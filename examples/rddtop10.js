@@ -11,7 +11,7 @@ var rdd3 = rdd2.filter(function(word) {
   return word.trim().length > 0;
 });
 
-rdd.count().then(function(val) {
+rdd3.count().then(function(val) {
   console.log("count = " + val);
 });
 /*
