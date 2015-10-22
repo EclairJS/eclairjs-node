@@ -1,0 +1,10 @@
+{
+  "name": "jsspark",
+  "dependencies": {
+    "browserify": "*",
+    "browserify-string": "*",
+    "node-uuid": "*",
+    "ws": "*",
+    "xmlhttprequest": "*"
+  }
+}

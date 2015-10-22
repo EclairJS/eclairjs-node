@@ -1,0 +1,8 @@
+**/node_modules/**
+java/.idea/*
+java/javascriptspark.iml
+java/target/*
+java/dependency-reduced-pom.xml
+.__browserify_string_empty.js
+.DS_Store
+jupyter-js-services
