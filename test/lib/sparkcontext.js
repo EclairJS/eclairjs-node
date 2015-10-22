@@ -8,14 +8,26 @@ function FakeKernelExecuteHandle() {
       var msg = {msg_type: 'status', content: {execution_state: 'idle'}};
       self.handleMsg(msg);
     }
-  }, 1000);
+  }, 10);
 }
 
 function FakeKernel() {
+  this._listener = null;
 }
 
-FakeKernel.prototype.execute = function() {
-  console.log(arguments)
+FakeKernel.prototype.addExecuteListener = function(listener) {
+  this._listener = listener;
+}
+
+FakeKernel.prototype.removeExecuteListener = function(listener) {
+  this._listener = null;
+}
+
+FakeKernel.prototype.execute = function(msg) {
+  if (this._listener) {
+    this._listener(msg);
+  }
+
   // TODO: use futures
   return new FakeKernelExecuteHandle();
 }

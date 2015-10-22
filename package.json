@@ -3,6 +3,7 @@
   "dependencies": {
     "browserify": "*",
     "browserify-string": "*",
+    "chai": "*",
     "node-uuid": "*",
     "ws": "*",
     "xmlhttprequest": "*"

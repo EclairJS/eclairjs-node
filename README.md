@@ -52,3 +52,14 @@ Run Example
 ```bash
 node --harmony examples/rddtop10.js
 ```
+
+Running Tests
+-----
+
+Install mocha first
+
+```npm install -g mocha```
+
+Then run the tests
+
+```mocha --harmony test/```
