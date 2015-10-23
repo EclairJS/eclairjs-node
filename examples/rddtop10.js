@@ -8,14 +8,6 @@ var rdd2 = rdd.flatMap(function(sentence) {
   return sentence.split(" ");
 });
 
-/*
-rdd2.count().then(function(val) {
-    console.log("val = " + val);
-}).catch(function(err) {
-    console.log("error!!");
-    console.log(err);
-});
-*/
 var rdd3 = rdd2.filter(function(word) {
   return word.trim().length > 0;
 });
