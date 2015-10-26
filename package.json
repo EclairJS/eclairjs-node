@@ -1,11 +1,16 @@
 {
-  "name": "jsspark",
+  "name": "eclair-node",
   "dependencies": {
     "browserify": "*",
     "browserify-string": "*",
-    "chai": "*",
-    "node-uuid": "*",
-    "ws": "*",
-    "xmlhttprequest": "*"
+    "ws": "^0.6.5",
+    "xmlhttprequest": "^1.8.0"
+  },
+  "devDependencies": {
+    "mocha": "2.3.x",
+    "chai": "3.4.x"
+  },
+  "scripts": {
+    "test": "mocha --harmony test/"
   }
 }
