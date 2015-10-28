@@ -1,0 +1,106 @@
+<html>
+    <head>
+        <title>Word Count Example</title>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" integrity="sha512-dTfge/zgoMYpP7QbHy4gWMEGsbsdZeCXz7irItjcC3sPUFtf0kuFbDz/ixG7ArTxmDjLXDmezHubeNikyKGVyQ==" crossorigin="anonymous">
+
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css" integrity="sha384-aUGj/X2zp5rLCbBxumKTCw2Z50WgIr1vs/PFN4praOTvYXWlVyh2UtNUU0KAUhAX" crossorigin="anonymous">
+
+        <script src="http://d3js.org/d3.v3.min.js"></script>
+        <script src="d3.layout.cloud.js"></script>
+        <script>
+            function _loadListener() {
+                buildCloud(JSON.parse(this.responseText));
+
+                // renable the run button
+                document.getElementById("runBtn").removeAttribute("disabled");
+                document.getElementById("runMsg").style.display = "none";
+                document.getElementById("finishedMsg").style.display = "inline";
+            }
+
+            function doWordCount() {
+                // disable the run button
+                document.getElementById("runBtn").setAttribute("disabled", "true");
+
+                document.getElementById("finishedMsg").style.display = "none";
+                document.getElementById("runMsg").style.display = "inline";
+
+/*
+                var d = [{"word":"of","count":"35.0"},{"word":"the","count":"30.0"},{"word":"and","count":"21.0"},{"word":"be"
+                    ,"count":"19.0"},{"word":"to","count":"19.0"},{"word":"a","count":"16.0"},{"word":"will","count":"15.0"},{"word":"freedom","count":"13.0"},{"word":"from","count":"13.0"},{"word":"i","count":"12.0"},{"word":"we","count":"11.0"},{"word":"let","count":"11.0"},{"word":"have","count":"10.0"},{"word":"that","count"
+            :"10.0"},{"word":"this","count":"9.0"},{"word":"with","count":"9.0"},{"word":"day","count":"1.0"},{"word":"ring","count":"9.0"},{"word":"every","count":"9.0"},{"word":"one","count":"8.0"}]
+                _loadListener()
+                buildCloud(d)
+                return*/
+
+                var xhr = new XMLHttpRequest();
+                xhr.addEventListener("load", _loadListener);
+                xhr.open("GET", "/doWordCount");
+                xhr.send();
+            }
+
+            function buildCloud(data) {
+                var fill = d3.scale.category20();
+
+                var layout = d3.layout.cloud().size([500, 500])
+                        .words(data.map(function(d) {
+                            return {text: d.word, count: d.count, size: parseInt(d.count)+20};
+                        }))
+                        .padding(5)
+                        .rotate(function() { return ~~(Math.random() * 2) * 90; })
+                        .font("Impact")
+                        .fontSize(function(d) { return d.size; })
+                        .on("end", draw);
+
+                layout.start();
+
+                function draw(words) {
+                    // clear
+                    d3.select("#chart").selectAll("*").remove();
+
+                    d3.select("#chart").append("svg")
+                            .attr("width", layout.size()[0])
+                            .attr("height", layout.size()[1])
+                            .append("g")
+                            .attr("transform", "translate(" + layout.size()[0] / 2 + "," + layout.size()[1] / 2 + ")")
+                            .selectAll("text")
+                            .data(words)
+                            .enter().append("text")
+                            .style("font-size", function(d) { return d.size + "px"; })
+                            .style("font-family", "Impact")
+                            .style("fill", function(d, i) { return fill(i); })
+                            .attr("text-anchor", "middle")
+                            .attr("transform", function(d) {
+                                return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+                            })
+                            .attr("svg:title", function(d) {return d.text + " ("+ d.count+")"})
+                            .text(function(d) { return d.text; });
+                }
+            }
+        </script>
+
+        <style>
+            .status {
+                display: none;
+                cursor: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>EclairJS Word Count</h2>
+            <div>
+                <button id="runBtn" type="button" onclick="doWordCount()" class="btn btn-primary">Run</button>
+
+                <div style="display: inline-block; margin-left: 8px;">
+                    <span id="runMsg" class="btn status bg-info">Running...</span>
+                    <span id="finishedMsg" class="btn status bg-success">Finished</span>
+                </div>
+
+            </div>
+
+            <div id="chart"></div>
+        </div>
+    </body>
+</html>

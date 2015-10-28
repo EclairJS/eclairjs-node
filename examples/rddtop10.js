@@ -2,7 +2,7 @@ var spark = require('../spark.js');
 
 var sc = new spark.SparkContext("local[*]", "foo");
 
-var rdd = sc.textFile("/tmp/examples/dream.txt");
+var rdd = sc.textFile("/Users/doronrosenberg/mystuff/ibm/jsspark/git/eclair-node/examples/dream.txt");
 
 var rdd2 = rdd.flatMap(function(sentence) {
   return sentence.split(" ");
@@ -26,8 +26,8 @@ var rdd6 = rdd5.mapToPair(function(tuple) {
 
 var rdd7 = rdd6.sortByKey(false);
 
-rdd7.take(10).then(function(val) { 
+rdd7.take(10).then(function(val) {
   console.log(val);
-}).catch(function(err) { 
+}).catch(function(err) {
   console.log(err); 
 });

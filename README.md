@@ -1,4 +1,4 @@
-Javascript Spark
+eclairJS-node
 ===================
 
 Javascript client for Apache Spark
@@ -14,7 +14,8 @@ Setup
 npm install
 ```
 
-**Docker**
+Docker
+------
 TODO
 
 Run Example
