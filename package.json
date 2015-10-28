@@ -1,8 +1,9 @@
 {
-  "name": "eclair-node",
+  "name": "eclairjs-node",
   "dependencies": {
     "browserify": "*",
     "browserify-string": "*",
+    "jupyter-js-services": "0.0.1",
     "ws": "^0.6.5",
     "xmlhttprequest": "^1.8.0"
   },
@@ -11,6 +12,7 @@
     "chai": "3.4.x"
   },
   "scripts": {
-    "test": "mocha --harmony test/"
-  }
+    "test": "mocha --harmony test/*.js"
+  },
+  "engine": "node >= 0.11.13"
 }
