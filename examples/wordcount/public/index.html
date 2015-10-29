@@ -19,20 +19,14 @@
                 document.getElementById("finishedMsg").style.display = "inline";
             }
 
+            var minCount = Number.MAX_VALUE, maxCount = 0;
+
             function doWordCount() {
                 // disable the run button
                 document.getElementById("runBtn").setAttribute("disabled", "true");
 
                 document.getElementById("finishedMsg").style.display = "none";
                 document.getElementById("runMsg").style.display = "inline";
-
-/*
-                var d = [{"word":"of","count":"35.0"},{"word":"the","count":"30.0"},{"word":"and","count":"21.0"},{"word":"be"
-                    ,"count":"19.0"},{"word":"to","count":"19.0"},{"word":"a","count":"16.0"},{"word":"will","count":"15.0"},{"word":"freedom","count":"13.0"},{"word":"from","count":"13.0"},{"word":"i","count":"12.0"},{"word":"we","count":"11.0"},{"word":"let","count":"11.0"},{"word":"have","count":"10.0"},{"word":"that","count"
-            :"10.0"},{"word":"this","count":"9.0"},{"word":"with","count":"9.0"},{"word":"day","count":"1.0"},{"word":"ring","count":"9.0"},{"word":"every","count":"9.0"},{"word":"one","count":"8.0"}]
-                _loadListener()
-                buildCloud(d)
-                return*/
 
                 var xhr = new XMLHttpRequest();
                 xhr.addEventListener("load", _loadListener);
@@ -43,14 +37,28 @@
             function buildCloud(data) {
                 var fill = d3.scale.category20();
 
-                var layout = d3.layout.cloud().size([500, 500])
+                data.forEach(function(item) {
+                    var c = parseInt(item.count);
+                    if (c > maxCount) {
+                        maxCount = c;
+                    }
+
+                    if (c < minCount) {
+                        minCount = c;
+                    }
+                });
+
+                var layout = d3.layout.cloud().size([800, 800])
                         .words(data.map(function(d) {
-                            return {text: d.word, count: d.count, size: parseInt(d.count)+20};
+                            return {text: d.word, count: d.count, size: parseInt(d.count)};
                         }))
                         .padding(5)
                         .rotate(function() { return ~~(Math.random() * 2) * 90; })
                         .font("Impact")
-                        .fontSize(function(d) { return d.size; })
+                        .fontSize(function(d) {
+                            var size = d3.scale.linear().range([20, 100]).domain([minCount, maxCount])(d.size);
+                            return size;
+                        })
                         .on("end", draw);
 
                 layout.start();
@@ -67,9 +75,10 @@
                             .selectAll("text")
                             .data(words)
                             .enter().append("text")
-                            .style("font-size", function(d) { return d.size + "px"; })
+
                             .style("font-family", "Impact")
                             .style("fill", function(d, i) { return fill(i); })
+                            .style("font-size", function(d) { return d.size + "px"; })
                             .attr("text-anchor", "middle")
                             .attr("transform", function(d) {
                                 return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
