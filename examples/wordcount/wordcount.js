@@ -39,15 +39,14 @@ WordCount.prototype.do = function(callback) {
 
   var rdd7 = rdd6.sortByKey(false);
 
-  rdd7.take(20).then(function(val) {
-    // we get a string version of an array of tuples, so parse them
-    var matches = val.match(/\([a-zA-Z0-9,.]*\)/g)
-    var results = [];
-    matches.forEach(function(match) {
-      var values = match.match(/[a-zA-Z0-9.]+/g);
-      results.push({word: values[1], count: values[0]})
+  rdd7.take(20).then(function(results) {
+    var response = [];
+
+    results.forEach(function(tuple) {
+      response.push({word: tuple[1], count: tuple[0]})
     });
-    callback(null, results)
+    callback(null, response)
+
   }).catch(function(err) {
     console.log(err);
     callback(err)
