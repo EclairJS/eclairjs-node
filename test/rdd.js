@@ -133,7 +133,7 @@ describe('Top 10 Test', function() {
         function() {
           rdd7.take(10);
         }, function(msg) {
-          expect(msg.code).equals('rdd7.take(10);');
+          expect(msg.code).equals('JSON.stringify(rdd7.take(10));');
         },
         done
       );
