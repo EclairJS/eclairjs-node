@@ -14,5 +14,5 @@
   "scripts": {
     "test": "mocha --harmony test/*.js"
   },
-  "engine": "node >= 0.11.13"
+  "engine": "node >= 0.12"
 }

@@ -7,7 +7,7 @@ Setup
 ---------------
 
 **Prerequisites**
-- [node >= 0.11.13](http://nodejs.org/)
+- [node >= 0.12](http://nodejs.org/)
 
 
 ```bash
