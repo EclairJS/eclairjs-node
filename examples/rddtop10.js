@@ -27,7 +27,7 @@ var rdd6 = rdd5.mapToPair(function(tuple) {
 var rdd7 = rdd6.sortByKey(false);
 
 rdd7.take(10).then(function(val) {
-  console.log(val);
+  console.log("Success:", val);
 }).catch(function(err) {
-  console.log(err); 
+  console.log("Error:", err);
 });
