@@ -14,5 +14,6 @@
   "scripts": {
     "test": "mocha --harmony test/*.js"
   },
+  "license": "Apache License, Version 2.0",
   "engine": "node >= 0.12"
 }

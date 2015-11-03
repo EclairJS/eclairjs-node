@@ -18,12 +18,23 @@ Docker
 ------
 TODO
 
-Run Example
+Run Examples
 ---------
 
 ```bash
 node --harmony examples/rddtop10.js
 ```
+
+To run the visual wordcount example
+
+```bash
+node install express
+cd examples/wordcount
+node --harmony index.js
+```
+
+Then point your browser to [`http://localhost:3000/`](http://localhost:3000/)
+
 
 Running Tests
 -----
