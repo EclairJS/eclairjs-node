@@ -1,4 +1,4 @@
-# Copyrighn (c) Jupyter Development Team.
+# Copyright (c) Jupyter Development Team.
 FROM jupyter/all-spark-notebook
 
 MAINTAINER Jupyter Project <jupyter@googlegroups.com>
