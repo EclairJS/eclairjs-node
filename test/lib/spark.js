@@ -14,5 +14,5 @@
  * limitations under the License.
  */
 
-module.exports.SparkContext = require('./sparkcontext.js');
-//module.exports.SQLContext = require('./sqlcontext.js');
+module.exports.SparkContext = require('./SparkContext.js');
+//module.exports.SQLContext = require('./SqlContext.js');
