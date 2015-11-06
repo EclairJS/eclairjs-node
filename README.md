@@ -52,7 +52,7 @@ Our goal is to keep master up to date with the latest version of Spark. When new
 | -------- | -------- | -------- |
 | master   | 0.1   | 1.5.1 |
 
-Please note that for the most part, as new APIs are implemented for **EclairJS** they will be added to the master branch.  ** See the [Guide to Using the JavaScript Spark API](https://github.rtp.raleigh.ibm.com/EclairJS/eclairjs-node/wikis/Guide-to-using-the-JavaScript-Spark-API) for a list of what is currently implemented.**
+Please note that for the most part, as new APIs are implemented for **EclairJS** they will be added to the master branch.  **See the [Guide to Using the JavaScript Spark API](https://github.rtp.raleigh.ibm.com/EclairJS/eclairjs-node/wikis/Guide-to-using-the-JavaScript-Spark-API) for a list of what is currently implemented.**
 
 Resources
 ===================
