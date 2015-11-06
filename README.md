@@ -1,6 +1,6 @@
 EclairJS 
 ===================
-**EclairJS** is a JavaScript client for Apache Spark.  It is a work-in-progress so it is a good idea to frequently check the [Guide to Using the JavaScript Spark API](https://github.rtp.raleigh.ibm.com/EclairJS/eclairjs-node/wikis/Guide-to-using-the-JavaScript-Spark-API) for a list of what is currently implemented.
+**EclairJS** is a JavaScript client for Apache Spark.  It is a work-in-progress so it is a good idea to frequently check the [Guide to Using the JavaScript Spark API](https://github.com/EclairJS/eclairjs-node/wikis/Guide-to-using-the-JavaScript-Spark-API) for a list of what is currently implemented.
 
 Overview
 ===================
@@ -30,19 +30,19 @@ TryIt
 ===================
 The easiest and fastest way to try things out is with the Dockerfile supplied for this project.  
 
-**Please see [Using-the-Docker-Container](https://github.rtp.raleigh.ibm.com/EclairJS/eclairjs-node/wikis/Using-the-Docker-Container).**
+**Please see [Using-the-Docker-Container](https://github.com/EclairJS/eclairjs-node/wikis/Using-the-Docker-Container).**
 
 Develop
 ===================
 If you are interested in becoming a collaborator and help in development of **EclairJS** please email blah@ibm.com to be granted collaborator access.
 
-**Please see [Development for EclairJS](https://github.rtp.raleigh.ibm.com/EclairJS/eclairjs-node/wikis/Development-for-EclairJS) for more information.**
+**Please see [Development for EclairJS](https://github.com/EclairJS/eclairjs-node/wikis/Development-for-EclairJS) for more information.**
 
 Build & Package
 ===================
 If you would like to take the manual route in lieu of using the Dockerfile you can build from source and setup your local environment.
 
-**Please see [Build and Package](https://github.rtp.raleigh.ibm.com/EclairJS/eclairjs-node/wikis/Build-and-Package) for more information.**
+**Please see [Build and Package](https://github.com/EclairJS/eclairjs-node/wikis/Build-and-Package) for more information.**
 
 Version
 ===================
@@ -52,8 +52,8 @@ Our goal is to keep master up to date with the latest version of Spark. When new
 | -------- | -------- | -------- |
 | master   | 0.1   | 1.5.1 |
 
-Please note that for the most part, as new APIs are implemented for **EclairJS** they will be added to the master branch.  **See the [Guide to Using the JavaScript Spark API](https://github.rtp.raleigh.ibm.com/EclairJS/eclairjs-node/wikis/Guide-to-using-the-JavaScript-Spark-API) for a list of what is currently implemented.**
+Please note that for the most part, as new APIs are implemented for **EclairJS** they will be added to the master branch.  **See the [Guide to Using the JavaScript Spark API](https://github.com/EclairJS/eclairjs-node/wikis/Guide-to-using-the-JavaScript-Spark-API) for a list of what is currently implemented.**
 
 Resources
 ===================
-There is more detailed information available in our [Wiki](https://github.rtp.raleigh.ibm.com/EclairJS/eclairjs-node/wikis/home) and our [Getting Started](https://github.rtp.raleigh.ibm.com/EclairJS/eclairjs-node/wikis/Getting-Started-With-EclairJS-Node) guide.
+There is more detailed information available in our [Wiki](https://github.com/EclairJS/eclairjs-node/wikis/home) and our [Getting Started](https://github.com/EclairJS/eclairjs-node/wikis/Getting-Started-With-EclairJS-Node) guide.
