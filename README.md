@@ -34,7 +34,7 @@ The easiest and fastest way to try things out is with the Dockerfile supplied fo
 
 Develop
 ===================
-If you are interested in becoming a collaborator and help in development of **EclairJS** please email blah@ibm.com to be granted collaborator access.
+If you are interested in becoming a collaborator and help in development of **EclairJS** please email <a href="mailto:eclairjs@googlegroups.com">eclairjs@googlegroups.com</a> to be granted collaborator access.
 
 **Please see [Development for EclairJS](https://github.com/EclairJS/eclairjs-node/wikis/Development-for-EclairJS) for more information.**
 
