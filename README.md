@@ -28,7 +28,7 @@ The **EclairJS Nashorn** API can be used with either Jupyter/IPython Notebooks o
 
 TryIt
 ===================
-The easiest and fastest way to try things out is with the Dockerfile supplied for this project.  
+The easiest and fastest way to try things out is with the Dockerfile supplied for this project.  Everything you need to get started with **EclairJS** is setup in the Docker container including a simple Spark "hello world" example which does a word count of the top ten most occurring words found in a text file.
 
 **Please see [Using-the-Docker-Container](https://github.com/EclairJS/eclairjs-node/wikis/Using-the-Docker-Container).**
 
@@ -52,7 +52,7 @@ Our goal is to keep master up to date with the latest version of Spark. When new
 | -------- | -------- | -------- |
 | master   | 0.1   | 1.5.1 |
 
-Please note that for the most part, as new APIs are implemented for **EclairJS** they will be added to the master branch.  **See the [Guide to Using the JavaScript Spark API](https://github.com/EclairJS/eclairjs-node/wikis/Guide-to-using-the-JavaScript-Spark-API) for a list of what is currently implemented.**
+Please note that for the most part, as new APIs are implemented for **EclairJS** they will be added to the master branch.  **See the [Guide to Using the JavaScript Spark API](https://github.com/EclairJS/eclairjs-node/wikis/Guide-to-using-the-JavaScript-Spark-API) for a list of what is currently implemented.**  **EclairJS** has been tested on _OSX_ and _Linux_.
 
 Resources
 ===================
