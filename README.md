@@ -8,6 +8,8 @@ The purpose of **EclairJS Node** is to enable JavaScript/NodeJS developers to pr
 ## EclairJS Nahorn
 The purpose of **EclairJS Nashorn** is to expose the [Apache Spark](http://spark.apache.org/) programming model to JavaScript.  **EclairJS Nashorn** provides support for JavaScript in [Spark](http://spark.apache.org/) and a framework that supports various applications including **Eclairjs Node**, a REPL and Jupyter Notebooks. 
 
+![EclairJS Overview](https://github.com/EclairJS/eclairjs-node/blob/master/images/overviewEclairJS.png)
+
 TryIt
 ===================
 Everything you need to run **EclairJS** is setup in Dockerfile which, with minimal overhead, allows you to run a simple "hello world" example which does a word count of the top ten most occurring words found in a text file, run the REPL and create new Notebooks using the JavaScript Spark API.  Please see [Using-the-Docker-Container](https://github.com/EclairJS/eclairjs-node/wikis/Using-the-Docker-Container).
