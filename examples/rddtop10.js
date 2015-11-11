@@ -18,7 +18,14 @@ var spark = require('../spark.js');
 
 var sc = new spark.SparkContext("local[*]", "foo");
 
-var rdd = sc.textFile(__dirname + '/dream.txt'); // Should be some file on your system
+var file = __dirname + '/dream.txt';
+
+// first argument is a new filename
+if (process.argv.length > 2) {
+  file = process.argv[2];
+}
+
+var rdd = sc.textFile(file);
 
 var rdd2 = rdd.flatMap(function(sentence) {
   return sentence.split(" ");
