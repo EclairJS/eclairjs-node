@@ -9,8 +9,9 @@
     "xmlhttprequest": "^1.8.0"
   },
   "devDependencies": {
-    "mocha": "2.3.x",
-    "chai": "3.4.x"
+    "chai": "3.4.x",
+    "jsdoc": "git+https://github.com/jsdoc3/jsdoc.git",
+    "mocha": "2.3.x"
   },
   "scripts": {
     "test": "mocha --harmony test/*.js"
