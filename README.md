@@ -5,7 +5,7 @@ EclairJS
 ## EclairJS Node
 The purpose of **EclairJS Node** is to enable JavaScript/NodeJS developers to program against [Apache Spark](http://spark.apache.org/).  **EclairJS Node** provides an API in NodeJS for the [Apache Spark API](http://spark.apache.org/docs/latest/api/java/index.html) and a remote client for a node application.  **EclairJS Node** is dependent on the **EclairJS Nashorn** component.
 
-## EclairJS Nahorn
+## EclairJS Nashorn
 The purpose of **EclairJS Nashorn** is to expose the [Apache Spark](http://spark.apache.org/) programming model to JavaScript.  **EclairJS Nashorn** provides support for JavaScript in [Spark](http://spark.apache.org/) and a framework that supports various applications including **Eclairjs Node**, a REPL and Jupyter Notebooks. 
 
 ![EclairJS Overview](https://github.com/EclairJS/eclairjs-node/blob/master/images/overviewEclairJS.png)
