@@ -14,6 +14,8 @@ TryIt
 ===================
 Everything you need to run **EclairJS** is setup in Dockerfile which, with minimal overhead, allows you to run a simple "hello world" example which does a word count of the top ten most occurring words found in a text file, run the REPL and create new Notebooks using the JavaScript Spark API.  Please see [Using-the-Docker-Container](https://github.com/EclairJS/eclairjs-node/wikis/Using-the-Docker-Container).
 
+You can also try out EclairJS within Jupyter notebooks running under the [IBM Bluemix Cloud](EclairJS-with-IBM-Bluemix). 
+
 Build & Package
 ===================
 If you would like to take the manual route in lieu of using the Dockerfile you can build from source and setup your local environment.  Please see [Build and Package](https://github.com/EclairJS/eclairjs-node/wikis/Build-and-Package) for more information.
@@ -26,7 +28,7 @@ Our goal is to keep master up to date with the latest version of Spark. When new
 | -------- | -------- | -------- |
 | master   | 0.1   | 1.5.1 |
 
-Please note as new APIs are implemented for **EclairJS** they will be added to the master branch.  Refer to the [Guide to Using the JavaScript Spark API](https://github.com/EclairJS/eclairjs-node/wikis/Guide-to-using-the-JavaScript-Spark-API) for a list of what is currently implemented.  **EclairJS** has been tested on OSX and Linux.
+Please note as new APIs are implemented for **EclairJS** they will be added to the master branch.  Refer to the [API Documentation](https://github.com/EclairJS/eclairjs-node/wikis/API-Documentation) for a list of what is currently implemented.  **EclairJS** has been tested on OSX and Linux.
 
 Resources
 ===================
