@@ -18,4 +18,4 @@ global.XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 global.WebSocket = require('ws');
 
 module.exports.SparkContext = require('./lib/SparkContext.js');
-module.exports.SQLContext = require('./lib/SQLContext.js');
+module.exports.SQLContext = require('./lib/sql/SQLContext.js');
