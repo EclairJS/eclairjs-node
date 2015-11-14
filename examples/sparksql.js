@@ -21,7 +21,7 @@ var sc = new spark.SparkContext("local[*]", "foo");
 var sqlContext = new spark.SQLContext(sc);
 
 // Load a text file and convert each line to a JavaScript Object.
-var rdd = sc.textFile("/Users/doronrosenberg/mystuff/ibm/eclairjs/git/eclairjs-node/examples/people.txt");
+var rdd = sc.textFile("__dirname + '/people.txt");
 
 var people = rdd.map(function(line) {
   var parts = line.split(",");
