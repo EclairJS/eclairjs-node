@@ -136,4 +136,76 @@ describe('DataFrame Test', function() {
       );
     });
   });
+
+  describe("dataFrame.filterWithColumn()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var col = dataFrame.col("age");
+          var testCol = col.gt("20");
+          var result = dataFrame.filterWithColumn(testCol);
+
+          var names = result.toRDD().map(function(row) {
+            return "Name: " + row.getString(0);
+          });
+
+          names.take(10).then(callback);
+        }, function(result) {
+          expect(result).deep.equals(["Name: Michael","Name: Andy"]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.flatMap()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.flatMap(function(row) {
+            var r = [];
+            r.push(row.getString(0));
+            return r
+          });
+
+          result.take(10).then(callback);
+        }, function(result) {
+          expect(result).deep.equals(["Michael", "Andy", "Justin"]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.groupBy(column)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var gd = dataFrame.groupBy(dataFrame.col("name"));
+          var df2 = gd.count();
+
+          df2.count().then(callback);
+        }, function(result) {
+          expect(result).equals(3);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.groupBy(columnName)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var gd = dataFrame.groupBy("name");
+          var df2 = gd.count();
+
+          df2.count().then(callback);
+        }, function(result) {
+          expect(result).equals(3);
+        },
+        done
+      );
+    });
+  });
 });
