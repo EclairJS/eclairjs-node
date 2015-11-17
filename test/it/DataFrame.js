@@ -208,4 +208,46 @@ describe('DataFrame Test', function() {
       );
     });
   });
+
+  describe("dataFrame.head()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var row = dataFrame.head();
+          row.mkString().then(callback);
+        }, function(result) {
+          expect(result).equals("Michael29");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.head(separator)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var row = dataFrame.head();
+          row.mkString(" - ").then(callback);
+        }, function(result) {
+          expect(result).equals("Michael - 29");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.head(separator, start, end)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var row = dataFrame.head();
+          row.mkString(" - ", "(", ")").then(callback);
+        }, function(result) {
+          expect(result).equals("(Michael - 29)");
+        },
+        done
+      );
+    });
+  });
 });
