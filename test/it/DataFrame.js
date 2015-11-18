@@ -107,7 +107,7 @@ describe('DataFrame Test', function() {
     });
   });
 
-/*  describe("dataFrame.col()", function() {
+describe("dataFrame.col()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
@@ -219,7 +219,7 @@ describe('DataFrame Test', function() {
           var row = dataFrame.head();
           row.mkString().then(callback);
         }, function(result) {
-          expect(result).equals("Michael29");
+          expect(result).equals("Michael291");
         },
         done
       );
@@ -233,7 +233,7 @@ describe('DataFrame Test', function() {
           var row = dataFrame.head();
           row.mkString(" - ").then(callback);
         }, function(result) {
-          expect(result).equals("Michael - 29");
+          expect(result).equals("Michael - 29 - 1");
         },
         done
       );
@@ -247,7 +247,7 @@ describe('DataFrame Test', function() {
           var row = dataFrame.head();
           row.mkString(" - ", "(", ")").then(callback);
         }, function(result) {
-          expect(result).equals("(Michael - 29)");
+          expect(result).equals("(Michael - 29 - 1)");
         },
         done
       );
@@ -306,7 +306,60 @@ describe('DataFrame Test', function() {
         function(callback) {
           var result = dataFrame.take(2).then(callback);
         }, function(result) {
-          expect(result).deep.equals([{"values":["Michael",29],"schema":{"fields":[{"name":"name","dataType":"StringType","nullable":true,"metadata":"FIXME"},{"name":"age","dataType":"IntegerType","nullable":true,"metadata":"FIXME"}]}},{"values":["Andy",30],"schema":{"fields":[{"name":"name","dataType":"StringType","nullable":true,"metadata":"FIXME"},{"name":"age","dataType":"IntegerType","nullable":true,"metadata":"FIXME"}]}}]);
+          expect(result).deep.equals([
+            {
+              "values": [
+                "Michael",
+                29,
+                1
+              ],
+              "schema": {
+                "fields": [
+                  {
+                    "name": "name",
+                    "dataType": "StringType",
+                    "nullable": true
+                  },
+                  {
+                    "name": "age",
+                    "dataType": "IntegerType",
+                    "nullable": true
+                  },
+                  {
+                    "name": "expense",
+                    "dataType": "IntegerType",
+                    "nullable": true
+                  }
+                ]
+              }
+            },
+            {
+              "values": [
+                "Andy",
+                30,
+                2
+              ],
+              "schema": {
+                "fields": [
+                  {
+                    "name": "name",
+                    "dataType": "StringType",
+                    "nullable": true
+                  },
+                  {
+                    "name": "age",
+                    "dataType": "IntegerType",
+                    "nullable": true
+                  },
+                  {
+                    "name": "expense",
+                    "dataType": "IntegerType",
+                    "nullable": true
+                  }
+                ]
+              }
+            }
+          ]);
         },
         done
       );
@@ -340,7 +393,7 @@ describe('DataFrame Test', function() {
       );
     });
   });
-*/
+
   describe("dataFrame.agg()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
@@ -352,24 +405,24 @@ describe('DataFrame Test', function() {
           m["expense"] =  "sum";
 
           results.agg(m).take(10).then(callback);
-
         }, function(result) {
           expect(result).deep.equals([
             {
-              "values": [30, 6],
+              "values": [
+                30,
+                6
+              ],
               "schema": {
                 "fields": [
                   {
                     "name": "max(age)",
                     "dataType": "IntegerType",
-                    "nullable": true,
-                    "metadata": "FIXME"
+                    "nullable": true
                   },
                   {
                     "name": "sum(expense)",
                     "dataType": "LongType",
-                    "nullable": true,
-                    "metadata": "FIXME"
+                    "nullable": true
                   }
                 ]
               }
