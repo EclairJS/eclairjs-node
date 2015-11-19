@@ -16,12 +16,12 @@
 
 var SparkContext = require('../../lib/sparkcontext.js');
 
-function FakeKernelExecuteHandle() {
+function FakeKernelExecuteHandle(execution) {
   var self = this;
 
   setTimeout(function() {
     if (self.handleMsg) {
-      var msg = {msg_type: 'status', content: {execution_state: 'idle'}};
+      var msg = execution ? {msg_type: 'execute_result', content: {data: {"text/plain": "{}"}}} : {msg_type: 'status', content: {execution_state: 'idle'}};
       self.handleMsg(msg);
     }
   }, 10);
@@ -45,7 +45,12 @@ FakeKernel.prototype.execute = function(msg) {
   }
 
   // TODO: use futures
-  return new FakeKernelExecuteHandle();
+  // TODO: registerTempTable is an exception here, need a better way
+  if (msg.code.indexOf("var ") == 0 || msg.code.indexOf("registerTempTable") >= 0) {
+    return new FakeKernelExecuteHandle();
+  } else {
+    return new FakeKernelExecuteHandle(true);
+  }
 }
 
 function FakeSparkContext(master, name) {

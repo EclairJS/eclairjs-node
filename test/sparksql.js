@@ -23,6 +23,11 @@ var ctx = new spark.SparkContext("local[*]", "foo");
 describe('SQL Test', function() {
   var sqlContext, rdd, fields, schema, people, rowRDD, peopleDataFrame, results, rdd2, rdd3;
 
+  before(function() {
+    var protocol = require('../lib/kernel.js');
+    protocol.resetVariables();
+  });
+
   var resolved = false;
 
   function executeTest(run, checks, done) {
