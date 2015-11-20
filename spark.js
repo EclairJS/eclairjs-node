@@ -20,4 +20,5 @@ global.WebSocket = require('ws');
 module.exports.SparkContext = require('./lib/SparkContext.js');
 module.exports.SQLContext = require('./lib/sql/SQLContext.js');
 module.exports.StreamingContext = require('./lib/streaming/StreamingContext.js');
+module.exports.KafkaUtils = require('./lib/streaming/KafkaUtils.js');
 module.exports.Duration = require('./lib/streaming/Duration.js');
