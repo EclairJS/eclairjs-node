@@ -32,7 +32,8 @@ function buildPeopleTable(file, callback) {
     var parts = line.split(",");
     return person = {
       name: parts[0],
-      age: parseInt(parts[1].trim())
+      age: parseInt(parts[1].trim()),
+      expense: parseInt(parts[2].trim())
     };
   });
 
@@ -41,11 +42,13 @@ function buildPeopleTable(file, callback) {
   var fields = [];
   fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));
   fields.push(DataTypes.createStructField("age", DataTypes.IntegerType, true));
+  fields.push(DataTypes.createStructField("expense", DataTypes.IntegerType, true));
+
   var schema = DataTypes.createStructType(fields);
 
   // Convert records of the RDD (people) to Rows.
   var rowRDD = people.map(function(person){
-    return RowFactory.create([person.name, person.age]);
+    return RowFactory.create([person.name, person.age, person.expense]);
   });
 
   //Apply the schema to the RDD.
@@ -104,7 +107,7 @@ describe('DataFrame Test', function() {
     });
   });
 
-  describe("dataFrame.col()", function() {
+describe("dataFrame.col()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
@@ -137,13 +140,13 @@ describe('DataFrame Test', function() {
     });
   });
 
-  describe("dataFrame.filterWithColumn()", function() {
+  describe("dataFrame.filter(column)", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
           var col = dataFrame.col("age");
           var testCol = col.gt("20");
-          var result = dataFrame.filterWithColumn(testCol);
+          var result = dataFrame.filter(testCol);
 
           var names = result.toRDD().map(function(row) {
             return "Name: " + row.getString(0);
@@ -216,7 +219,7 @@ describe('DataFrame Test', function() {
           var row = dataFrame.head();
           row.mkString().then(callback);
         }, function(result) {
-          expect(result).equals("Michael29");
+          expect(result).equals("Michael291");
         },
         done
       );
@@ -230,7 +233,7 @@ describe('DataFrame Test', function() {
           var row = dataFrame.head();
           row.mkString(" - ").then(callback);
         }, function(result) {
-          expect(result).equals("Michael - 29");
+          expect(result).equals("Michael - 29 - 1");
         },
         done
       );
@@ -244,10 +247,191 @@ describe('DataFrame Test', function() {
           var row = dataFrame.head();
           row.mkString(" - ", "(", ")").then(callback);
         }, function(result) {
-          expect(result).equals("(Michael - 29)");
+          expect(result).equals("(Michael - 29 - 1)");
         },
         done
       );
     });
   });
+
+
+  describe("dataFrame.map", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var names = dataFrame.map(function(row) {
+            return "Name: " + row.getString(0);
+          });
+
+          names.take(10).then(callback);
+        }, function(result) {
+          expect(result).deep.equals(["Name: Michael","Name: Andy", "Name: Justin"]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.select(columnName)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.select("name", "age");
+          result.toString().then(callback);
+        }, function(result) {
+          expect(result).equals("[name: string, age: int]");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.select(column)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.select(dataFrame.col("name"), dataFrame.col("age"));
+          result.toString().then(callback);
+        }, function(result) {
+          expect(result).equals("[name: string, age: int]");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.take()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.take(2).then(callback);
+        }, function(result) {
+          expect(result).deep.equals([
+            {
+              "values": [
+                "Michael",
+                29,
+                1
+              ],
+              "schema": {
+                "fields": [
+                  {
+                    "name": "name",
+                    "dataType": "StringType",
+                    "nullable": true
+                  },
+                  {
+                    "name": "age",
+                    "dataType": "IntegerType",
+                    "nullable": true
+                  },
+                  {
+                    "name": "expense",
+                    "dataType": "IntegerType",
+                    "nullable": true
+                  }
+                ]
+              }
+            },
+            {
+              "values": [
+                "Andy",
+                30,
+                2
+              ],
+              "schema": {
+                "fields": [
+                  {
+                    "name": "name",
+                    "dataType": "StringType",
+                    "nullable": true
+                  },
+                  {
+                    "name": "age",
+                    "dataType": "IntegerType",
+                    "nullable": true
+                  },
+                  {
+                    "name": "expense",
+                    "dataType": "IntegerType",
+                    "nullable": true
+                  }
+                ]
+              }
+            }
+          ]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.where(sql)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.where("age > 20");
+          result.count().then(callback);
+        }, function(result) {
+          expect(result).equals(2);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.where(column)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.where(dataFrame.col("age").gt("20"));
+          result.count().then(callback);
+        }, function(result) {
+          expect(result).equals(2);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.agg()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var results = sqlContext.sql("SELECT name, age, expense FROM people");
+
+          var m = {};
+          m["age"] = "max";
+          m["expense"] =  "sum";
+
+          results.agg(m).take(10).then(callback);
+        }, function(result) {
+          expect(result).deep.equals([
+            {
+              "values": [
+                30,
+                6
+              ],
+              "schema": {
+                "fields": [
+                  {
+                    "name": "max(age)",
+                    "dataType": "IntegerType",
+                    "nullable": true
+                  },
+                  {
+                    "name": "sum(expense)",
+                    "dataType": "LongType",
+                    "nullable": true
+                  }
+                ]
+              }
+            }
+          ]);
+        },
+        done
+      );
+    });
+  });
+
 });
