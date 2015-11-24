@@ -55,8 +55,8 @@ function buildRockstarsTable(file, callback) {
   fields.push(DataTypes.createStructField("numkids", DataTypes.IntegerType, true));
   fields.push(DataTypes.createStructField("married", DataTypes.BooleanType, true));
   fields.push(DataTypes.createStructField("networth", DataTypes.DoubleType, true));
-  //fields.push(DataTypes.createStructField("weight", DataTypes.FloatType, true));
-  fields.push(DataTypes.createStructField("weight", DataTypes.DoubleType, true));
+  fields.push(DataTypes.createStructField("weight", DataTypes.FloatType, true));
+  //fields.push(DataTypes.createStructField("weight", DataTypes.DoubleType, true));
   //fields.push(DataTypes.createStructField("percent", DataTypes.DecimalType, true));
   fields.push(DataTypes.createStructField("percent", DataTypes.DoubleType, true));
   var schema = DataTypes.createStructType(fields);
@@ -156,23 +156,35 @@ describe('Row Test', function() {
     });
  });
 
- /** 
-  * Commenting this out for now as there is a bug in nashorn API where index is not being passed thru to JavaObject 
-  * Need to fix in nashorn API!
  describe("row.apply()", function() {
-    it("should generate the correct output e.g. should be forename", function(done) {
+    it("should generate the correct output e.g. should be surname", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.apply(0).then(callback);
         }, function(result) {
+          console.log('apply result: ',result);
           expect(result).equals('Jovi');
         },
         done
       );
     });
   });
-  **/
+
+ describe("row.apply()", function() {
+    it("should generate the correct output e.g. should be Bon Jovi is married", function(done) {
+      executeTest(
+        function(callback) {
+          // Use firstrow of table
+          firstrow.apply(5).then(callback);
+        }, function(result) {
+          console.log('apply result: ',result);
+          expect(result).equals(true);
+        },
+        done
+      );
+    });
+  });
 
   // Something is wrong I think in Nashorn side of copy - need to figure out
   /**
