@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: SparkContext</title>
+    <title>JSDoc: Class: DStream</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: SparkContext</h1>
+    <h1 class="page-title">Class: DStream</h1>
 
     
 
@@ -28,11 +28,7 @@
 
 <header>
     
-        <h2>SparkContext</h2>
-        
-            <div class="class-description">A JavaScript-friendly version of SparkContext that returns RDDs
-Only one SparkContext may be active per JVM. You must stop() the active SparkContext before creating a new one.
-This limitation may eventually be removed; see SPARK-2243 for more details.</div>
+        <h2>DStream</h2>
         
     
 </header>
@@ -43,10 +39,8 @@ This limitation may eventually be removed; see SPARK-2243 for more details.</div
         
 
     
-    <h2>Constructor</h2>
-    
 
-    <h4 class="name" id="SparkContext"><span class="type-signature"></span>new SparkContext<span class="signature">(master, name)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="DStream"><span class="type-signature"></span>new DStream<span class="signature">()</span><span class="type-signature"></span></h4>
 
     
 
@@ -58,78 +52,6 @@ This limitation may eventually be removed; see SPARK-2243 for more details.</div
 
 
 
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>master</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">Cluster URL to connect to</td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">A name for your application, to display on the cluster web UI</td>
-        </tr>
-
-    
-    </tbody>
-</table>
 
 
 
@@ -165,7 +87,7 @@ This limitation may eventually be removed; see SPARK-2243 for more details.</div
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="SparkContext.js.html">SparkContext.js</a>, <a href="SparkContext.js.html#line65">line 65</a>
+        <a href="streaming_DStream.js.html">streaming/DStream.js</a>, <a href="streaming_DStream.js.html#line52">line 52</a>
     </li></ul></dd>
     
 
@@ -214,14 +136,14 @@ This limitation may eventually be removed; see SPARK-2243 for more details.</div
 
     
 
-    <h4 class="name" id="parallelize"><span class="type-signature"></span>parallelize<span class="signature">(arr)</span><span class="type-signature"> &rarr; {<a href="RDD.html">RDD</a>}</span></h4>
+    <h4 class="name" id="flatMap"><span class="type-signature"></span>flatMap<span class="signature">(func)</span><span class="type-signature"> &rarr; {<a href="DStream.html">DStream</a>}</span></h4>
 
     
 
 
 
 <div class="description">
-    Distribute a local Scala collection to form an RDD.
+    Return a new DStream by first applying a function to all elements of this DStream, and then flattening the results.
 </div>
 
 
@@ -257,15 +179,10 @@ This limitation may eventually be removed; see SPARK-2243 for more details.</div
 
         <tr>
             
-                <td class="name"><code>arr</code></td>
+                <td class="name"><code>func</code></td>
             
 
             <td class="type">
-            
-                
-<span class="param-type">array</span>
-
-
             
             </td>
 
@@ -314,7 +231,7 @@ This limitation may eventually be removed; see SPARK-2243 for more details.</div
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="SparkContext.js.html">SparkContext.js</a>, <a href="SparkContext.js.html#line104">line 104</a>
+        <a href="streaming_DStream.js.html">streaming/DStream.js</a>, <a href="streaming_DStream.js.html#line62">line 62</a>
     </li></ul></dd>
     
 
@@ -348,7 +265,7 @@ This limitation may eventually be removed; see SPARK-2243 for more details.</div
     </dt>
     <dd>
         
-<span class="param-type"><a href="RDD.html">RDD</a></span>
+<span class="param-type"><a href="DStream.html">DStream</a></span>
 
 
     </dd>
@@ -363,15 +280,14 @@ This limitation may eventually be removed; see SPARK-2243 for more details.</div
 
     
 
-    <h4 class="name" id="textFile"><span class="type-signature"></span>textFile<span class="signature">(path)</span><span class="type-signature"> &rarr; {<a href="RDD.html">RDD</a>}</span></h4>
+    <h4 class="name" id="map"><span class="type-signature"></span>map<span class="signature">(func)</span><span class="type-signature"> &rarr; {<a href="DStream.html">DStream</a>}</span></h4>
 
     
 
 
 
 <div class="description">
-    Read a text file from HDFS, a local file system (available on all nodes), or any Hadoop-supported file system URI,
-and return it as an RDD of Strings.
+    Return a new DStream by applying a function to all elements of this DStream.
 </div>
 
 
@@ -407,15 +323,10 @@ and return it as an RDD of Strings.
 
         <tr>
             
-                <td class="name"><code>path</code></td>
+                <td class="name"><code>func</code></td>
             
 
             <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
             
             </td>
 
@@ -423,7 +334,7 @@ and return it as an RDD of Strings.
 
             
 
-            <td class="description last">path to file</td>
+            <td class="description last"></td>
         </tr>
 
     
@@ -464,7 +375,7 @@ and return it as an RDD of Strings.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="SparkContext.js.html">SparkContext.js</a>, <a href="SparkContext.js.html#line126">line 126</a>
+        <a href="streaming_DStream.js.html">streaming/DStream.js</a>, <a href="streaming_DStream.js.html#line74">line 74</a>
     </li></ul></dd>
     
 
@@ -498,7 +409,253 @@ and return it as an RDD of Strings.
     </dt>
     <dd>
         
-<span class="param-type"><a href="RDD.html">RDD</a></span>
+<span class="param-type"><a href="DStream.html">DStream</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="print"><span class="type-signature"></span>print<span class="signature">()</span><span class="type-signature"> &rarr; {void}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Print the first ten elements of each RDD generated in this DStream. This is an output operator, so this DStream will be 
+registered as an output stream and there materialized.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="streaming_DStream.js.html">streaming/DStream.js</a>, <a href="streaming_DStream.js.html#line100">line 100</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">void</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="window"><span class="type-signature"></span>window<span class="signature">(duration)</span><span class="type-signature"> &rarr; {<a href="DStream.html">DStream</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Return a new DStream in which each RDD contains all the elements in seen in a sliding window of time over this DStream. 
+The new DStream generates RDDs with the same interval as this DStream.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>duration</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">width of the window; must be a multiple of this DStream's interval.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="streaming_DStream.js.html">streaming/DStream.js</a>, <a href="streaming_DStream.js.html#line87">line 87</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="DStream.html">DStream</a></span>
 
 
     </dd>

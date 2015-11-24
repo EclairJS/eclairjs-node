@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: sql/SQLContext.js</title>
+    <title>JSDoc: Source: sql/GroupedData.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: sql/SQLContext.js</h1>
+    <h1 class="page-title">Source: sql/GroupedData.js</h1>
 
     
 
@@ -42,99 +42,43 @@
  * limitations under the License.
  */
 
-var gw = require('jupyter-js-services');
-var RDD = require('../RDD.js');
 var protocol = require('../kernel.js');
 var Utils = require('../utils.js');
-var request = require('request');
 
-var DataTypes = require('./types/DataTypes.js');
 var DataFrame = require('./DataFrame.js');
 
 /**
  * @constructor
- * @classdesc The entry point for working with structured data (rows and columns) in Spark.  Allows the creation of DataFrame objects as well as the execution of SQL queries.
- * @param {SparkContext}
+ * @classdec A set of methods for aggregations on a DataFrame, created by DataFrame.groupBy.
  */
-function SQLContext(SparkContext) {
-  this.context = SparkContext;
+function GroupedData(kernelP, refIdP) {
+  this.kernelP = kernelP;
+  this.refIdP = refIdP;
+}
 
-  this.types = {};
-  this.types.DataTypes = new DataTypes(this.context.kernel);
-
+/**
+ * Compute the avg value for each numeric columns for each group.
+ * @param {string[]} cols
+ * @returns {DataFrame}
+ */
+GroupedData.prototype.avg = function() {
+  var args = Array.prototype.slice.call(arguments);
+  var refId = protocol.genVariable('dataFrame');
   var self = this;
 
-  this.sqlContextP = new Promise(function(resolve, reject) {
-    // generate the SQLContext source code
-    self.context.kernel.then(function(kernel) {
-      var refId = "sqlContext";
-      var templateStr = 'var {{refId}} = new SQLContext(jsc);';
-      var code = Utils.processTemplate(templateStr, {refId: refId});
-
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        resolve,
-        reject,
-        refId);
-    });
+  var cols = [];
+  args.forEach(function(arg) {
+    cols.push('"'+arg+'"');
   });
-};
 
-/**
- * Creates a DataFrame from RDD of Rows using the schema
- * @param {RDD[]} rowRDD -
- * @param {StructType} schema -
- * @returns {DataFrame}
- */
-SQLContext.prototype.createDataFrame = function(rowRDD, schema) {
-  var refId = protocol.genVariable('dataFrame');
-  var self = this;
-
-  return new DataFrame(this.context.kernel, new Promise(function(resolve, reject) {
-    Promise.all([self.context.kernel, self.sqlContextP]).then(function(values) {
+  return new DataFrame(this.kernelP, new Promise(function(resolve, reject) {
+    Promise.all([self.kernelP, self.refIdP]).then(function(values) {
       var kernel = values[0];
-      var sqlContextId = values[1];
+      var dataFrameId = values[1];
 
-      // gather all the refIds of the arguments(which are promises)
-      var promises = [rowRDD.refIdP, schema.refIdP];
+      var templateStr = 'var {{refId}} = {{inRefId}}.avg({{cols}});';
 
-      Promise.all(promises).then(function(values) {
-        var templateStr = 'var {{refId}} = {{sqlContextId}}.createDataFrame({{rowRDD}}, {{schema}});';
-        var code = Utils.processTemplate(templateStr, {
-          refId: refId,
-          sqlContextId: sqlContextId,
-          rowRDD: values[0],
-          schema: values[1]
-        });
-
-        protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-          resolve,
-          reject,
-          refId);
-      }).catch(reject);
-    })
-  }), rowRDD, schema);
-};
-
-/**
- * Returns DataFrame
- * @param {string} sqlString
- * @returns {DataFrame}
- */
-SQLContext.prototype.sql = function(sqlString) {
-  var refId = protocol.genVariable('dataFrame');
-  var self = this;
-
-  return new DataFrame(this.context.kernel, new Promise(function(resolve, reject) {
-    Promise.all([self.context.kernel, self.sqlContextP]).then(function(values) {
-      var kernel = values[0];
-      var sqlContextId = values[1];
-
-      var templateStr = 'var {{refId}} = {{sqlContextId}}.sql("{{sqlString}}");';
-      var code = Utils.processTemplate(templateStr, {
-        refId: refId,
-        sqlContextId: sqlContextId,
-        sqlString: sqlString
-      });
+      var code = Utils.processTemplate(templateStr, {refId: refId, inRefId: dataFrameId, cols: cols.join(',')});
 
       protocol.verifyAssign(kernel.execute({code: code, silent: false}),
         resolve,
@@ -144,7 +88,32 @@ SQLContext.prototype.sql = function(sqlString) {
   }));
 };
 
-module.exports = SQLContext;
+/**
+ * Count the number of rows for each group.
+ * @returns {DataFrame}
+ */
+GroupedData.prototype.count = function() {
+  var refId = protocol.genVariable('dataFrame');
+  var self = this;
+
+  return new DataFrame(this.kernelP, new Promise(function(resolve, reject) {
+    Promise.all([self.kernelP, self.refIdP]).then(function(values) {
+      var kernel = values[0];
+      var dataFrameId = values[1];
+
+      var templateStr = 'var {{refId}} = {{inRefId}}.count();';
+
+      var code = Utils.processTemplate(templateStr, {refId: refId, inRefId: dataFrameId});
+
+      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
+        resolve,
+        reject,
+        refId);
+    }).catch(reject);
+  }));
+};
+
+module.exports = GroupedData;
 </code></pre>
         </article>
     </section>
