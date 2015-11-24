@@ -106,7 +106,7 @@ describe('DataFrame Test', function() {
       );
     });
   });
-/*
+
   describe("dataFrame.col()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
@@ -589,7 +589,7 @@ describe('DataFrame Test', function() {
         done
       );
     });
-  });*/
+  });
 
   describe("dataFrame.dtypes()", function() {
     it("should generate the correct output", function(done) {
@@ -598,6 +598,80 @@ describe('DataFrame Test', function() {
           dataFrame.dtypes().then(callback);
         }, function(result) {
           expect(result).deep.equals([["name","StringType"],["age","IntegerType"],["expense","IntegerType"]]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.except()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var df2 = dataFrame.filter("age > 20");
+
+          dataFrame.except(df2).toJSON().toArray().then(callback);
+        }, function(result) {
+          expect(result).deep.equals([
+            {
+              "age": 19,
+              "expense": 3,
+              "name": "Justin"
+            }
+          ]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.explain()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.explain().then(callback);
+        }, function(result) {
+          expect(result).equals(undefined);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.first()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var row = dataFrame.first();
+          row.mkString().then(callback);
+        }, function(result) {
+          expect(result).equals("Michael291");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.foreach()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.foreach(function(row){}).then(callback);
+        }, function(result) {
+          expect(result).equals(undefined);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.show()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.show().then(callback);
+        }, function(result) {
+          expect(result).equals(undefined);
         },
         done
       );

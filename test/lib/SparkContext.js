@@ -16,12 +16,24 @@
 
 var SparkContext = require('../../lib/sparkcontext.js');
 
-function FakeKernelExecuteHandle(execution) {
+var MODE_RESULT = 0;
+var MODE_ASSIGN = 1;
+var MODE_VOID_ASSIGN = 2;
+
+function FakeKernelExecuteHandle(mode) {
   var self = this;
 
   setTimeout(function() {
     if (self.handleMsg) {
-      var msg = execution ? {msg_type: 'execute_result', content: {data: {"text/plain": "{}"}}} : {msg_type: 'status', content: {execution_state: 'idle'}};
+      var msg;
+      if (mode == MODE_ASSIGN) {
+        msg = {msg_type: 'status', content: {execution_state: 'idle'}};
+      } else if (mode == MODE_RESULT) {
+        msg =  {msg_type: 'execute_result', content: {data: {"text/plain": "{}"}}};
+      } else if (mode == MODE_VOID_ASSIGN) {
+        msg =  {msg_type: 'execute_reply', content: {status: 'ok'}};
+      }
+
       self.handleMsg(msg);
     }
   }, 10);
@@ -47,9 +59,13 @@ FakeKernel.prototype.execute = function(msg) {
   // TODO: use futures
   // TODO: registerTempTable is an exception here, need a better way
   if (msg.code.indexOf("var ") == 0 || msg.code.indexOf("registerTempTable") >= 0) {
-    return new FakeKernelExecuteHandle();
+    return new FakeKernelExecuteHandle(MODE_ASSIGN);
   } else {
-    return new FakeKernelExecuteHandle(true);
+    if (global.ECLAIRJS_TEST_MODE && global.ECLAIRJS_TEST_MODE == 'void') {
+      return new FakeKernelExecuteHandle(MODE_VOID_ASSIGN);
+    } else {
+      return new FakeKernelExecuteHandle(MODE_RESULT);
+    }
   }
 }
 

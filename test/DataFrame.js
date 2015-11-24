@@ -566,4 +566,65 @@ describe('DataFrame', function() {
       );
     });
   });
+
+  describe("explain()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          global.ECLAIRJS_TEST_MODE = 'void';
+          df.explain().then(callback);
+        }, function(result) {
+          delete global.ECLAIRJS_TEST_MODE;
+          expect(result).equals('dataFrame1.explain();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("first()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.first();
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var row2 = dataFrame1.first();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("foreach()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          global.ECLAIRJS_TEST_MODE = 'void';
+          df.foreach(function(row) {
+          }).then(callback);
+        }, function(result) {
+          delete global.ECLAIRJS_TEST_MODE;
+          expect(result).equals('dataFrame1.foreach(function (row) {\n          });');
+        },
+        done
+      );
+    });
+  });
+
+  describe("show()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          global.ECLAIRJS_TEST_MODE = 'void';
+          df.show().then(callback);
+        }, function(result) {
+          delete global.ECLAIRJS_TEST_MODE;
+          expect(result).equals('dataFrame1.show();');
+        },
+        done
+      );
+    });
+  });
 });
