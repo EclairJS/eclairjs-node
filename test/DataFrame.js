@@ -418,4 +418,152 @@ describe('DataFrame', function() {
       );
     });
   });
+
+  describe("as()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.as("alias");
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame10 = dataFrame1.as("alias");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("apply()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.apply("name");
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var column9 = dataFrame1.apply("name");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("coalesce()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.coalesce(5);
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame11 = dataFrame1.coalesce(5);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("collect()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.collect();
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('JSON.stringify(dataFrame1.collect());');
+        },
+        done
+      );
+    });
+  });
+
+  describe("cube()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.cube("name", "expense");
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var groupedData3 = dataFrame1.cube("name","expense");');
+        },
+        done
+      );
+    })
+  });
+
+  describe("describe()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.describe("name", "expense");
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame12 = dataFrame1.describe("name","expense");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("drop()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.drop("name");
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame13 = dataFrame1.drop("name");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("distinct()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.distinct();
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame14 = dataFrame1.distinct();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("dropDuplicates()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.dropDuplicates(["name"]);
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame15 = dataFrame1.dropDuplicates(["name"]);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("dtypes()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          df.dtypes().then(callback);
+        }, function(result) {
+          expect(result).equals('JSON.stringify(dataFrame1.dtypes());');
+        },
+        done
+      );
+    });
+  });
 });

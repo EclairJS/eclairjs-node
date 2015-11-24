@@ -77,7 +77,7 @@ function executeTest(run, checks, done) {
 
 var fileName = path.resolve(__dirname+'/../../examples/people.txt');
 
-var dataFrame;
+var dataFrame, duplicateDataFrame;
 
 describe('DataFrame Test', function() {
   describe("programmaticallySpecifyingSchema", function() {
@@ -106,8 +106,8 @@ describe('DataFrame Test', function() {
       );
     });
   });
-
-describe("dataFrame.col()", function() {
+/*
+  describe("dataFrame.col()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
@@ -133,7 +133,7 @@ describe("dataFrame.col()", function() {
 
           names.take(10).then(callback);
         }, function(result) {
-          expect(result).deep.equals(["Name: Michael","Name: Andy"]);
+          expect(result).deep.equals(["Name: Michael", "Name: Andy"]);
         },
         done
       );
@@ -154,7 +154,7 @@ describe("dataFrame.col()", function() {
 
           names.take(10).then(callback);
         }, function(result) {
-          expect(result).deep.equals(["Name: Michael","Name: Andy"]);
+          expect(result).deep.equals(["Name: Michael", "Name: Andy"]);
         },
         done
       );
@@ -265,7 +265,7 @@ describe("dataFrame.col()", function() {
 
           names.take(10).then(callback);
         }, function(result) {
-          expect(result).deep.equals(["Name: Michael","Name: Andy", "Name: Justin"]);
+          expect(result).deep.equals(["Name: Michael", "Name: Andy", "Name: Justin"]);
         },
         done
       );
@@ -402,7 +402,7 @@ describe("dataFrame.col()", function() {
 
           var m = {};
           m["age"] = "max";
-          m["expense"] =  "sum";
+          m["expense"] = "sum";
 
           results.agg(m).take(10).then(callback);
         }, function(result) {
@@ -434,4 +434,174 @@ describe("dataFrame.col()", function() {
     });
   });
 
+  describe("dataFrame.as()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.as("myAlias");
+          result.toString().then(callback);
+        }, function(result) {
+          expect(result).equals("[name: string, age: int, expense: int]");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.apply()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.apply("name");
+          result.toString().then(callback);
+        }, function(result) {
+          expect(result).equals("name");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.collect()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.filter('age > 20');
+          result.collect().then(function(rows) {
+            rows[0].mkString(" - ", "(", ")").then(callback);
+          });
+        }, function(result) {
+          expect(result).equals('(Michael - 29 - 1)');
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.cube(columnName)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var cube = dataFrame.cube("name", "expense");
+          cube.avg("age").toString().then(callback);
+        }, function(result) {
+          expect(result).equals('[name: string, expense: int, avg(age): double]');
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.cube(column)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var cube = dataFrame.cube(dataFrame.col("name"), dataFrame.col("expense"));
+          cube.avg("age").toString().then(callback);
+        }, function(result) {
+          expect(result).equals('[name: string, expense: int, avg(age): double]');
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.describe(columnName)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.describe("age", "expense").toJSON().toArray().then(callback);
+        }, function(result) {
+          expect(result).deep.equals([
+            {
+              "age": "3",
+              "expense": "3",
+              "summary": "count"
+            },
+            {
+              "age": "26.0",
+              "expense": "2.0",
+              "summary": "mean"
+            },
+            {
+              "age": "4.966554808583776",
+              "expense": "0.8164965809277263",
+              "summary": "stddev"
+            },
+            {
+              "age": "19",
+              "expense": "1",
+              "summary": "min"
+            },
+            {
+              "age": "30",
+              "expense": "3",
+              "summary": "max"
+            }
+          ]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.drop(columnName)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.drop("age").toJSON().toArray().then(callback);
+        }, function(result) {
+          expect(result[0]).deep.equals({expense: 1, name: "Michael"});
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.distinct()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var fileName = path.resolve(__dirname + '/duplicatePeople.txt');
+
+          buildPeopleTable(fileName, function(df) {
+            duplicateDataFrame = df;
+
+            df.distinct().count().then(callback);
+          });
+        }, function(result) {
+          expect(result).equals(3);
+        },
+        done
+      );
+    });
+  });
+
+
+  describe("dataFrame.dropDuplicates()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          duplicateDataFrame.dropDuplicates(["expense"]).count().then(callback);
+        }, function(result) {
+          expect(result).equals(2);
+        },
+        done
+      );
+    });
+  });*/
+
+  describe("dataFrame.dtypes()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.dtypes().then(callback);
+        }, function(result) {
+          expect(result).deep.equals([["name","StringType"],["age","IntegerType"],["expense","IntegerType"]]);
+        },
+        done
+      );
+    });
+  });
 });
+
