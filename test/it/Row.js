@@ -34,7 +34,7 @@ function buildRockstarsTable(file, callback) {
       surname: parts[0],
       forename: parts[1],
       age: parts[2] ? parseInt(parts[2]) : null,
-      birthday: parts[3],
+      birthday: parts[3] ? JSON.stringify(new Date(parts[3])) : null,
       numkids: parts[4] ? parseInt(parts[4]) : null,
       married: parts[5] ? JSON.parse(parts[5]) : null,
       networth: parts[6] ? parseFloat(parts[6]) : null,
@@ -55,15 +55,15 @@ function buildRockstarsTable(file, callback) {
   fields.push(DataTypes.createStructField("numkids", DataTypes.IntegerType, true));
   fields.push(DataTypes.createStructField("married", DataTypes.BooleanType, true));
   fields.push(DataTypes.createStructField("networth", DataTypes.DoubleType, true));
-  fields.push(DataTypes.createStructField("weight", DataTypes.FloatType, true));
-  //fields.push(DataTypes.createStructField("weight", DataTypes.DoubleType, true));
+  //fields.push(DataTypes.createStructField("weight", DataTypes.FloatType, true));
+  fields.push(DataTypes.createStructField("weight", DataTypes.DoubleType, true));
   //fields.push(DataTypes.createStructField("percent", DataTypes.DecimalType, true));
   fields.push(DataTypes.createStructField("percent", DataTypes.DoubleType, true));
   var schema = DataTypes.createStructType(fields);
 
   // Convert records of the RDD (rocker) to Rows.
   var rowRDD = rockers.map(function(rocker){
-    //print('create rocker: ',JSON.stringify(rocker));
+    print('create rocker: ',JSON.stringify(rocker));
     return RowFactory.create([rocker.surname, rocker.forename, rocker.age, rocker.birthday, rocker.numkids, rocker.married, rocker.networth, rocker.weight, rocker.percent]);
   });
 
@@ -124,7 +124,7 @@ describe('Row Test', function() {
     });
   });
 
- describe("row.anyNull()", function() {
+  describe("row.anyNull()", function() {
     it("should generate the correct output e.g. no nulls in header row", function(done) {
       executeTest(
         function(callback) {
@@ -139,7 +139,7 @@ describe('Row Test', function() {
     });
   });
 
- describe("row.anyNull()", function() {
+  describe("row.anyNull()", function() {
     it("should generate the correct output e.g. null found in Jagger row", function(done) {
       executeTest(
         function(callback) {
@@ -154,16 +154,15 @@ describe('Row Test', function() {
         done
       );
     });
- });
+  });
 
- describe("row.apply()", function() {
+  describe("row.apply()", function() {
     it("should generate the correct output e.g. should be surname", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.apply(0).then(callback);
         }, function(result) {
-          console.log('apply result: ',result);
           expect(result).equals('Jovi');
         },
         done
@@ -171,14 +170,13 @@ describe('Row Test', function() {
     });
   });
 
- describe("row.apply()", function() {
+  describe("row.apply()", function() {
     it("should generate the correct output e.g. should be Bon Jovi is married", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.apply(5).then(callback);
         }, function(result) {
-          console.log('apply result: ',result);
           expect(result).equals(true);
         },
         done
@@ -195,7 +193,7 @@ describe('Row Test', function() {
           // Use firstrow of table
           firstrow.copy().then(callback);
         }, function(result) {
-          expect(result).equals("");
+          expect(result).equals();
         },
         done
       );
@@ -203,27 +201,21 @@ describe('Row Test', function() {
   });
   **/
 
-  // Commenting out for now.  There is a problem with the way some of the types are being stored on Nashorn side
-  /**
   describe("row.equals()", function() {
-    it("should generate the correct output", function(done) {
+    it("should generate the correct output e.g. firstrow should equal itself", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
-          //firstrow.equals(['Jovi','Bon',53,'1962-03-02T05:00:00.000Z',true,'$300000000.00']).then(callback);
-          firstrow.equals(['Jovi','Bon',53,'March 02 1962',4,true,300000000.11,161.6,0.45]).then(callback);
+          firstrow.equals(firstrow).then(callback);
         }, function(result) {
-          // NEED TO FIX THIS - SHOULD BE TRUE! MOVING ON FOR NOW.
-          // Nashorn is storing double as 3.0000000011E8 but doesn't comvert back to what Javascript expects e.g. 300000000.11
-          expect(result).equals(false);
+          expect(result).equals(true);
         },
         done
       );
     });
   });
-  **/
 
- describe("row.fieldIndex()", function() {
+  describe("row.fieldIndex()", function() {
     it("should generate the correct output e.g. should be index 1 for forename", function(done) {
       executeTest(
         function(callback) {
@@ -237,7 +229,7 @@ describe('Row Test', function() {
     });
   });
 
- describe("row.get()", function() {
+  describe("row.get()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's forename", function(done) {
       executeTest(
         function(callback) {
@@ -251,7 +243,7 @@ describe('Row Test', function() {
     });
   });
 
- describe("row.get()", function() {
+  describe("row.get()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's weight", function(done) {
       executeTest(
         function(callback) {
@@ -265,7 +257,7 @@ describe('Row Test', function() {
     });
   });
 
- describe("row.getBoolean()", function() {
+  describe("row.getBoolean()", function() {
     it("should generate the correct output e.g. should be Bon Jovi is married", function(done) {
       executeTest(
         function(callback) {
@@ -279,15 +271,14 @@ describe('Row Test', function() {
     });
   });
 
- /** Commenting out for now as has the Nashorn type conversion issue
- describe("row.getByte()", function() {
+  /** Commenting out for now as has the Nashorn type conversion issue
+  describe("row.getByte()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.getByte(0).then(callback);
         }, function(result) {
-          console.log('result: ',result);
           expect(result).equals(78);
         },
         done
@@ -296,7 +287,7 @@ describe('Row Test', function() {
   });
   **/
 
- describe("row.getDate()", function() {
+  describe("row.getDate()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's birthday as date", function(done) {
       executeTest(
         function(callback) {
@@ -304,14 +295,14 @@ describe('Row Test', function() {
           //firstrow.getDate(3).then(callback);
           firstrow.get(3).then(callback);
         }, function(result) {
-          expect(result).equals('March 02 1962');
+          expect(result).equals('"1962-03-02T05:00:00.000Z"');
         },
         done
       );
     });
   });
 
- describe("row.getDecimal()", function() {
+  describe("row.getDecimal()", function() {
     it("should generate the correct output e.g. percentage of fans that are female", function(done) {
       executeTest(
         function(callback) {
@@ -326,7 +317,7 @@ describe('Row Test', function() {
     });
   });
 
- describe("row.getDouble()", function() {
+  describe("row.getDouble()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's networth", function(done) {
       executeTest(
         function(callback) {
@@ -340,7 +331,7 @@ describe('Row Test', function() {
     });
   });
 
- describe("row.getFloat()", function() {
+  describe("row.getFloat()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's weight", function(done) {
       executeTest(
         function(callback) {
@@ -355,7 +346,7 @@ describe('Row Test', function() {
     });
   });
 
- describe("row.getInt()", function() {
+  describe("row.getInt()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's age", function(done) {
       executeTest(
         function(callback) {
@@ -369,8 +360,8 @@ describe('Row Test', function() {
     });
   });
 
- /** Need test case for getLong once type conversion fixed on Nashorn side.
- describe("row.getLong()", function() {
+  /** Need test case for getLong once type conversion fixed on Nashorn side.
+  describe("row.getLong()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
@@ -385,8 +376,8 @@ describe('Row Test', function() {
   });
   **/
 
- /** Need test case for getShort once type conversion fixed on Nashorn side.
- describe("row.getShort()", function() {
+  /** Need test case for getShort once type conversion fixed on Nashorn side.
+  describe("row.getShort()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
@@ -401,8 +392,8 @@ describe('Row Test', function() {
   });
   **/
 
- /** This is not passing back String from Nashorn but is trying to pass back a org.apache.spark.sql.Row (have to talk to Bill about it)
- describe("row.getStruct()", function() {
+  /** This is not passing back String from Nashorn but is trying to pass back a org.apache.spark.sql.Row (have to talk to Bill about it)
+  describe("row.getStruct()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
@@ -417,8 +408,8 @@ describe('Row Test', function() {
   });
   **/
 
- /** Needs to be fixed once we get Date/Timestamp conversion fixed on Nashorn side. **/ 
- describe("row.getTimestamp()", function() {
+  /** Needs to be fixed once we get Date/Timestamp conversion fixed on Nashorn side. **/ 
+  describe("row.getTimestamp()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
@@ -426,15 +417,15 @@ describe('Row Test', function() {
           //firstrow.getTimestamp(3).then(callback);
           firstrow.get(3).then(callback);
         }, function(result) {
-          expect(result).equals('March 02 1962');
+          expect(result).equals('"1962-03-02T05:00:00.000Z"');
         },
         done
       );
     });
   });
 
- /** have to come back and revisit - just times out
- describe("row.hashCode()", function() {
+  /** have to come back and revisit - just times out
+  describe("row.hashCode()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
@@ -449,7 +440,7 @@ describe('Row Test', function() {
   });
   **/
 
- describe("row.isNullAt()", function() {
+  describe("row.isNullAt()", function() {
     it("should generate the correct output e.g. null found in Jagger row for networth", function(done) {
       executeTest(
         function(callback) {
@@ -464,9 +455,9 @@ describe('Row Test', function() {
         done
       );
     });
- });
+  });
 
- describe("row.length()", function() {
+  describe("row.length()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
@@ -480,7 +471,7 @@ describe('Row Test', function() {
     });
   });
 
- describe("row.mkString()", function() {
+  describe("row.mkString()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
@@ -489,15 +480,32 @@ describe('Row Test', function() {
         }, function(result) {
           // Need to talk to Bill about this - Nashorn is storing doubles in scientific notation 
           // and it's not being converted back correctly to JS float
-          //expect(result).equals("Jovi,Bon,53,March 02 1962,4,true,300000000.11,161.6,0.45");
-          expect(result).equals("Jovi,Bon,53,March 02 1962,4,true,3.0000000011E8,161.6,0.45");
+          //expect(result).equals("Jovi,Bon,53,1962-03-02T05:00:00.000Z,4,true,300000000.11,161.6,0.45");
+          expect(result).equals('Jovi,Bon,53,"1962-03-02T05:00:00.000Z",4,true,3.0000000011E8,161.6,0.45');
         },
         done
       );
     });
   });
 
- describe("row.size()", function() {
+  // Note sure why this isn't working have to look into it somemore before opening issue.
+  /**
+  describe("row.schema()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          // Use firstrow of table
+          firstrow.schema().then(callback);
+        }, function(result) {
+          expect(result).equals({});
+        },
+        done
+      );
+    });
+  });
+  **/
+
+  describe("row.size()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
