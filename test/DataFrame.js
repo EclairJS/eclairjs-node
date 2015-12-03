@@ -314,10 +314,12 @@ describe('DataFrame', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
+          global.ECLAIRJS_TEST_MODE = 'void';
           var result = df.registerTempTable("test");
 
           onceDone(result).then(callback);
         }, function(result) {
+          delete global.ECLAIRJS_TEST_MODE;
           expect(result).equals('dataFrame1.registerTempTable("test");');
         },
         done
@@ -622,6 +624,36 @@ describe('DataFrame', function() {
         }, function(result) {
           delete global.ECLAIRJS_TEST_MODE;
           expect(result).equals('dataFrame1.show();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("toJSON()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.toJSON();
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var rdd8 = dataFrame1.toJSON();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("toRDD()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.toRDD();
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).equals('var rdd9 = dataFrame1.toRDD();');
         },
         done
       );

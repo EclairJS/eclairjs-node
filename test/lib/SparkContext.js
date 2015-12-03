@@ -56,12 +56,17 @@ FakeKernel.prototype.execute = function(msg) {
     this._listener(msg);
   }
 
+  var mode = -1;
+  if (global.ECLAIRJS_TEST_MODE && global.ECLAIRJS_TEST_MODE == 'void') {
+    mode = MODE_VOID_ASSIGN;
+  }
+
   // TODO: use futures
   // TODO: registerTempTable is an exception here, need a better way
-  if (msg.code.indexOf("var ") == 0 || msg.code.indexOf("registerTempTable") >= 0) {
+  if (msg.code.indexOf("var ") == 0) {
     return new FakeKernelExecuteHandle(MODE_ASSIGN);
   } else {
-    if (global.ECLAIRJS_TEST_MODE && global.ECLAIRJS_TEST_MODE == 'void') {
+    if (mode == MODE_VOID_ASSIGN) {
       return new FakeKernelExecuteHandle(MODE_VOID_ASSIGN);
     } else {
       return new FakeKernelExecuteHandle(MODE_RESULT);
