@@ -478,10 +478,7 @@ describe('Row Test', function() {
           // Use firstrow of table
           firstrow.mkString(',').then(callback);
         }, function(result) {
-          // Need to talk to Bill about this - Nashorn is storing doubles in scientific notation 
-          // and it's not being converted back correctly to JS float
-          //expect(result).equals("Jovi,Bon,53,1962-03-02T05:00:00.000Z,4,true,300000000.11,161.6,0.45");
-          expect(result).equals('Jovi,Bon,53,"1962-03-02T05:00:00.000Z",4,true,3.0000000011E8,161.6,0.45');
+          expect(result).equals('Jovi,Bon,53,"1962-03-02T05:00:00.000Z",4,true,300000000.11,161.6,0.45');
         },
         done
       );
