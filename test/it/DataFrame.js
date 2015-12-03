@@ -558,6 +558,19 @@ describe('DataFrame Test', function() {
     });
   });
 
+  describe("dataFrame.drop(column)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.drop(dataFrame.col("age")).toJSON().toArray().then(callback);
+        }, function(result) {
+          expect(result[0]).deep.equals({expense: 1, name: "Michael"});
+        },
+        done
+      );
+    });
+  });
+
   describe("dataFrame.distinct()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
