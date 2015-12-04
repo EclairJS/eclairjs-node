@@ -47,6 +47,29 @@ var Utils = require('../utils.js');
 
 var StructType = require('./types/StructType.js');
 
+/*
+ * NOTE: the following have not been implemented as they do not make sense for JavaScript
+ *
+ * &lt;K,V> java.util.Map&lt;K,V>    getJavaMap(int i)
+ * Returns the value at position i of array type as a Map.
+ * &lt;T> java.util.List&lt;T>   getList(int i)
+ * Returns the value at position i of array type as List.
+ * &lt;K,V> scala.collection.Map&lt;K,V> getMap(int i)
+ * Returns the value at position i of map type as a Scala Map.
+ * &lt;T> scala.collection.Seq&lt;T> getSeq(int i)
+ * Returns the value at position i of array type as a Scala Seq.
+ * &lt;T> scala.collection.immutable.Map&lt;java.lang.String,T>  getValuesMap(scala.collection.Seq&lt;java.lang.String> fieldNames)
+ * Returns a Map(name -> value) for the requested fieldNames
+ * scala.collection.Seq&lt;java.lang.Object>  toSeq()
+ * Return a Scala Seq representing the row.
+ *
+ * NOTE: the following are being ignored as they also don't make sense for JavaScript (see ./types/DataTypes.js)
+ *
+ * byte getByte(int i)
+ * decimal getDecimal(int i)
+ * long getLong(int i)
+ * short getShort(int i)
+ */
 /**
  * @constructor
  * @classdesc Represents one row of output from a relational operator. Allows both generic access by ordinal, which will incur boxing overhead for primitives, as well as native primitive access.
@@ -123,25 +146,29 @@ Row.prototype.apply = function(index) {
  */
 Row.prototype.copy = function() {
 
-  throw {name:'NotImplementedException', message:'The method is currently not implemented'};
+  //throw {name:'NotImplementedException', message:'The method is currently not implemented'};
 
-  var refId = protocol.genVariable('row');
-  var self = this;
+  //var refId = protocol.genVariable('row');
+  //var self = this;
 
-  return new Row(this.kernelP, new Promise(function(resolve, reject) {
-    Promise.all([self.refIdP, self.kernelP]).then(function(values) {
-      var inRefId = values[0];
-      var kernel = values[1];
+  //return new Row(this.kernelP, new Promise(function(resolve, reject) {
+    //Promise.all([self.refIdP, self.kernelP]).then(function(values) {
+      //var inRefId = values[0];
+      //var kernel = values[1];
 
-      var templateStr = 'var {{refId}} = {{inRefId}}.copy();';
-      var code = Utils.processTemplate(templateStr, {refId: refId, inRefId: inRefId});
+      //var templateStr = 'var {{refId}} = {{inRefId}}.copy();';
+      //var code = Utils.processTemplate(templateStr, {refId: refId, inRefId: inRefId});
 
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        resolve,
-        reject,
-        refId);
-    }).catch(reject);
-  }));
+      //protocol.verifyAssign(kernel.execute({code: code, silent: false}),
+        //resolve,
+        //reject,
+        //refId);
+    //}).catch(reject);
+  //}));
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.copy();';
+
+  return Utils.generateAssignment(this, Row, templateStr);
 };
 
 /**
@@ -258,7 +285,9 @@ Row.prototype.getBoolean = function(index) {
  * Returns the value at position idex as a primitive byte.
  * @param {integer} index
  * @returns {byte}
+ * @ignore
  */
+/* Not applicable to JavaScript
 Row.prototype.getByte = function(index) {
   var self = this;
 
@@ -277,45 +306,54 @@ Row.prototype.getByte = function(index) {
     }).catch(reject);
   });
 };
+*/
 
 /**
  * Returns the value at position index of type as Date.
  * @param {integer} index
  * @returns {Date}
- * @throws {NotImplementedException} - This method is currently not implemented
+ * @throws {NotImplementedException} - This method is currently not implemented 
  */
 Row.prototype.getDate = function(index) {
-
   throw {name:'NotImplementedException', message:'The method is currently not implemented'};
 
+  var refId = protocol.genVariable('sqlDate');
   var self = this;
 
-  return new Promise(function(resolve, reject) {
+  var SqlDate = require('./SqlDate.js');
+
+  return new SqlDate(this.kernelP, new Promise(function(resolve, reject) {
 
     function _resolve(val) {
       // parse stringified date here and return as date
-      //console.log('date: ',new Date(val));
-      //console.log('typeof date: ',typeof val);
-      resolve(JSON.parse(val));
+      console.log('date: ',val.toString());
+      console.log('date: ',val.valueOf());
+      console.log('typeof date: ',typeof val);
+      resolve(new Date(val));
     }
 
     Promise.all([self.refIdP, self.kernelP]).then(function(values) {
-      var refId = values[0];
+      var inRefId = values[0];
       var kernel = values[1];
 
-      var templateStr = '{{inRefId}}.getDate({{index}});';
-      var code = Utils.processTemplate(templateStr, {inRefId: refId, index: index});
-      protocol.verifyResult(kernel.execute({code: code}), _resolve, reject);
+      var templateStr = 'var {{refId}} = {{inRefId}}.getDate({{index}});';
+      var code = Utils.processTemplate(templateStr, {refId: refId, inRefId: inRefId, index: index});
+      //protocol.verifyResult(kernel.execute({code: code}), _resolve, reject);
+      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
+        _resolve,
+        reject,
+        refId);
     }).catch(reject);
-  })
+  }));
 };
 
 /**
  * Returns the value at position index of type as decimal.
  * @param {integer} index
  * @returns {decimal}
- * @throws {NotImplementedException} - This method is currently not implemented
+ * @ignore
  */
+/* Not applicable to JavaScript
 Row.prototype.getDecimal = function(index) {
 
   throw {name:'NotImplementedException', message:'The method is currently not implemented'};
@@ -338,6 +376,7 @@ Row.prototype.getDecimal = function(index) {
     }).catch(reject);
   })
 };
+*/
 
 /**
  * Returns the value at position index of type as double.
@@ -368,12 +407,8 @@ Row.prototype.getDouble = function(index) {
  * Returns the value at position index of type as float.
  * @param {integer} index
  * @returns {float}
- * @throws {NotImplementedException} - This method is currently not implemented
  */
 Row.prototype.getFloat = function(index) {
-
-  throw {name:'NotImplementedException', message:'The method is currently not implemented'};
-
   var self = this;
 
   return new Promise(function(resolve, reject) {
@@ -423,8 +458,9 @@ Row.prototype.getInt = function(index) {
  * Returns the value at position index of type as long.
  * @param {integer} index
  * @returns {long}
- * @throws {NotImplementedException} - This method is currently not implemented
+ * @ignore
  */
+/* Not applicable to JavaScript
 Row.prototype.getLong = function(index) {
 
   throw {name:'NotImplementedException', message:'The method is currently not implemented'};
@@ -447,13 +483,15 @@ Row.prototype.getLong = function(index) {
     }).catch(reject);
   })
 };
+*/
 
 /**
  * Returns the value at position index of type as short.
  * @param {integer} index
  * @returns {short}
- * @throws {NotImplementedException} - This method is currently not implemented
+ * @ignore
  */
+/* Not applicable to JavaScript
 Row.prototype.getShort = function(index) {
 
   throw {name:'NotImplementedException', message:'The method is currently not implemented'};
@@ -477,8 +515,7 @@ Row.prototype.getShort = function(index) {
     }).catch(reject);
   })
 };
-
-
+*/
 
 /**
  * Returns the value at position index of type as String.
@@ -670,7 +707,7 @@ Row.prototype.mkString = function() {
  * @throws {NotImplementedException} - This method is currently not implemented
  */
 Row.prototype.schema = function() {
-
+/*
   throw {name:'NotImplementedException', message:'The method is currently not implemented'};
 
   var refId = protocol.genVariable('structType');
@@ -690,6 +727,9 @@ Row.prototype.schema = function() {
         refId);
     }).catch(reject);
   }));
+*/
+  var templateStr = 'var {{refId}} = {{inRefId}}.schema();';
+  Utils.generateAssignment(this, StructType, templateStr);
 };
 
 /**
@@ -733,7 +773,7 @@ module.exports = Row;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Wed Nov 25 2015 15:36:22 GMT-0500 (EST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Fri Dec 04 2015 17:54:14 GMT-0500 (EST)
 </footer>
 
 <script> prettyPrint(); </script>

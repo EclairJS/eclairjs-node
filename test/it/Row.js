@@ -34,7 +34,7 @@ function buildRockstarsTable(file, callback) {
       surname: parts[0],
       forename: parts[1],
       age: parts[2] ? parseInt(parts[2]) : null,
-      birthday: parts[3] ? JSON.stringify(new Date(parts[3])) : null,
+      birthday: parts[3] ? parts[3] : null,
       numkids: parts[4] ? parseInt(parts[4]) : null,
       married: parts[5] ? JSON.parse(parts[5]) : null,
       networth: parts[6] ? parseFloat(parts[6]) : null,
@@ -44,27 +44,29 @@ function buildRockstarsTable(file, callback) {
   });
 
   var DataTypes = sqlContext.types.DataTypes;
+  var SqlDate = sqlContext.SqlDate;
 
   var fields = [];
   fields.push(DataTypes.createStructField("surname", DataTypes.StringType, true));
   fields.push(DataTypes.createStructField("forename", DataTypes.StringType, true));
   fields.push(DataTypes.createStructField("age", DataTypes.IntegerType, true));
-  //fields.push(DataTypes.createStructField("birthday", DataTypes.DateType, true));
-  fields.push(DataTypes.createStructField("birthday", DataTypes.StringType, true));
-  //fields.push(DataTypes.createStructField("numkids", DataTypes.ShortType, true));
+  fields.push(DataTypes.createStructField("birthday", DataTypes.DateType, true));
   fields.push(DataTypes.createStructField("numkids", DataTypes.IntegerType, true));
   fields.push(DataTypes.createStructField("married", DataTypes.BooleanType, true));
   fields.push(DataTypes.createStructField("networth", DataTypes.DoubleType, true));
-  //fields.push(DataTypes.createStructField("weight", DataTypes.FloatType, true));
-  fields.push(DataTypes.createStructField("weight", DataTypes.DoubleType, true));
-  //fields.push(DataTypes.createStructField("percent", DataTypes.DecimalType, true));
+  fields.push(DataTypes.createStructField("weight", DataTypes.FloatType, true));
   fields.push(DataTypes.createStructField("percent", DataTypes.DoubleType, true));
   var schema = DataTypes.createStructType(fields);
 
   // Convert records of the RDD (rocker) to Rows.
   var rowRDD = rockers.map(function(rocker){
-    print('create rocker: ',JSON.stringify(rocker));
-    return RowFactory.create([rocker.surname, rocker.forename, rocker.age, rocker.birthday, rocker.numkids, rocker.married, rocker.networth, rocker.weight, rocker.percent]);
+    //print('create rocker: ',JSON.stringify(rocker));
+    // Have to convert the Date and Timestamp fields
+    print('rocker.birthday: ',rocker.birthday);
+    print('rocker.birthday.getTime(): ',new Date(rocker.birthday).getTime());
+    var bday = new SqlDate(rocker.birthday);
+    print('bday: ',bday.toString());
+    return RowFactory.create([rocker.surname, rocker.forename, rocker.age, bday, rocker.numkids, rocker.married, rocker.networth, rocker.weight, rocker.percent]);
   });
 
   //Apply the schema to the RDD.
@@ -108,7 +110,7 @@ describe('Row Test', function() {
 
             var results = sqlContext.sql("SELECT * FROM rockstars");
             var names = results.toRDD().map(function(row) {
-              //print('toRDD.map row: ',row);
+              print('toRDD.map row: ',row);
               // surname is at index=0
               return "Surname: " + row.getString(0);
             });
@@ -184,8 +186,8 @@ describe('Row Test', function() {
     });
   });
 
+/*
   // Something is wrong I think in Nashorn side of copy - need to figure out
-  /**
   describe("row.copy()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
@@ -193,13 +195,13 @@ describe('Row Test', function() {
           // Use firstrow of table
           firstrow.copy().then(callback);
         }, function(result) {
-          expect(result).equals();
+          expect(result).equals(firstrow);
         },
         done
       );
     });
   });
-  **/
+*/
 
   describe("row.equals()", function() {
     it("should generate the correct output e.g. firstrow should equal itself", function(done) {
@@ -271,51 +273,23 @@ describe('Row Test', function() {
     });
   });
 
-  /** Commenting out for now as has the Nashorn type conversion issue
-  describe("row.getByte()", function() {
-    it("should generate the correct output", function(done) {
-      executeTest(
-        function(callback) {
-          // Use firstrow of table
-          firstrow.getByte(0).then(callback);
-        }, function(result) {
-          expect(result).equals(78);
-        },
-        done
-      );
-    });
-  });
-  **/
-
+ /** Need to implement SqlDate for Node
   describe("row.getDate()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's birthday as date", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
-          //firstrow.getDate(3).then(callback);
-          firstrow.get(3).then(callback);
+          firstrow.getDate(3).then(callback);
+          //firstrow.get(3).then(callback);
         }, function(result) {
+          console.log(result.toString());
           expect(result).equals('"1962-03-02T05:00:00.000Z"');
         },
         done
       );
     });
   });
-
-  describe("row.getDecimal()", function() {
-    it("should generate the correct output e.g. percentage of fans that are female", function(done) {
-      executeTest(
-        function(callback) {
-          // Use firstrow of table
-          //firstrow.getDecimal(8).then(callback);
-          firstrow.getDouble(8).then(callback);
-        }, function(result) {
-          expect(result).equals(0.45);
-        },
-        done
-      );
-    });
-  });
+  */
 
   describe("row.getDouble()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's networth", function(done) {
@@ -336,8 +310,7 @@ describe('Row Test', function() {
       executeTest(
         function(callback) {
           // Use firstrow of table
-          //firstrow.getFloat(7).then(callback);
-          firstrow.getDouble(7).then(callback);
+          firstrow.getFloat(7).then(callback);
         }, function(result) {
           expect(result).equals(161.6);
         },
@@ -360,38 +333,6 @@ describe('Row Test', function() {
     });
   });
 
-  /** Need test case for getLong once type conversion fixed on Nashorn side.
-  describe("row.getLong()", function() {
-    it("should generate the correct output", function(done) {
-      executeTest(
-        function(callback) {
-          // Use firstrow of table
-          firstrow.getLong(2).then(callback);
-        }, function(result) {
-          expect(result).equals(53);
-        },
-        done
-      );
-    });
-  });
-  **/
-
-  /** Need test case for getShort once type conversion fixed on Nashorn side.
-  describe("row.getShort()", function() {
-    it("should generate the correct output", function(done) {
-      executeTest(
-        function(callback) {
-          // Use firstrow of table
-          firstrow.getShort(2).then(callback);
-        }, function(result) {
-          expect(result).equals(53);
-        },
-        done
-      );
-    });
-  });
-  **/
-
   /** This is not passing back String from Nashorn but is trying to pass back a org.apache.spark.sql.Row (have to talk to Bill about it)
   describe("row.getStruct()", function() {
     it("should generate the correct output", function(done) {
@@ -408,14 +349,13 @@ describe('Row Test', function() {
   });
   **/
 
-  /** Needs to be fixed once we get Date/Timestamp conversion fixed on Nashorn side. **/ 
+  /** Need to implement SqlTimestamp for node
   describe("row.getTimestamp()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
-          //firstrow.getTimestamp(3).then(callback);
-          firstrow.get(3).then(callback);
+          firstrow.getTimestamp(3).then(callback);
         }, function(result) {
           expect(result).equals('"1962-03-02T05:00:00.000Z"');
         },
@@ -423,6 +363,7 @@ describe('Row Test', function() {
       );
     });
   });
+  */
 
   /** have to come back and revisit - just times out
   describe("row.hashCode()", function() {
@@ -478,15 +419,15 @@ describe('Row Test', function() {
           // Use firstrow of table
           firstrow.mkString(',').then(callback);
         }, function(result) {
-          expect(result).equals('Jovi,Bon,53,"1962-03-02T05:00:00.000Z",4,true,300000000.11,161.6,0.45');
+          expect(result).equals('Jovi,Bon,53,1962-03-02,4,true,300000000.11,161.6,0.45');
         },
         done
       );
     });
   });
 
+/*
   // Note sure why this isn't working have to look into it somemore before opening issue.
-  /**
   describe("row.schema()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
@@ -500,7 +441,7 @@ describe('Row Test', function() {
       );
     });
   });
-  **/
+*/
 
   describe("row.size()", function() {
     it("should generate the correct output", function(done) {
