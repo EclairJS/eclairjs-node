@@ -45,6 +45,8 @@
 var protocol = require('../kernel.js');
 var Utils = require('../utils.js');
 
+var SqlDate = require('./SqlDate.js');
+var SqlTimestamp = require('./SqlTimestamp.js');
 var StructType = require('./types/StructType.js');
 
 /*
@@ -311,40 +313,12 @@ Row.prototype.getByte = function(index) {
 /**
  * Returns the value at position index of type as Date.
  * @param {integer} index
- * @returns {Date}
- * @throws {NotImplementedException} - This method is currently not implemented 
+ * @returns {SqlDate}
  */
 Row.prototype.getDate = function(index) {
-  throw {name:'NotImplementedException', message:'The method is currently not implemented'};
+  var templateStr = 'var {{refId}} = {{inRefId}}.getDate({{index}});';
 
-  var refId = protocol.genVariable('sqlDate');
-  var self = this;
-
-  var SqlDate = require('./SqlDate.js');
-
-  return new SqlDate(this.kernelP, new Promise(function(resolve, reject) {
-
-    function _resolve(val) {
-      // parse stringified date here and return as date
-      console.log('date: ',val.toString());
-      console.log('date: ',val.valueOf());
-      console.log('typeof date: ',typeof val);
-      resolve(new Date(val));
-    }
-
-    Promise.all([self.refIdP, self.kernelP]).then(function(values) {
-      var inRefId = values[0];
-      var kernel = values[1];
-
-      var templateStr = 'var {{refId}} = {{inRefId}}.getDate({{index}});';
-      var code = Utils.processTemplate(templateStr, {refId: refId, inRefId: inRefId, index: index});
-      //protocol.verifyResult(kernel.execute({code: code}), _resolve, reject);
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        _resolve,
-        reject,
-        refId);
-    }).catch(reject);
-  }));
+  return Utils.generateAssignment(this, SqlDate, templateStr, {index: index});
 };
 
 /**
@@ -564,31 +538,12 @@ Row.prototype.getStruct = function(index) {
 /**
  * Returns the value at position index of date type as Date.
  * @param {integer} index
- * @returns {Date}
- * @throws {NotImplementedException} - This method is currently not implemented
+ * @returns {SqlTimestamp}
  */
 Row.prototype.getTimestamp = function(index) {
+  var templateStr = 'var {{refId}} = {{inRefId}}.getTimestamp({{index}});';
 
-  throw {name:'NotImplementedException', message:'The method is currently not implemented'};
-
-  var self = this;
-
-  return new Promise(function(resolve, reject) {
-
-    function _resolve(val) {
-      // parse stringified date here and return as date
-      resolve(new Date(JSON.parse(val)));
-    }
-
-    Promise.all([self.refIdP, self.kernelP]).then(function(values) {
-      var refId = values[0];
-      var kernel = values[1];
-
-      var templateStr = '{{inRefId}}.getTimestamp({{index}});';
-      var code = Utils.processTemplate(templateStr, {inRefId: refId, index: index});
-      protocol.verifyResult(kernel.execute({code: code}), _resolve, reject);
-    }).catch(reject);
-  })
+  return Utils.generateAssignment(this, SqlTimestamp, templateStr, {index: index});
 };
 
 /**
@@ -767,13 +722,13 @@ module.exports = Row;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Fri Dec 04 2015 17:54:14 GMT-0500 (EST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Tue Dec 08 2015 17:34:29 GMT-0500 (EST)
 </footer>
 
 <script> prettyPrint(); </script>

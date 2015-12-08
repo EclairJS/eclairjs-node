@@ -22,7 +22,7 @@ var path = require('path');
 
 var spark = require('../../spark.js');
 
-var sc = new spark.SparkContext("local[*]", "foo");
+var sc = new spark.SparkContext("local[*]", "row");
 var sqlContext = new spark.SQLContext(sc);
 
 function buildRockstarsTable(file, callback) {
@@ -44,7 +44,7 @@ function buildRockstarsTable(file, callback) {
   });
 
   var DataTypes = sqlContext.types.DataTypes;
-  var SqlDate = sqlContext.SqlDate;
+  //var SqlDate = sqlContext.SqlDate;
 
   var fields = [];
   fields.push(DataTypes.createStructField("surname", DataTypes.StringType, true));
@@ -56,17 +56,16 @@ function buildRockstarsTable(file, callback) {
   fields.push(DataTypes.createStructField("networth", DataTypes.DoubleType, true));
   fields.push(DataTypes.createStructField("weight", DataTypes.FloatType, true));
   fields.push(DataTypes.createStructField("percent", DataTypes.DoubleType, true));
+  fields.push(DataTypes.createStructField("birthdaytime", DataTypes.TimestampType, true));
   var schema = DataTypes.createStructType(fields);
 
   // Convert records of the RDD (rocker) to Rows.
   var rowRDD = rockers.map(function(rocker){
     //print('create rocker: ',JSON.stringify(rocker));
     // Have to convert the Date and Timestamp fields
-    print('rocker.birthday: ',rocker.birthday);
-    print('rocker.birthday.getTime(): ',new Date(rocker.birthday).getTime());
     var bday = new SqlDate(rocker.birthday);
-    print('bday: ',bday.toString());
-    return RowFactory.create([rocker.surname, rocker.forename, rocker.age, bday, rocker.numkids, rocker.married, rocker.networth, rocker.weight, rocker.percent]);
+    var bdaytime = new SqlTimestamp(rocker.birthday);
+    return RowFactory.create([rocker.surname, rocker.forename, rocker.age, bday, rocker.numkids, rocker.married, rocker.networth, rocker.weight, rocker.percent, bdaytime]);
   });
 
   //Apply the schema to the RDD.
@@ -110,7 +109,7 @@ describe('Row Test', function() {
 
             var results = sqlContext.sql("SELECT * FROM rockstars");
             var names = results.toRDD().map(function(row) {
-              print('toRDD.map row: ',row);
+              //print('toRDD.map row: ',row);
               // surname is at index=0
               return "Surname: " + row.getString(0);
             });
@@ -273,23 +272,33 @@ describe('Row Test', function() {
     });
   });
 
- /** Need to implement SqlDate for Node
   describe("row.getDate()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's birthday as date", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.getDate(3).then(callback);
-          //firstrow.get(3).then(callback);
+          firstrow.getDate(3).toString().then(callback);
         }, function(result) {
-          console.log(result.toString());
-          expect(result).equals('"1962-03-02T05:00:00.000Z"');
+          expect(result).equals('1962-03-02');
         },
         done
       );
     });
   });
-  */
+
+  describe("row.getTimestamp()", function() {
+    it("should generate the correct output e.g. should be Bon Jovi's birthday as timestamp", function(done) {
+      executeTest(
+        function(callback) {
+          // Use firstrow of table
+          firstrow.getTimestamp(9).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('1962-03-02 00:00:00.0');
+        },
+        done
+      );
+    });
+  });
 
   describe("row.getDouble()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's networth", function(done) {
@@ -405,7 +414,7 @@ describe('Row Test', function() {
           // Use firstrow of table
           firstrow.length().then(callback);
         }, function(result) {
-          expect(result).equals(9);
+          expect(result).equals(10);
         },
         done
       );
@@ -419,7 +428,7 @@ describe('Row Test', function() {
           // Use firstrow of table
           firstrow.mkString(',').then(callback);
         }, function(result) {
-          expect(result).equals('Jovi,Bon,53,1962-03-02,4,true,300000000.11,161.6,0.45');
+          expect(result).equals('Jovi,Bon,53,1962-03-02,4,true,300000000.11,161.6,0.45,1962-03-02 00:00:00.0');
         },
         done
       );
@@ -450,7 +459,7 @@ describe('Row Test', function() {
           // Use firstrow of table
           firstrow.size().then(callback);
         }, function(result) {
-          expect(result).equals(9);
+          expect(result).equals(10);
         },
         done
       );
