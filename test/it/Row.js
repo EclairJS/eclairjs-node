@@ -185,22 +185,19 @@ describe('Row Test', function() {
     });
   });
 
-/*
-  // Something is wrong I think in Nashorn side of copy - need to figure out
   describe("row.copy()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.copy().then(callback);
+          firstrow.copy().mkString().then(callback);
         }, function(result) {
-          expect(result).equals(firstrow);
+          expect(result).equals('JoviBon531962-03-024true300000000.11161.60.451962-03-02 00:00:00.0');
         },
         done
       );
     });
   });
-*/
 
   describe("row.equals()", function() {
     it("should generate the correct output e.g. firstrow should equal itself", function(done) {
@@ -342,21 +339,24 @@ describe('Row Test', function() {
     });
   });
 
-  /** This is not passing back String from Nashorn but is trying to pass back a org.apache.spark.sql.Row (have to talk to Bill about it)
+  /** 
+   * This is not coming back from the call this.getJavaObject().getStruct(index) on the Nashorn side. 
+   */
+  /*
   describe("row.getStruct()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.getStruct(6).then(callback);
+          firstrow.getStruct(2).mkString().then(callback);
         }, function(result) {
-          expect(result).equals(DataTypes.prototype.DoubleType);
+          expect(result).equals('dadasd');
         },
         done
       );
     });
   });
-  **/
+  */
 
   /** Need to implement SqlTimestamp for node
   describe("row.getTimestamp()", function() {
@@ -374,7 +374,7 @@ describe('Row Test', function() {
   });
   */
 
-  /** have to come back and revisit - just times out
+  /** have to come back and revisit - just times out **/
   describe("row.hashCode()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
@@ -382,13 +382,12 @@ describe('Row Test', function() {
           // Use firstrow of table
           firstrow.hashCode().then(callback);
         }, function(result) {
-          expect(result).equals('');
+          expect(result).equals(1304030203);
         },
         done
       );
     });
   });
-  **/
 
   describe("row.isNullAt()", function() {
     it("should generate the correct output e.g. null found in Jagger row for networth", function(done) {
@@ -435,22 +434,25 @@ describe('Row Test', function() {
     });
   });
 
-/*
-  // Note sure why this isn't working have to look into it somemore before opening issue.
+  /*
+   * Note: Not all of the methods in StructType and StructField are implemented. This needs to be done before this
+   * test case can be uncommented
+   */
+  /*
   describe("row.schema()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.schema().then(callback);
+          firstrow.schema().simpleString().then(callback);
         }, function(result) {
-          expect(result).equals({});
+          expect(result).equals('struct<surname:string,forename:string,age:int,birthday:date,numkids:int,married:boolean,networth:double,weight:double,percent:double,birthdaytime:timestamp>');
         },
         done
       );
     });
   });
-*/
+  */
 
   describe("row.size()", function() {
     it("should generate the correct output", function(done) {
