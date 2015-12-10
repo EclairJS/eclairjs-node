@@ -1,10 +1,16 @@
 {
-  "name": "eclairjs-node",
+  "name": "eclairjs",
+  "version": "0.1",
+  "description": "Node.js API for Apache Spark with Remote Client",
+  "author": "EclairJS <eclairjs@us.ibm.com>",
+  "main": "./spark.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/EclairJS/eclairjs-node.git"
+  },
   "dependencies": {
-    "browserify": "*",
-    "browserify-string": "*",
     "jupyter-js-services": "0.0.1",
-    "request": "*",
+    "request": "2.67.x",
     "ws": "^0.8.0",
     "xmlhttprequest": "^1.8.0"
   },
@@ -13,6 +19,12 @@
     "jsdoc": "git+https://github.com/jsdoc3/jsdoc.git",
     "mocha": "2.3.x"
   },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "spark.js",
+    "lib/"
+  ],
   "scripts": {
     "test": "mocha --harmony test/*.js"
   },
