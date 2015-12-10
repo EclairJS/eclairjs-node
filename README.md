@@ -14,7 +14,7 @@ TryIt
 ===================
 Everything you need to run **EclairJS** is setup in a Dockerfile. This provides you with several easy-to-use options: run a simple "hello world" example which counts the ten most frequently occurring words in a text file, run the REPL, and create new Notebooks using the JavaScript Spark API.  Please see [Using-the-Docker-Container](https://github.com/EclairJS/eclairjs-node/wikis/Using-the-Docker-Container).
 
-You can also try out **EclairJS** in Jupyter notebooks running under the [IBM Bluemix Cloud](EclairJS-with-IBM-Bluemix). 
+You can also try out **EclairJS** in Jupyter notebooks running under the [IBM Bluemix Cloud](https://github.com/EclairJS/eclairjs-node/wikis/EclairJS-with-IBM-Bluemix). 
 
 Build & Package
 ===================
