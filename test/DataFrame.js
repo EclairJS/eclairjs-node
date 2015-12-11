@@ -719,4 +719,69 @@ describe('DataFrame', function() {
     });
   });
 
+  describe("join(right)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.join(df)).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame18 = dataFrame1.join(dataFrame1);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("join(right, columnName)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.join(df, "test")).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame19 = dataFrame1.join(dataFrame1, "test");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("join(right, [columnName, columnName2])", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.join(df, ["test", "test2"])).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame20 = dataFrame1.join(dataFrame1, [\"test\",\"test2\"]);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("join(right, column)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.join(df, df.col("age"))).then(callback);
+        }, function(result) {
+          expect(result[1]).equals('var dataFrame21 = dataFrame1.join(dataFrame1, column10);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("join(right, column, outer)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.join(df, df.col("age"), "outer")).then(callback);
+        }, function(result) {
+          expect(result[1]).equals('var dataFrame22 = dataFrame1.join(dataFrame1, column11, "outer");');
+        },
+        done
+      );
+    });
+  });
+
 });

@@ -106,7 +106,7 @@ describe('DataFrame Test', function() {
       );
     });
   });
-/*
+
   describe("dataFrame.col()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
@@ -786,7 +786,7 @@ describe('DataFrame Test', function() {
         done
       );
     });
-  });*/
+  });
 
   describe("dataFrame.isLocal()", function() {
     it("should generate the correct output", function(done) {
@@ -795,6 +795,65 @@ describe('DataFrame Test', function() {
           dataFrame.isLocal().then(callback);
         }, function(result) {
           expect(result).equals(false);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.join(df)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.join(dataFrame).take(1).then(callback);
+        }, function(result) {
+          expect(result[0].values).deep.equals(["Michael", 29,1,"Michael",29,1]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.join(df, col)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.join(dataFrame, "name").take(1).then(callback);
+        }, function(result) {
+          expect(result[0].values).deep.equals([ 'Andy', 30, 2, 30, 2 ]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.join(df, [col,col])", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = dataFrame.join(dataFrame, ["age", "expense"]).take(1).then(callback);
+        }, function(result) {
+          expect(result[0].values).deep.equals([ 'Michael', 29, 1, 'Michael']);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.join(df, colExp)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var df1 = sqlContext.sql("SELECT name, age FROM people");
+          var df2 = sqlContext.sql("SELECT name, expense FROM people");
+
+          var colExpr = df1.col("name").equalTo(df2.col("name"));
+
+          var joinedDF = df1.join(df2, colExpr);
+
+          joinedDF.take(1).then(callback);
+        }, function(result) {
+          expect(result[0].values).deep.equals([ 'Andy', 30, 'Andy', 2 ]);
         },
         done
       );
