@@ -6,7 +6,7 @@ Learn more about the larger [EclairJS project](http://www.eclairjs.org).
 
 ## Installation
 
-```bash
+```
 $ npm install eclairjs
 ```
 
@@ -15,8 +15,6 @@ EclairJS Node requires Node 0.12 or higher and also requires a running instance 
 Supported Spark versions can be found in the [Versions](#version) section below.
 
 ## Example
-EclairJS Node's api mirrors the Spark api.  Here is the classic word count example:
-
 ```node
 var eclairjs = require('eclairjs');
 
@@ -45,8 +43,6 @@ reducedWordsWithCount.collect().then(function(results) {
 ## Try It
 EclairJS Node provides a Docker container that contains all of its dependencies on [Dockerhub](https://hub.docker.com/r/eclairjs/minimal-gateway/).
 
-The Docker image supports the latest released version of EclairJS Node and may not work with `master`.   You can simply check out the appropriate branch (` git checkout branch-0.5` for example).
-
 ```bash
 docker pull eclairjs/minimal-gateway
 docker run -p 8888:8888 eclairjs/minimal-gateway
@@ -61,29 +57,26 @@ export JUPYTER_PORT=8888
 
 Now you can run the Word count example:
 
-```bash
+```
 node --harmony examples/rddtop10.js ./dream.txt
 ```
 
-You can learn more about the Docker container [here](https://github.com/EclairJS/eclairjs-node/wikis/Using-the-Docker-Container).
+Please see [Using-the-Docker-Container](https://github.com/EclairJS/eclairjs-node/wikis/Using-the-Docker-Container) for more about the Docker container.
 You can also try out EclairJS in Jupyter notebooks running under the [IBM Bluemix Cloud](https://github.com/EclairJS/eclairjs-node/wikis/EclairJS-with-IBM-Bluemix).
 
 ## Documentation
-* [Developing with EclairJS](https://github.com/EclairJS/eclairjs-node/wiki/Developing-With-EclairJS)
 * [API Docs](https://github.com/EclairJS/eclairjs-node/wiki/API-Documentation)
 * [Wiki](https://github.com/EclairJS/eclairjs-node/wiki)
 * [Presentations](https://github.com/EclairJS/eclairjs-node/wiki/Project-and-Community#presentations)
-* [API Examples](https://github.com/EclairJS/eclairjs-node/tree/master/examples)
-* [Example Applications](https://github.com/EclairJS/eclairjs-examples)
+* [Examples](https://github.com/EclairJS/eclairjs-node/tree/master/examples)
 
 ## Community
 * [EclairJS Project](http://eclairjs.org/)
 * [Google Group](https://groups.google.com/forum/#!forum/eclairjs)
 * [Slack](https://eclairjs.slack.com)
 
-## Deploy
-You can choose to either deploy using Docker ([Using the Docker Container](https://github.com/EclairJS/eclairjs-node/wikis/Using-the-Docker-Container)) 
-or manually build and setup your own environment ([Build and Package](https://github.com/EclairJS/eclairjs-node/wikis/Build-and-Package)).
+## Build & Package
+If you would like to take the manual route in lieu of using the Dockerfile you can build the EclairJS components from source and setup your own local environment.  Please see [Build and Package](https://github.com/EclairJS/eclairjs-node/wikis/Build-and-Package) for more information.
 
 ## Progress
 
@@ -93,7 +86,7 @@ or manually build and setup your own environment ([Build and Package](https://gi
 |SQL/DataFrames   | Partial Support    |
 |Streaming        | Partial Support    |
 |ml               | Partial Support    |
-|mllib            | Partial Support    |
+|mllib             | Partial Support    |
 |GraphX           | Unsupported        |
 
 Refer to the [API Documentation](https://github.com/EclairJS/eclairjs-node/wikis/API-Documentation) for a list of what is currently implemented.  Please note as new APIs are implemented for EclairJS Node they will be added to the master branch.
@@ -106,5 +99,5 @@ Our goal is to keep the EclairJS master branch up to date with the latest versio
 |EclairJS Version/Tag | Apache Spark Version |
 | -------- | -------- |
 | 0.1            | 1.5.1 |
-| 0.2 - 0.6      | 1.6.0 |
-| 0.7  (master)  | 1.6.0 |
+| 0.2 - 0.5      | 1.6.0 |
+| 0.6  (master)  | 1.6.0 |
