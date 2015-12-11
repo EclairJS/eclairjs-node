@@ -106,7 +106,7 @@ describe('DataFrame Test', function() {
       );
     });
   });
-
+/*
   describe("dataFrame.col()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
@@ -678,6 +678,19 @@ describe('DataFrame Test', function() {
     });
   });
 
+  describe("dataFrame.foreachPartition()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.foreachPartition(function(partition){}).then(callback);
+        }, function(result) {
+          expect(result).equals(undefined);
+        },
+        done
+      );
+    });
+  });
+
   describe("dataFrame.show()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
@@ -690,5 +703,103 @@ describe('DataFrame Test', function() {
       );
     });
   });
+
+  describe("dataFrame.inputFiles()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var fileName = path.resolve(__dirname+'/test.json');
+
+          sqlContext.read().json(fileName).inputFiles().then(callback);
+        }, function(result) {
+          expect(result).deep.equals(["file:"+path.resolve(__dirname+'/test.json')]);
+        },
+        done
+      );
+    });
+  });
+
+
+  describe("dataFrame.inputFiles()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var plus20s = dataFrame.filter("age > 20");
+
+          dataFrame.intersect(plus20s).take(10).then(callback);
+        }, function(result) {
+          expect(result).deep.equals([
+            {
+              "schema": {
+                "fields": [
+                  {
+                    "dataType": "StringType",
+                    "name": "name",
+                    "nullable": true
+                  },
+                  {
+                    "dataType": "IntegerType",
+                    "name": "age",
+                    "nullable": true
+                  },
+                  {
+                    "dataType": "IntegerType",
+                    "name": "expense",
+                    "nullable": true
+                  }
+                ]
+              },
+              "values": [
+                "Andy",
+                30,
+                2
+              ]
+            },
+            {
+              "schema": {
+                "fields": [
+                  {
+                    "dataType": "StringType",
+                    "name": "name",
+                    "nullable": true
+                  },
+                  {
+                    "dataType": "IntegerType",
+                    "name": "age",
+                    "nullable": true
+                  },
+                  {
+                    "dataType": "IntegerType",
+                    "name": "expense",
+                    "nullable": true
+                  }
+                ]
+              },
+              "values": [
+                "Michael",
+                29,
+                1
+              ]
+            }
+          ]);
+        },
+        done
+      );
+    });
+  });*/
+
+  describe("dataFrame.isLocal()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.isLocal().then(callback);
+        }, function(result) {
+          expect(result).equals(false);
+        },
+        done
+      );
+    });
+  });
+
 });
 

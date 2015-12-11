@@ -659,4 +659,64 @@ describe('DataFrame', function() {
       );
     });
   });
+
+  describe("foreachPartition()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          global.ECLAIRJS_TEST_MODE = 'void';
+          df.foreachPartition(function(partition) {
+          }).then(callback);
+        }, function(result) {
+          delete global.ECLAIRJS_TEST_MODE;
+          expect(result).equals('dataFrame1.foreachPartition(function (partition) {\n          });');
+        },
+        done
+      );
+    });
+  });
+
+  describe("inputFiles()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          df.inputFiles().then(callback);
+        }, function(result) {
+          expect(result).equals('JSON.stringify(dataFrame1.inputFiles());');
+        },
+        done
+      );
+    });
+  });
+
+  describe("intersect()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var plus20s = df.filter("age > 20");
+
+          var result = df.intersect(plus20s);
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result).deep.equals(["var dataFrame16 = dataFrame1.filter(\"age > 20\");", "var dataFrame17 = dataFrame1.intersect(dataFrame16);"]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("isLocal()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          df.isLocal().then(callback);
+        }, function(result) {
+          expect(result).equals('dataFrame1.isLocal();');
+        },
+        done
+      );
+    });
+  });
+
 });
