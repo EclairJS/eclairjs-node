@@ -18,7 +18,7 @@ You can also try out **EclairJS** in Jupyter notebooks running under the [IBM Bl
 
 Build & Package
 ===================
-If you would like to take the manual route in lieu of using the Dockerfile you can build the **EclairJS** components from source and setup your own local environment.  Please see [Build and Package](https://github.com/EclairJS/eclairjs-node/wikis/Build-and-Package) for more information.
+If you would like to take the manual route in lieu of using the Dockerfile you can build the **EclairJS** components from source and setup your own local environment.  EclairJS Node is available as an [NPM installable package](https://www.npmjs.com/package/eclairjs).  Please see [Build and Package](https://github.com/EclairJS/eclairjs-node/wikis/Build-and-Package) for more information.
 
 Version
 ===================
