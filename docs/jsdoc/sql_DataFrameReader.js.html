@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: sql/RowFactory.js</title>
+    <title>JSDoc: Source: sql/DataFrameReader.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: sql/RowFactory.js</h1>
+    <h1 class="page-title">Source: sql/DataFrameReader.js</h1>
 
     
 
@@ -42,46 +42,35 @@
  * limitations under the License.
  */
 
-var protocol = require('../kernel.js');
 var Utils = require('../utils.js');
-
-var Row = require('./Row.js');
+var RDD = require('../RDD.js');
+var DataFrame = require('./DataFrame.js');
 
 /**
  * @constructor
- * @classdesc A factory class used to construct Row objects.
+ * @classdesc Interface used to load a DataFrame from external storage systems (e.g. file systems, key-value stores, etc).
+ * Use SQLContext.read to access this.
  */
-function RowFactory(kernelP) {
+function DataFrameReader(kernelP, refIdP) {
   this.kernelP = kernelP;
-}
-
-/**
- * Create a Row from the given arguments. Position i in the argument list becomes position i in the created Row object.
- * @param {object} values
- * @returns {Row}
- */
-RowFactory.prototype.create = function(values) {
-  var refId = protocol.genVariable('row');
-  var self = this;
-
-  return new Row(this.kernelP, new Promise(function(resolve, reject) {
-    Promise.all([self.kernelP]).then(function(promiseValues) {
-      var kernel = promiseValues[0];
-
-      var templateStr = 'var {{refId}} = RowFactory.create({{values}});';
-      var code = Utils.processTemplate(templateStr, {refId: refId, values: JSON.stringify(values)});
-
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        resolve,
-        reject,
-        refId);
-    }).catch(reject);
-  }));
+  this.refIdP = refIdP;
 };
 
-module.exports = function(kernelP) {
-  return new RowFactory(kernelP);
-}</code></pre>
+/**
+ * Loads a JSON file, or RDD[String] storing JSON objects (one object per line) and returns the result as a DataFrame.
+ * @param {string | RDD}
+ * @returns {DataFrame}
+ */
+DataFrameReader.prototype.json = function(input) {
+  var templateStr = (input instanceof RDD) ? 'var {{refId}} = {{inRefId}}.json({{input}});' : 'var {{refId}} = {{inRefId}}.json("{{input}}");';
+
+  var inputP = (input instanceof RDD) ? input.refIdP : Promise.resolve(input);
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {input: inputP});
+};
+
+module.exports = DataFrameReader;
+</code></pre>
         </article>
     </section>
 

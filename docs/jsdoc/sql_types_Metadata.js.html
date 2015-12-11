@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: sql/SqlDate.js</title>
+    <title>JSDoc: Source: sql/types/Metadata.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: sql/SqlDate.js</h1>
+    <h1 class="page-title">Source: sql/types/Metadata.js</h1>
 
     
 
@@ -48,104 +48,180 @@ var Utils = require('../utils.js');
 /**
  *
  * @constructor
- * @classdesc A thin wrapper around a millisecond value that allows JDBC to identify this as an SQL DATE value.
- * A milliseconds value represents the number of milliseconds that have passed since January 1, 1970 00:00:00.000 GMT.
- * To conform with the definition of SQL DATE, the millisecond values wrapped by a java.sql.Date instance must be 'normalized'
- * by setting the hours, minutes, seconds, and milliseconds to zero in the particular time zone with which the instance is associated.
- * @param {number | string | Date} number of millisecond, string date representation, or Date object
+ * @classdesc Metadata is a wrapper over Map[String, Any] that limits the value type to simple ones:
+ * Boolean, Long, Double, String, Metadata, Array[Boolean], Array[Long], Array[Double], Array[String], and Array[Metadata].
+ * JSON is used for serialization.
+ * The default constructor is private. User should use either MetadataBuilder or Metadata.fromJson() to create Metadata instances.
+ * @protected
  */
-function SqlDate(kernelP, refIdP, sqldate) {
+function Metadata(kernelP, refIdP, metadata) {
   this.kernelP = kernelP;
   this.refIdP = refIdP;
 
-  this.sqldate = sqldate;
+  this.metadata = metadata;
 };
 
 /**
- * Tests if this date is after the specified date.
- * @param {SqlDate} when
+ * Tests whether this Metadata contains a binding for a key.
+ * @param {string} key
  * @returns {boolean}
+ * @ignore
  */
-SqlDate.prototype.after = function(when) {
-  var templateStr = '{{inRefId}}.after({{when}});';
-
-  return Utils.generateResultPromise(this, templateStr, {when: when});
+Metadata.prototype.contains = function(key) {
 };
 
 /**
- * Tests if this date is before the specified date.
- * @param {SqlDate} when
+ * Returns an empty Metadata.
+ * @static
+ * @returns {Metadata}
+ * @ignore
+ */
+Metadata.prototype.empty = function() {
+};
+
+/**
+ *
+ * @param {object} obj
  * @returns {boolean}
+ * @ignore
  */
-SqlDate.prototype.before = function(when) {
-  var templateStr = '{{inRefId}}.before({{when}});';
-
-  return Utils.generateResultPromise(this, templateStr, {when: when});
+Metadata.prototype.equals = function(obj) {
 };
 
 /**
- * Return a copy of this object.
- * @returns {SqlDate}
+ * Creates a Metadata instance from JSON
+ * @static
+ * @param {string} json
+ * @returns {Metadata}
+ * @ignore
  */
-SqlDate.prototype.clone = function() {
-  var templateStr = 'var {{refId}} = {{inRefId}}.clone();';
-
-  return Utils.generateAssignment(this, SqlDate, templateStr);
+Metadata.prototype.fromJson = function(json) {
 };
 
 /**
- * Compares two Dates for ordering
- * @param {SqlDate} anotherDate
+ * Gets a Boolean.
+ * @param {string} key
+ * @returns {boolean}
+ * @ignore
+ */
+Metadata.prototype.getBoolean = function(key) {
+};
+
+/**
+ * Gets a Boolean array.
+ * @param {string} key
+ * @returns {boolean[]}
+ * @ignore
+ */
+Metadata.prototype.getBooleanArray = function(key) {
+};
+
+/**
+ * Gets a Double.
+ * @param {string} key
+ * @returns {double}
+ * @ignore
+ */
+Metadata.prototype.getDouble = function(key) {
+};
+
+/**
+ * Gets a Double array.
+ * @param {string} key
+ * @returns {double[]}
+ * @ignore
+ */
+Metadata.prototype.getDoubleArray = function(key) {
+};
+
+/**
+ * Gets a Long.
+ * @param {string} key
+ * @returns {long}
+ * @ignore
+ */
+Metadata.prototype.getLong = function(key) {
+};
+
+/**
+ * Gets a Long array.
+ * @param {string} key
+ * @returns {long[]}
+ * @ignore
+ */
+Metadata.prototype.getLongArray = function(key) {
+};
+
+/**
+ * Gets a Metadata.
+ * @param {string} key
+ * @returns {Metadata}
+ * @ignore
+ */
+Metadata.prototype.getMetadata = function(key) {
+};
+
+/**
+ * Gets a Metadata array.
+ * @param {string} key
+ * @returns {Metadata[]}
+ * @ignore
+ */
+Metadata.prototype.getMetadataArray = function(key) {
+};
+
+/**
+ * Gets a String..
+ * @param {string} key
+ * @returns {string}
+ */
+Metadata.prototype.getString = function(key) {
+var templateStr = '{{inRefId}}.getString("{{key}}");';
+
+  return Utils.generateResultPromise(this, templateStr, {key: key});
+};
+
+/**
+ * Gets a String array..
+ * @param {string} key
+ * @returns {string[]}
+ * @ignore
+ */
+Metadata.prototype.getStringArray = function(key) {
+};
+
+/**
  * @returns {integer}
+ * @ignore
  */
-SqlDate.prototype.compareTo = function(anotherDate) {
-  var templateStr = '{{inRefId}}.compareTo({{anotherDate}});';
-
-  return Utils.generateResultPromise(this, templateStr, {anotherDate: anotherDate});
+Metadata.prototype.hashCode = function() {
 };
 
 /**
- * Compares two dates for equality.
- * @param {SqlDate} when
- * @returns {boolean}
- */
-SqlDate.prototype.equals = function(when) {
-  var templateStr = '{{inRefId}}.equals({{when}});';
-
-  return Utils.generateResultPromise(this, templateStr, {when: when});
-};
-
-/**
- * Sets an existing Date object using the given milliseconds time value.
- * @param milliseconds
- */
-SqlDate.prototype.setTime = function(milliseconds) {
-  var templateStr = '{{inRefId}}.setTime({{milliseconds}});';
-
-  return Utils.generateResultPromise(this, templateStr, {milliseconds: milliseconds});
-};
-
-/**
- * Formats a date in the date escape format yyyy-mm-dd.
+ * Converts to its JSON representation.
  * @returns {string}
  */
-SqlDate.prototype.toJSON = function() {
-  var templateStr = '{{inRefId}}.toJSON();';
+Metadata.prototype.json = function() {
+  var templateStr = '{{inRefId}}.json();';
 
   return Utils.generateResultPromise(this, templateStr);
 };
 
 /**
- * Formats a date in the date escape format yyyy-mm-dd.
- * @returns {string}
+ *
+ * @returns {map}
+ * @ignore
  */
-SqlDate.prototype.toString = function() {
-  var templateStr = '{{inRefId}}.toString();';
-
-  return Utils.generateResultPromise(this, templateStr);
+Metadata.prototype.map = function() {
 };
 
-module.exports = SqlDate;
+Metadata.prototype.toJSON = function() {
+    return this.getJavaObject().toJson();
+};
+
+Metadata.prototype.toString = function() {
+    return this.getJavaObject().toString();
+};
 </code></pre>
         </article>
     </section>

@@ -205,58 +205,35 @@ DataFrame.prototype.count = function() {
 
 /**
  * Create a multi-dimensional cube for the current DataFrame using the specified columns, so we can run aggregation on them.
- * @param {string| Column} cols...
+ * @param {string | Column} cols...
  * @example
  * var df = dataFrame.cube("age", "expense");
  * @returns {GroupedData}
  */
 DataFrame.prototype.cube = function() {
   var args = Array.prototype.slice.call(arguments);
-  var refId = protocol.genVariable('groupedData');
-  var self = this;
 
   var GroupedData = require('./GroupedData.js');
 
-  return new GroupedData(this.kernelP, new Promise(function(resolve, reject) {
-    var promises = [self.kernelP, self.refIdP];
+  var groupByArgs = [];
 
+  if (args &amp;&amp; Array.isArray(args)) {
     // we have an Column[], so we need to resolve their refIds
     if(typeof args[0] === 'object') {
       args.forEach(function(arg) {
-        promises.push(arg.refIdP);
+        groupByArgs.push(arg.refIdP);
       });
     } else {
       // we have an string[], so we autoresolve each string with " around it
       args.forEach(function(arg) {
-        promises.push(Promise.resolve('"'+arg+'"'));
+        groupByArgs.push(Promise.resolve('"'+arg+'"'));
       });
     }
+  }
 
-    Promise.all(promises).then(function(values) {
-      var kernel = values[0];
-      var dataFrameId = values[1];
+  var templateStr = 'var {{refId}} = {{inRefId}}.cube({{groupByArgs}});';
 
-      // if not a Column then its a sql string
-      var colIds = [];
-
-      // resolved columns are in position 2 and above
-      if (values[2]) {
-        for (var i = 2; i &lt; values.length; i++) {
-          colIds.push(values[i]);
-        }
-      }
-
-      // different template for string or object
-      var templateStr = 'var {{refId}} = {{inRefId}}.cube({{groupByArgs}});';
-
-      var code = Utils.processTemplate(templateStr, {refId: refId, inRefId: dataFrameId, groupByArgs: colIds.join(',')});
-
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        resolve,
-        reject,
-        refId);
-    }).catch(reject);
-  }));
+  return Utils.generateAssignment(this, GroupedData, templateStr, {groupByArgs: groupByArgs});
 };
 
 /**
@@ -419,57 +396,45 @@ DataFrame.prototype.foreach = function(func) {
 };
 
 /**
+ * Applies a function to each partition of this DataFrame.
+ * @param {function} func
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+DataFrame.prototype.foreachPartition = function(func) {
+  var udfP = (typeof func === 'function') ? serialize.serializeFunction(func) : Promise.resolve(func);
+
+  var templateStr = '{{inRefId}}.foreachPartition({{udf}});';
+
+  return Utils.generateVoidPromise(this, templateStr, {udf: udfP});
+};
+
+/**
  * Groups the DataFrame using the specified columns, so we can run aggregation on them
  * @param {string[] | Column[]} - Array of Column objects of column name strings
  * @returns {GroupedData}
  */
 DataFrame.prototype.groupBy = function() {
   var args = Array.prototype.slice.call(arguments);
-  var refId = protocol.genVariable('groupedData');
-  var self = this;
 
   var GroupedData = require('./GroupedData.js');
 
-  return new GroupedData(this.kernelP, new Promise(function(resolve, reject) {
-    var promises = [self.kernelP, self.refIdP];
+  var groupByArgs = [];
 
-    // we have an Column[], so we need to resolve their refIds
-    if(typeof args[0] === 'object') {
-      args.forEach(function(arg) {
-        promises.push(arg.refIdP);
-      });
-    } else {
-      // we have an string[], so we autoresolve each string with " around it
-      args.forEach(function(arg) {
-        promises.push(Promise.resolve('"'+arg+'"'));
-      });
-    }
+  // we have an Column[], so we need to resolve their refIds
+  if(typeof args[0] === 'object') {
+    args.forEach(function(arg) {
+      groupByArgs.push(arg.refIdP);
+    });
+  } else {
+    // we have an string[], so we autoresolve each string with " around it
+    args.forEach(function(arg) {
+      groupByArgs.push(Promise.resolve('"'+arg+'"'));
+    });
+  }
 
-    Promise.all(promises).then(function(values) {
-      var kernel = values[0];
-      var dataFrameId = values[1];
+  var templateStr = 'var {{refId}} = {{inRefId}}.groupBy({{groupByArgs}});';
 
-      // if not a Column then its a sql string
-      var colIds = [];
-
-      // resolved columns are in position 2 and above
-      if (values[2]) {
-        for (var i = 2; i &lt; values.length; i++) {
-          colIds.push(values[i]);
-        }
-      }
-
-      // different template for string or object
-      var templateStr = 'var {{refId}} = {{inRefId}}.groupBy({{groupByArgs}});';
-
-      var code = Utils.processTemplate(templateStr, {refId: refId, inRefId: dataFrameId, groupByArgs: colIds.join(',')});
-
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        resolve,
-        reject,
-        refId);
-    }).catch(reject);
-  }));
+  return Utils.generateAssignment(this, GroupedData, templateStr, {groupByArgs: groupByArgs});
 };
 
 /**
@@ -480,6 +445,52 @@ DataFrame.prototype.head = function() {
   var templateStr = 'var {{refId}} = {{inRefId}}.head();';
 
   return Utils.generateAssignment(this, Row, templateStr);
+};
+
+/**
+ * Returns a best-effort snapshot of the files that compose this DataFrame. This method simply asks each constituent
+ * BaseRelation for its respective files and takes the union of all results. Depending on the source relations,
+ * this may not find all input files. Duplicates are removed.
+ * @returns {Promise.&lt;string[]>} Promise which resolves to a list of files.
+ */
+DataFrame.prototype.inputFiles = function() {
+  function _resolve(result, resolve, reject) {
+    try {
+      resolve(JSON.parse(result));
+    } catch (e) {
+      var err = new Error("Parse Error: "+ e.message);
+      reject(err);
+    }
+  }
+
+  var templateStr = 'JSON.stringify({{inRefId}}.inputFiles());';
+
+  return Utils.generateResultPromise(this, templateStr, {}, _resolve);
+};
+
+/**
+ * Returns a new DataFrame containing rows only in both this frame and another frame. This is equivalent to INTERSECT in SQL
+ * @param {DataFrame} other
+ * @returns {DataFrame}
+ */
+DataFrame.prototype.intersect = function(other) {
+  var templateStr = 'var {{refId}} = {{inRefId}}.intersect({{other}});';
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {other: other.refIdP});
+};
+
+/**
+ * Returns true if the collect and take methods can be run locally (without any Spark executors).
+ * @returns {Promise.&lt;boolean>}
+ */
+DataFrame.prototype.isLocal = function() {
+  function _resolve(result, resolve, reject) {
+    resolve(result === 'true');
+  }
+
+  var templateStr = '{{inRefId}}.isLocal();';
+
+  return Utils.generateResultPromise(this, templateStr, {}, _resolve);
 };
 
 /**
@@ -518,49 +529,23 @@ DataFrame.prototype.select = function() {
     return this;
   }
 
-  var refId = protocol.genVariable('dataFrame');
-  var self = this;
+  var selectArgs = [];
 
-  return new DataFrame(this.kernelP, new Promise(function(resolve, reject) {
-    var promises = [self.kernelP, self.refIdP];
+  // we have an Column[], so we need to resolve their refIds
+  if(typeof args[0] === 'object') {
+    args.forEach(function(arg) {
+      selectArgs.push(arg.refIdP);
+    });
+  } else {
+    // we have an string[], so we autoresolve each string with " around it
+    args.forEach(function(arg) {
+      selectArgs.push(Promise.resolve('"'+arg+'"'));
+    });
+  }
 
-    // we have an Column[], so we need to resolve their refIds
-    if(typeof args[0] === 'object') {
-      args.forEach(function(arg) {
-        promises.push(arg.refIdP);
-      });
-    } else {
-      // we have an string[], so we autoresolve each string with " around it
-      args.forEach(function(arg) {
-        promises.push(Promise.resolve('"'+arg+'"'));
-      });
-    }
+  var templateStr = 'var {{refId}} = {{inRefId}}.select({{selectArgs}});';
 
-    Promise.all(promises).then(function(values) {
-      var kernel = values[0];
-      var dataFrameId = values[1];
-
-      var colIds = [];
-
-      // resolved columns are in position 2 and above
-      if (values[2]) {
-        // we had an array of cols
-        for (var i = 2; i &lt; values.length; i++) {
-          colIds.push(values[i]);
-        }
-      }
-
-      // different template for string or object
-      var templateStr = 'var {{refId}} = {{inRefId}}.select({{groupByArgs}});';
-
-      var code = Utils.processTemplate(templateStr, {refId: refId, inRefId: dataFrameId, groupByArgs: colIds.join(',')});
-
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        resolve,
-        reject,
-        refId);
-    }).catch(reject);
-  }));
+  return Utils.generateAssignment(this, DataFrame, templateStr, {selectArgs: selectArgs});
 };
 
 /**
@@ -634,8 +619,7 @@ DataFrame.prototype.where = function(condition) {
   return Utils.generateAssignment(this, DataFrame, templateStr, {filterArg: conditionP});
 };
 
-module.exports = DataFrame;
-</code></pre>
+module.exports = DataFrame;</code></pre>
         </article>
     </section>
 
@@ -645,13 +629,13 @@ module.exports = DataFrame;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Wed Dec 09 2015 18:12:46 GMT-0500 (EST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Fri Dec 11 2015 15:14:01 GMT-0500 (EST)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -434,11 +434,6 @@ describe('Row Test', function() {
     });
   });
 
-  /*
-   * Note: Not all of the methods in StructType and StructField are implemented. This needs to be done before this
-   * test case can be uncommented
-   */
-  /*
   describe("row.schema()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
@@ -452,7 +447,6 @@ describe('Row Test', function() {
       );
     });
   });
-  */
 
   describe("row.size()", function() {
     it("should generate the correct output", function(done) {
