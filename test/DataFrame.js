@@ -784,4 +784,71 @@ describe('DataFrame', function() {
     });
   });
 
+  describe("limit()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.limit(1)).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame23 = dataFrame1.limit(1);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("mapPartitions()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.mapPartitions(function(rows) {
+            return [rows.length];
+          })).then(callback);
+        }, function(result) {
+          expect(result).equals('var rdd10 = dataFrame1.mapPartitions(function (rows) {\n            return [rows.length];\n          });');
+        },
+        done
+      );
+    });
+  });
+
+  describe("na()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.na()).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrameNaFunctions1 = dataFrame1.na();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("orderBy(columnName)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.orderBy("name", "age")).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame24 = dataFrame1.orderBy(\"name\",\"age\");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("orderBy(col)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.orderBy(df.col("name"), df.col("age"))).then(callback);
+        }, function(result) {
+          expect(result[2]).equals('var dataFrame25 = dataFrame1.orderBy(column12,column13);');
+        },
+        done
+      );
+    });
+  });
+
 });

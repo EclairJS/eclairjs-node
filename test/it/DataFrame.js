@@ -67,7 +67,7 @@ function executeTest(run, checks, done) {
     try {
       checks(result);
     } catch(e) {
-      done(e)
+      done(e);
       return;
     }
 
@@ -860,5 +860,64 @@ describe('DataFrame Test', function() {
     });
   });
 
+  describe("dataFrame.limit()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.limit(1).count().then(callback)
+        }, function(result) {
+          expect(result).equals(1);
+        },
+        done
+      );
+    });
+  });
+
+
+  describe("dataFrame.mapPartitions()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.mapPartitions(function(rows) {
+            return [rows.length];
+          }).take(10).then(callback)
+        }, function(result) {
+          expect(result).deep.equals([2,1]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.na()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var fileName = path.resolve(__dirname + '/peopleNullValues.txt');
+
+          buildPeopleTable(fileName, function(df) {
+            df.na().drop().take(10).then(callback)
+          });
+
+        }, function(result) {
+          expect(result.length).equals(2);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.orderBy()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.orderBy("age", "name").take(10).then(callback);
+        }, function(result) {
+          expect(result[0].values[0]).equals("Justin");
+        },
+        done
+      );
+    });
+  });
 });
 
