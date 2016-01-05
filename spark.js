@@ -17,8 +17,65 @@
 global.XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 global.WebSocket = require('ws');
 
-module.exports.SparkContext = require('./lib/SparkContext.js');
+var gw = require('jupyter-js-services');
+
+function _getURL() {
+  // special processing for eclairjs.cloudet.xyz to follow redirect
+  //  to spawned kernel
+  var JUPYTER_HOST = process.env.JUPYTER_HOST || "127.0.0.1";
+  var JUPYTER_PORT = process.env.JUPYTER_PORT || 8888;
+
+  // used for remote urls where we need to handle redirects
+  var ELAIRJS_HOST = process.env.ECLAIRJS_HOST || "";
+
+  return new Promise(function(resolve, reject) {
+    if (JUPYTER_HOST != ELAIRJS_HOST) {
+      resolve(JUPYTER_HOST + ":" + JUPYTER_PORT);
+    } else {
+      request({
+        followAllRedirects: true,
+        url: "http://" + ELAIRJS_HOST + "/spawn"
+      }, function(error, response, body) {
+        if (!error) {
+          // console.log(response.request.path);
+          var userPath = response.request.path.split('/').slice(0, 3).join('/');
+          var hostURL = ELAIRJS_HOST + userPath;
+          // console.log(hostURL)
+          resolve(hostURL);
+        }
+        else
+          reject(error);
+      });
+    }
+  });
+}
+
+// We build our Spark Kernel connection here and share it when any classes that need it
+var kernelP = new Promise(function(resolve, reject) {
+  _getURL().then(function(hostURL){
+    //start the kernel
+    gw.startNewKernel({
+      baseUrl: "http://" + hostURL,
+      wsUrl: "ws://" + hostURL,
+      name: "eclair"
+    }).then(function(k) {
+      console.log("got kernel");
+      //when we have kernel info we know the spark kernel is ready.
+      k.kernelInfo().then(function(info) {
+        resolve(k);
+      });
+    });
+
+  }).catch(function(err) {
+    reject(err);
+  })
+});
+
+module.exports.SparkContext = require('./lib/SparkContext.js')(kernelP);
 module.exports.SQLContext = require('./lib/sql/SQLContext.js');
 module.exports.StreamingContext = require('./lib/streaming/StreamingContext.js');
 module.exports.KafkaUtils = require('./lib/streaming/KafkaUtils.js');
 module.exports.Duration = require('./lib/streaming/Duration.js');
+module.exports.storage = {
+  StorageLevel: require('./lib/storage/StorageLevel.js')(kernelP)
+};

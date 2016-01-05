@@ -851,4 +851,31 @@ describe('DataFrame', function() {
     });
   });
 
+  describe("persist()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.persist()).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame26 = dataFrame1.persist();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("persist(storageLevel)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.persist(spark.storage.StorageLevel.NONE())).then(callback);
+        }, function(result) {
+          expect(result[0]).equals('var storageLevel1 = StorageLevel.NONE();');
+          expect(result[1]).equals('var dataFrame27 = dataFrame1.persist(storageLevel1);');
+        },
+        done
+      );
+    });
+  });
+
 });

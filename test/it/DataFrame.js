@@ -919,5 +919,18 @@ describe('DataFrame Test', function() {
       );
     });
   });
+
+  describe("dataFrame.persist()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.persist(spark.storage.StorageLevel.MEMORY_ONLY()).head().mkString().then(callback);
+        }, function(result) {
+          expect(result).equals("Michael291");
+        },
+        done
+      );
+    });
+  });
 });
 
