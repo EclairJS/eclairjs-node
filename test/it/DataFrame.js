@@ -932,5 +932,132 @@ describe('DataFrame Test', function() {
       );
     });
   });
+
+
+  describe("dataFrame.queryExecution()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.queryExecution().simpleString().then(callback);
+        }, function(result) {
+          expect(result).to.contain('== Physical Plan ==');
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.rdd()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.rdd().count().then(callback);
+        }, function(result) {
+          expect(result).equals(3);
+        },
+        done
+      );
+    });
+  });
+
+
+  describe("dataFrame.rollup()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var df = dataFrame.repartition(1);
+          df.rollup("age", "expense").count().count().then(callback);
+        }, function(result) {
+          expect(result).equals(7);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.sample()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var df = dataFrame.sample(true, 0.5).take(10).then(callback);
+        }, function(result) {
+          expect(result[0].values[0]).equals("Andy");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.schema()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var df = dataFrame.schema().simpleString().then(callback);
+        }, function(result) {
+          expect(result).equals("struct<name:string,age:int,expense:int>");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.sort()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.sort("age", "name").take(10).then(callback);
+        }, function(result) {
+          expect(result[0].values[0]).equals("Justin");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.toDF()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var nameAgeDF = dataFrame.select("name", "age");
+          nameAgeDF.toDF("newName", "newAge").toString().then(callback);
+        }, function(result) {
+          expect(result).equals("[newName: string, newAge: int]");
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.selectExpr()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.selectExpr("name", "age > 19").take(10).then(callback);
+        }, function(result) {
+          expect(result[0].values[1]).equals(true);
+          expect(result[1].values[1]).equals(true);
+          expect(result[2].values[1]).equals(false);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.unionAll()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var df1 = dataFrame.selectExpr("name", "age < 30");
+          var df2 = dataFrame.selectExpr("name", "age > 20");
+          var result = df1.unionAll(df2);
+
+          result.take(10).then(callback);
+        }, function(result) {
+          expect(result.length).equals(6);
+        },
+        done
+      );
+    });
+  });
 });
 
