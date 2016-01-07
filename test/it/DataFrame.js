@@ -75,7 +75,7 @@ function executeTest(run, checks, done) {
   });
 }
 
-var fileName = path.resolve(__dirname+'/../../examples/people.txt');
+var fileName = path.resolve(__dirname+'/../data/people.txt');
 
 var dataFrame, duplicateDataFrame;
 
@@ -575,7 +575,7 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
-          var fileName = path.resolve(__dirname + '/duplicatePeople.txt');
+          var fileName = path.resolve(__dirname+'/../data/duplicatePeople.txt');
 
           buildPeopleTable(fileName, function(df) {
             duplicateDataFrame = df;
@@ -893,7 +893,7 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
-          var fileName = path.resolve(__dirname + '/peopleNullValues.txt');
+          var fileName = path.resolve(__dirname+'/../data/peopleNullValues.txt');
 
           buildPeopleTable(fileName, function(df) {
             df.na().drop().take(10).then(callback)

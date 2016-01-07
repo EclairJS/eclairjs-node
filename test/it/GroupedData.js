@@ -75,7 +75,7 @@ function executeTest(run, checks, done) {
   });
 }
 
-var fileName = path.resolve(__dirname+'/../../examples/people.txt');
+var fileName = path.resolve(__dirname+'/../data/people.txt');
 
 var dataFrame;
 
