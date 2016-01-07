@@ -76,6 +76,11 @@ module.exports.SQLContext = require('./lib/sql/SQLContext.js');
 module.exports.StreamingContext = require('./lib/streaming/StreamingContext.js');
 module.exports.KafkaUtils = require('./lib/streaming/KafkaUtils.js');
 module.exports.Duration = require('./lib/streaming/Duration.js');
+
+module.exports.sql = {
+  functions: require('./lib/sql/functions.js')(kernelP)
+};
+
 module.exports.storage = {
   StorageLevel: require('./lib/storage/StorageLevel.js')(kernelP)
 };

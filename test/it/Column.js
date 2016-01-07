@@ -68,16 +68,24 @@ function buildPeopleTable(file, callback) {
 }
 
 function executeTest(run, checks, done) {
-  run(function(result) {
-    try {
-      checks(result);
-    } catch(e) {
-      done(e);
-      return;
-    }
+  try {
+    run(function(result) {
+      try {
+        checks(result);
+      } catch (e) {
+        done(e);
+        return;
+      }
 
-    done();
-  });
+      done();
+    },
+    function(err) {
+      done(new Error(err));
+    });
+  } catch (e) {
+    done(e);
+    return;
+  }
 }
 
 var fileName = path.resolve(__dirname+'/../data/people.txt');
@@ -326,5 +334,276 @@ describe('Column Test', function() {
       );
     });
   })
+
+  describe("Column.geq(21)", function() {
+    it("should generate a Column of value (age >= 21)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").geq(21).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('(age >= 21)');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.geq(column)", function() {
+    it("should generate a Column of value (name >= expense)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").geq(dataFrame.col("expense")).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('(age >= expense)');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.getField()", function() {
+    it("should generate a Column of value (age[expense])", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").getField("expense").toString().then(callback);
+        }, function(result) {
+          expect(result).equals('age[expense]');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.getItem()", function() {
+    it("should generate a Column of value (age[expense])", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").getItem("expense").toString().then(callback);
+        }, function(result) {
+          expect(result).equals('age[expense]');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.gt(20)", function() {
+    it("should generate a Column of value (age > 20)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").gt(20).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('(age > 20)');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.hashCode()", function() {
+    it("should return an int", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").hashCode().then(callback);
+        }, function(result) {
+          expect(result).equals(-1145380159);
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.in([20,19])", function() {
+    it("should false,false,true", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.select(dataFrame.col("age").in([20,19])).take(10).then(callback);
+        }, function(result) {
+          expect(result[0].values[0]).equals(false);
+          expect(result[1].values[0]).equals(false);
+          expect(result[2].values[0]).equals(true);
+        },
+        done
+      );
+    });
+  })
+
+
+  describe("Column.isNaN(age)", function() {
+    it("should generate a Column of value isnan(age)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").isNaN().toString().then(callback);
+        }, function(result) {
+          expect(result).equals("isnan(age)");
+        },
+        done
+      );
+    });
+  })
+
+
+  describe("Column.isNull(age)", function() {
+    it("should generate a Column of value isnull(age)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").isNull().toString().then(callback);
+        }, function(result) {
+          expect(result).equals("isnull(age)");
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.isNotNull(age)", function() {
+    it("should generate a Column of value isnotnull(age)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").isNotNull().toString().then(callback);
+        }, function(result) {
+          expect(result).equals("isnotnull(age)");
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.leq(21)", function() {
+    it("should generate a Column of value (age <= 21)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").leq(21).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('(age <= 21)');
+        },
+        done
+      );
+    });
+  })
+
+
+  describe("Column.like(3)", function() {
+    it("should generate a Column of value age LIKE 3", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").like("3").toString().then(callback);
+        }, function(result) {
+          expect(result).equals('age LIKE 3');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.lt(21)", function() {
+    it("should generate a Column of value (age < 21)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("age").lt(21).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('(age < 21)');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.minus(age)", function() {
+    it("should generate a Column of value (expense - age)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("expense").minus(dataFrame.col("age")).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('(expense - age)');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.mod(age)", function() {
+    it("should generate a Column of value (expense % age)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("expense").mod(dataFrame.col("age")).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('(expense % age)');
+        },
+        done
+      );
+    });
+  })
+
+
+  describe("Column.multiply(age)", function() {
+    it("should generate a Column of value (expense * age)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("expense").multiply(dataFrame.col("age")).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('(expense * age)');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.notEqual(age)", function() {
+    it("should generate a Column of value NOT (expense = age)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("expense").notEqual(dataFrame.col("age")).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('NOT (expense = age)');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.or(age)", function() {
+    it("should generate a Column of value (expense|| age)", function(done) {
+      executeTest(
+        function(callback) {
+          dataFrame.col("expense").or(dataFrame.col("age")).toString().then(callback);
+        }, function(result) {
+          expect(result).equals('(expense || age)');
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.otherwise()", function() {
+    it("should when with sql.functions.when correctly", function(done) {
+      executeTest(
+        function(callback, error) {
+          var select = spark.sql.functions.when(dataFrame.col("age").notEqual(19), true).otherwise(false);
+          dataFrame.select(select).take(10).then(callback).catch(error);
+        }, function(result) {
+          expect(result[0].values[0]).equals(true);
+          expect(result[1].values[0]).equals(true);
+          expect(result[2].values[0]).equals(false);
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.when()", function() {
+    it("should generate a Column", function(done) {
+      executeTest(
+        function(callback, error) {
+          var whenCol = spark.sql.functions.when(dataFrame.col("name").equalTo("Andy"), 0);
+          whenCol.when(dataFrame.col("age").equalTo(10), 100).toString().then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('CASE WHEN (name = Andy) THEN 0 WHEN (age = 10) THEN 100');
+        },
+        done
+      );
+    });
+  })
+
 });
 
