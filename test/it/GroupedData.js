@@ -63,18 +63,25 @@ function buildPeopleTable(file, callback) {
 }
 
 function executeTest(run, checks, done) {
-  run(function(result) {
-    try {
-      checks(result);
-    } catch(e) {
-      done(e)
-      return;
-    }
+  try {
+    run(function(result) {
+        try {
+          checks(result);
+        } catch (e) {
+          done(e);
+          return;
+        }
 
-    done();
-  });
+        done();
+      },
+      function(err) {
+        done(new Error(err));
+      });
+  } catch (e) {
+    done(e);
+    return;
+  }
 }
-
 var fileName = path.resolve(__dirname+'/../data/people.txt');
 
 var dataFrame;
@@ -91,9 +98,22 @@ describe('GroupedData Test', function() {
             dataFrame = df;
             dataFrame.columns().then(callback);
           });
-
         }, function(result) {
           expect(result.toString()).equals('name,age,expense');
+        },
+        done
+      );
+    });
+  });
+
+  describe("GroupedData.agg()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var gd = dataFrame.groupBy("name");
+          gd.agg(spark.sql.functions.max(dataFrame.col("age"))).toString().then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('[name: string, max(age): int]');
         },
         done
       );
@@ -107,7 +127,6 @@ describe('GroupedData Test', function() {
           var gd = dataFrame.groupBy("name");
           gd.avg("age").toString().then(callback);
         }, function(result) {
-          console.log('result: ',result);
           expect(result).equals('[name: string, avg(age): double]');
         },
         done
@@ -122,7 +141,6 @@ describe('GroupedData Test', function() {
           var gd = dataFrame.groupBy("name");
           gd.max("age").toString().then(callback);
         }, function(result) {
-          console.log('result: ',result);
           expect(result).equals('[name: string, max(age): int]');
         },
         done
@@ -137,7 +155,6 @@ describe('GroupedData Test', function() {
           var gd = dataFrame.groupBy("name");
           gd.mean("age").toString().then(callback);
         }, function(result) {
-          console.log('result: ',result);
           expect(result).equals('[name: string, mean(age): double]');
         },
         done
@@ -152,7 +169,6 @@ describe('GroupedData Test', function() {
           var gd = dataFrame.groupBy("name");
           gd.min("age").toString().then(callback);
         }, function(result) {
-          console.log('result: ',result);
           expect(result).equals('[name: string, min(age): int]');
         },
         done
@@ -167,7 +183,6 @@ describe('GroupedData Test', function() {
           var gd = dataFrame.groupBy("name");
           gd.sum("age").toString().then(callback);
         }, function(result) {
-          console.log('result: ',result);
           expect(result).equals('[name: string, sum(age): bigint]');
         },
         done
