@@ -42,44 +42,13 @@
  * limitations under the License.
  */
 
-var gw = require('jupyter-js-services');
 var RDD = require('./RDD.js');
 var protocol = require('./kernel.js');
 var Utils = require('./utils.js');
 var request = require('request');
 
-function _getURL() {
-
-  // special processing for eclairjs.cloudet.xyz to follow redirect
-  //  to spawned kernel
-
-  var JUPYTER_HOST = process.env.JUPYTER_HOST || "127.0.0.1";
-  var JUPYTER_PORT = process.env.JUPYTER_PORT || 8888;
-
-  // used for remote urls where we need to handle redirects
-  var ELAIRJS_HOST = process.env.ECLAIRJS_HOST || "";
-
-  return new Promise(function(resolve, reject) {
-    if (JUPYTER_HOST != ELAIRJS_HOST) {
-      resolve(JUPYTER_HOST + ":" + JUPYTER_PORT);
-    } else {
-      request({
-        followAllRedirects: true,
-        url: "http://" + ELAIRJS_HOST + "/spawn"
-      }, function(error, response, body) {
-        if (!error) {
-          // console.log(response.request.path);
-          var userPath = response.request.path.split('/').slice(0, 3).join('/');
-          var hostURL = ELAIRJS_HOST + userPath;
-          // console.log(hostURL)
-          resolve(hostURL);
-        }
-        else
-          reject(error);
-      });
-    }
-  });
-}
+// our shared kernel promise
+var kernelP;
 
 /**
  *
@@ -92,36 +61,19 @@ function _getURL() {
  */
 function SparkContext(master, name) {
   this.kernel = new Promise(function(resolve, reject) {
-
-    _getURL().then(function(hostURL){
-      //start the kernel
-      gw.startNewKernel({
-        baseUrl: "http://" + hostURL,
-        wsUrl: "ws://" + hostURL,
-        name: "eclair"
-      }).then(function(k) {
-        console.log("got kernel");
-        //when we have kernel info we know the spark kernel is ready.
-        k.kernelInfo().then(function(info) {
-          var templateStr = 
-              'var jsc = new SparkContext("{{master}}", "{{name}}");'
-          var code = Utils.processTemplate(templateStr, 
-                                           {master: master, name: name})
-          k.execute({
-            code: code
-          }).handleMsg = msg => {
-            if(msg.msg_type === 'status' &amp;&amp;
-               msg.content.execution_state === 'idle') {
-              resolve(k);
-            }
-          }
-        });
-      });
-
-    }).catch(function(err) {
-      reject(err);
-    })
-  })
+    kernelP.then(function(k) {
+      var templateStr = 'var jsc = new SparkContext("{{master}}", "{{name}}");';
+      var code = Utils.processTemplate(templateStr, {master: master, name: name});
+      k.execute({
+        code: code
+      }).handleMsg = msg => {
+        if(msg.msg_type === 'status' &amp;&amp;
+          msg.content.execution_state === 'idle') {
+          resolve(k);
+        }
+      }
+    });
+  });
 }
 
 /**
@@ -167,10 +119,10 @@ SparkContext.prototype.textFile = function(path) {
   }))
 }
 
-module.exports = SparkContext;
-
-
-
+module.exports = function(kP) {
+  kernelP = kP;
+  return SparkContext;
+}
 </code></pre>
         </article>
     </section>
@@ -181,13 +133,13 @@ module.exports = SparkContext;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Fri Dec 11 2015 15:14:01 GMT-0500 (EST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Tue Jan 12 2016 15:51:08 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

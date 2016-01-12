@@ -494,6 +494,72 @@ DataFrame.prototype.isLocal = function() {
 };
 
 /**
+ * Cartesian join with another DataFrame. Note that cartesian joins are very expensive without an extra filter that can be pushed down.
+ * @param {DataFrame} Right side of the join operation.
+ * @param {string | string[] | Column} columnNamesOrJoinExpr Optional: If string or array of strings column names, inner equi-join with another DataFrame using the given columns.
+ * Different from other join functions, the join columns will only appear once in the output, i.e. similar to SQL's JOIN USING syntax.
+ * If Column object, joinExprs inner join with another DataFrame, using the given join expression.
+ * @param {string} joinType Optional, only valid if using Column joinExprs.
+ * @returns {DataFrame}
+ * @example
+ * var joinedDf = df1.join(df2);
+ * // or
+ * var joinedDf = df1.join(df2,"age");
+ * // or
+ * var joinedDf = df1.join(df2, ["age", "DOB"]);
+ * // or Column joinExpr
+ * var joinedDf = df1.join(df2, df1.col("name").equalTo(df2.col("name")));
+ * // or Column joinExpr
+ * var joinedDf = df1.join(df2, df1.col("name").equalTo(df2.col("name")), "outer");
+ */
+DataFrame.prototype.join = function(right, usingColumns, joinType) {
+  var templateStr;
+
+  var usingColumnsData;
+  var jType;
+
+  if (usingColumns) {
+    if (usingColumns instanceof Column) {
+      usingColumnsData = usingColumns.refIdP;
+
+      jType = joinType;
+    } else if (Array.isArray(usingColumns)) {
+      var cols = [];
+
+      usingColumns.forEach(function(col) {
+        cols.push('"'+col+'"');
+      });
+
+      usingColumnsData = '['+cols.join(',')+']';
+    } else {
+      usingColumnsData = '"'+usingColumns+'"';
+    }
+
+    if (jType) {
+      templateStr = 'var {{refId}} = {{inRefId}}.join({{right}}, {{usingColumns}}, "{{joinType}}");';
+    } else {
+      templateStr = 'var {{refId}} = {{inRefId}}.join({{right}}, {{usingColumns}});';
+    }
+  } else {
+    templateStr = 'var {{refId}} = {{inRefId}}.join({{right}});';
+  }
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {right: right.refIdP, usingColumns: usingColumnsData, joinType: jType});
+};
+
+/**
+ * Returns a new DataFrame by taking the first n rows. The difference between this function and head is that head
+ * returns an array while limit returns a new DataFrame.
+ * @param {integer} number
+ * @returns {DataFrame}
+ */
+DataFrame.prototype.limit = function(number) {
+  var templateStr = 'var {{refId}} = {{inRefId}}.limit({{number}});';
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {number: number});
+};
+
+/**
  * Returns a new RDD by applying a function to all rows of this DataFrame.
  * @param {function} func
  * @returns {RDD}
@@ -507,6 +573,120 @@ DataFrame.prototype.map = function(func) {
 };
 
 /**
+ * Return a new RDD by applying a function to each partition of this DataFrame.
+ * Similar to map, but runs separately on each partition (block) of the DataFrame, so func must accept an Array.
+ * func should return a array rather than a single item.
+ * @param {function} func
+ * @returns {RDD}
+ */
+DataFrame.prototype.mapPartitions = function(func) {
+  var udfP = (typeof func === 'function') ? serialize.serializeFunction(func) : Promise.resolve(func);
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.mapPartitions({{udf}});';
+
+  return Utils.generateAssignment(this, RDD, templateStr, {udf: udfP});
+};
+
+/**
+ * Returns a DataFrameNaFunctions for working with missing data.
+ * @returns {DataFrameNaFunctions}
+ */
+DataFrame.prototype.na = function() {
+  var DataFrameNaFunctions = require('./DataFrameNaFunctions.js');
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.na();';
+
+  return Utils.generateAssignment(this, DataFrameNaFunctions, templateStr, {});
+};
+
+/**
+ * Returns a new DataFrame sorted by the specified columns, if columnName is used sorted in ascending order.
+ * This is an alias of the sort function.
+ * @param {string | Column} columnName,...columnName or sortExprs,... sortExprs
+ * @returns {DataFrame}
+ */
+DataFrame.prototype.orderBy = function() {
+  var args = Array.prototype.slice.call(arguments);
+
+  var orderByArgs = [];
+
+  if (args &amp;&amp; Array.isArray(args)) {
+    // we have an Column[], so we need to resolve their refIds
+    if(typeof args[0] === 'object') {
+      args.forEach(function(arg) {
+        orderByArgs.push(arg.refIdP);
+      });
+    } else {
+      // we have an string[], so we autoresolve each string with " around it
+      args.forEach(function(arg) {
+        orderByArgs.push(Promise.resolve('"'+arg+'"'));
+      });
+    }
+  }
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.orderBy({{orderByArgs}});';
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {orderByArgs: orderByArgs});
+};
+
+/**
+ * @param {StorageLevel} newLevel
+ * @returns {DataFrame}
+ */
+DataFrame.prototype.persist = function(newLevel) {
+  var templateStr = newLevel ? 'var {{refId}} = {{inRefId}}.persist({{newLevel}});' : 'var {{refId}} = {{inRefId}}.persist();';
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {newLevel: newLevel ? newLevel.refIdP : null});
+};
+
+/**
+ * Prints the schema to the console in a nice tree format.
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+DataFrame.prototype.printSchema = function() {
+  var templateStr = '{{inRefId}}.printSchema();';
+
+  return Utils.generateVoidPromise(this, templateStr);
+};
+
+/**
+ * @returns {SQLContextQueryExecution}
+ */
+DataFrame.prototype.queryExecution = function() {
+  var SQLContextQueryExecution = require('./SQLContextQueryExecution.js');
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.queryExecution();';
+
+  return Utils.generateAssignment(this, SQLContextQueryExecution, templateStr);
+};
+
+/**
+ * Randomly splits this DataFrame with the provided weights.
+ * @param {float[]} weights - weights for splits, will be normalized if they don't sum to 1.
+ * @param {int} seed - Seed for sampling.
+ * @returns {Promise.&lt;DataFrame[]>} A Promise that resolves to an array containing the DataFrames.
+ */
+DataFrame.prototype.randomSplit = function(weights, seed) {
+  throw "not implemented by ElairJS";
+
+  /*
+  var templateStr = 'var {{refId}} = {{inRefId}}.randomSplit([{{weights}}, {{seed}}]);';
+
+  return Utils.generateResultPromise(this, templateStr, {weights: weights.join(','), seed: seed}, _resolve);
+  */
+};
+
+/**
+ * Represents the content of the DataFrame as an RDD of Rows.
+ * @returns {RDD}
+ */
+DataFrame.prototype.rdd = function() {
+  var templateStr = 'var {{refId}} = {{inRefId}}.rdd();';
+
+  return Utils.generateAssignment(this, RDD, templateStr);
+};
+
+/**
  * Registers this DataFrame as a temporary table using the given name.
  * @param {string} tableName
  * @returns {Promise.&lt;Void>} A Promise that resolves when the temp table has been created.
@@ -515,6 +695,79 @@ DataFrame.prototype.registerTempTable = function(tableName) {
   var templateStr = '{{inRefId}}.registerTempTable("{{tableName}}");';
 
   return Utils.generateVoidPromise(this, templateStr, {tableName: tableName});
+};
+
+/**
+ * Returns a new DataFrame that has exactly numPartitions partitions.
+ * @param {integer} numPartitions
+ * @returns {DataFrame}
+ */
+DataFrame.prototype.repartition = function(numPartitions) {
+  var templateStr = 'var {{refId}} = {{inRefId}}.repartition({{numPartitions}});';
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {numPartitions: numPartitions});
+};
+
+/**
+ * Create a multi-dimensional rollup for the current DataFrame using the specified columns,
+ * so we can run aggregation on them. See GroupedData for all the available aggregate functions.
+ * @param {string | Column} columnName, .....columnName or sortExprs,... sortExprs
+ * @returns {GroupedData}
+ * @example
+ *  var result = peopleDataFrame.rollup("age", "networth").count();
+ *  // or
+ *  var col = peopleDataFrame.col("age");
+ *	var result = peopleDataFrame.rollup(col).count();
+ */
+DataFrame.prototype.rollup = function() {
+  var args = Array.prototype.slice.call(arguments);
+
+  var GroupedData = require('./GroupedData.js');
+
+  var rollupArgs = [];
+
+  if (args &amp;&amp; Array.isArray(args)) {
+    // we have an Column[], so we need to resolve their refIds
+    if(typeof args[0] === 'object') {
+      args.forEach(function(arg) {
+        rollupArgs.push(arg.refIdP);
+      });
+    } else {
+      // we have an string[], so we autoresolve each string with " around it
+      args.forEach(function(arg) {
+        rollupArgs.push(Promise.resolve('"'+arg+'"'));
+      });
+    }
+  }
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.rollup({{rollupArgs}});';
+
+  return Utils.generateAssignment(this, GroupedData, templateStr, {rollupArgs: rollupArgs});
+};
+
+/**
+ * Returns a new DataFrame by sampling a fraction of rows, using a random seed.
+ * @param {boolean} withReplacement
+ * @param {float} fraction
+ * @param {integer} seed Optional
+ * @returns {DataFrame}
+ */
+DataFrame.prototype.sample = function(withReplacement, fraction, seed) {
+  var templateStr = seed ? 'var {{refId}} = {{inRefId}}.sample({{withReplacement}}, {{fraction}}, {{seed}});' : 'var {{refId}} = {{inRefId}}.sample({{withReplacement}}, {{fraction}});';
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {withReplacement: withReplacement, fraction: fraction, seed: seed});
+};
+
+/**
+ * Returns the schema of this DataFrame.
+ * @returns {StructType}
+ */
+DataFrame.prototype.schema = function() {
+  var StructType = require('./types/StructType.js');
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.schema();';
+
+  return Utils.generateAssignment(this, StructType, templateStr);
 };
 
 /**
@@ -549,6 +802,27 @@ DataFrame.prototype.select = function() {
 };
 
 /**
+ * Selects a set of SQL expressions. This is a variant of select that accepts SQL expressions.
+ * @param {string} exprs,...exprs
+ * @returns {DataFrame}
+ * @example
+ * var result = peopleDataFrame.selectExpr("name", "age > 19");
+ */
+DataFrame.prototype.selectExpr = function() {
+  var args = Array.prototype.slice.call(arguments);
+
+  var selectArgs = [];
+
+  args.forEach(function(arg) {
+    selectArgs.push('"'+arg+'"');
+  });
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.selectExpr({{selectArgs}});';
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {selectArgs: selectArgs.join(',')});
+};
+
+/**
  * Displays the top 20 rows of DataFrame in a tabular form.
  *
  * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
@@ -557,6 +831,52 @@ DataFrame.prototype.show = function() {
   var templateStr = '{{inRefId}}.show();';
 
   return Utils.generateVoidPromise(this, templateStr);
+};
+
+/**
+ * Returns a new DataFrame sorted by the specified columns, if columnName is used sorted in ascending order.
+ * @param {string | Column} columnName,...columnName or sortExprs,... sortExprs
+ * @returns {DataFrame}
+ * @example
+ *  var result = peopleDataFrame.sort("age", "name");
+ *  // or
+ *  var col = peopleDataFrame.col("age");
+ *	var colExpr = col.desc();
+ *	var result = peopleDataFrame.sort(colExpr);
+ */
+DataFrame.prototype.sort = function() {
+  var args = Array.prototype.slice.call(arguments);
+
+  var sortByArgs = [];
+
+  if (args &amp;&amp; Array.isArray(args)) {
+    // we have an Column[], so we need to resolve their refIds
+    if(typeof args[0] === 'object') {
+      args.forEach(function(arg) {
+        sortByArgs.push(arg.refIdP);
+      });
+    } else {
+      // we have an string[], so we autoresolve each string with " around it
+      args.forEach(function(arg) {
+        sortByArgs.push(Promise.resolve('"'+arg+'"'));
+      });
+    }
+  }
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.sort({{sortByArgs}});';
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {sortByArgs: sortByArgs});
+};
+
+/**
+ * Returns SQLContext
+ * @returns {SQLContext}
+ */
+DataFrame.prototype.sqlContext = function() {
+  var SQLContext = require('./SQLContext.js');
+
+  // TODO: need a cleaner way
+  return new SQLContext({context: this.kernelP});
 };
 
 /**
@@ -578,6 +898,27 @@ DataFrame.prototype.take = function(num) {
   var templateStr = 'JSON.stringify({{inRefId}}.take({{num}}));';
 
   return Utils.generateResultPromise(this, templateStr, {num: num}, _resolve);
+};
+
+/**
+ * Returns a new DataFrame with columns renamed. This can be quite convenient in conversion from a
+ * RDD of tuples into a DataFrame with meaningful names. For example:
+ * @param {string} colNames,...colNames
+ * @return {DataFrame}
+ * @example
+ * var result = nameAgeDF.toDF("newName", "newAge");
+ */
+DataFrame.prototype.toDF = function() {
+  var args = Array.prototype.slice.call(arguments);
+
+  var cols = [];
+  args.forEach(function(col) {
+    cols.push('"'+col+'"');
+  });
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.toDF({{cols}});';
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {cols: cols.join(',')});
 };
 
 /**
@@ -607,6 +948,27 @@ DataFrame.prototype.toString = function() {
 };
 
 /**
+ * Returns a new DataFrame containing union of rows in this frame and another frame. This is equivalent to UNION ALL in SQL.
+ * @param {DataFrame} other
+ * @returns {DataFrame}
+ */
+DataFrame.prototype.unionAll = function(other) {
+  var templateStr = 'var {{refId}} = {{inRefId}}.unionAll({{other}});';
+
+  return Utils.generateAssignment(this, DataFrame, templateStr, {other: other.refIdP});
+};
+
+/**
+ * @param {boolean} blocking
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+DataFrame.prototype.unpersist = function(blocking) {
+  var templateStr = '{{inRefId}}.unpersist({{blocking}});';
+
+  return Utils.generateVoidPromise(this, templateStr, {blocking: blocking});
+};
+
+/**
  * Filters rows using the given Column or SQL expression.
  * @param {Column | string} condition - .
  * @returns {DataFrame}
@@ -619,6 +981,18 @@ DataFrame.prototype.where = function(condition) {
   return Utils.generateAssignment(this, DataFrame, templateStr, {filterArg: conditionP});
 };
 
+/**
+ * Interface for saving the content of the DataFrame out into external storage.
+ * @returns {DataFrameWriter}
+ */
+DataFrame.prototype.write = function() {
+  var DataFrameWriter = require('./DataFrameWriter.js');
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.write();';
+
+  return Utils.generateAssignment(this, DataFrameWriter, templateStr);
+};
+
 module.exports = DataFrame;</code></pre>
         </article>
     </section>
@@ -629,13 +1003,13 @@ module.exports = DataFrame;</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Fri Dec 11 2015 15:14:01 GMT-0500 (EST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Tue Jan 12 2016 15:51:08 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

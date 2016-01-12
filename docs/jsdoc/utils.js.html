@@ -142,6 +142,85 @@ Utils.generateAssignment = function(inRef, classRef, templateStr, replacements) 
   }));
 };
 
+
+/**
+ * Handles evaluating a statement (use for Static method calls for example).  Will return a new instance of classRef.
+ * @param {Class} classRef - the class object that corresponds to the returned type.
+ * @param {string} templateStr - the template string to use when generating the assignment.
+ * @param {object} replacements - replacements to use in templateStr.  If the value of a replacement is a Promise, that
+ *                 promise is resolved and the resolved value is used to replace the promise in replacements.  A member
+ *                 of replacements can also be an array of promises.
+ * @returns {object}
+ */
+Utils.evaluate = function(kernelP, classRef, templateStr, replacements) {
+  var varName = classRef.name == 'RDD' ? 'rdd' : classRef.name.charAt(0).toLowerCase() + classRef.name.slice(1);
+
+  var refId = protocol.genVariable(varName);
+
+  var finalReplacements = {};
+
+  var promises = [kernelP];
+
+  var replacementPromiseNames = [];
+
+  if (replacements) {
+    // Check for any promises inside replacements
+    for (var name in replacements) {
+      var replacement = replacements[name];
+
+      if (replacement instanceof Promise) {
+        replacementPromiseNames.push(name);
+
+        promises.push(replacement);
+      } else if (Array.isArray(replacement) &amp;&amp; replacement[0] instanceof Promise) {
+        // we have an array of promises
+        replacement.forEach(function(promise) {
+          // each promise gets the same name
+          replacementPromiseNames.push(name);
+
+          promises.push(promise);
+        });
+      } else {
+        finalReplacements[name] = replacement;
+      }
+    }
+  }
+
+  return new classRef(kernelP, new Promise(function(resolve, reject) {
+    Promise.all(promises).then(function(values) {
+      var kernel = values[0];
+
+      finalReplacements["refId"] = refId;
+
+      // handle any replacement promises
+      for (var i = 0; i &lt; replacementPromiseNames.length; i++) {
+        var name = replacementPromiseNames[i];
+
+        // handle arrays of replacements
+        if (finalReplacements[name]) {
+          // if a Promise's name already is in the finalReplacements then we have an array of Promises so make the replacement
+          // an array of the results.
+          if (!Array.isArray(finalReplacements[name])) {
+            // make it an array
+            finalReplacements[name] = [finalReplacements[name]];
+          }
+
+          finalReplacements[name].push(values[1 + i]);
+        } else {
+          finalReplacements[name] = values[1 + i];
+        }
+      }
+
+      var code = Utils.processTemplate(templateStr, finalReplacements);
+
+      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
+        resolve,
+        reject,
+        refId);
+    }).catch(reject);
+  }));
+};
+
 /**
  * Handles running calls that return a Promise which resolves to an JavaScript primitive value (inRef.count()).
  * @param {object} inRef - the reference we are using to generate the result.  Expected to be a class that has kernelP/refIdP members.
@@ -153,6 +232,34 @@ Utils.generateAssignment = function(inRef, classRef, templateStr, replacements) 
  * @returns {Promise}
  */
 Utils.generateResultPromise = function(inRef, templateStr, replacements, customResolve) {
+  var finalReplacements = {};
+
+  var promises = [inRef.kernelP, inRef.refIdP];
+  var replacementPromiseNames = [];
+
+  if (replacements) {
+    // Check for any promises inside replacements
+    for (var name in replacements) {
+      var replacement = replacements[name];
+
+      if (replacement instanceof Promise) {
+        replacementPromiseNames.push(name);
+
+        promises.push(replacement);
+      } else if (Array.isArray(replacement) &amp;&amp; replacement[0] instanceof Promise) {
+        // we have an array of promises
+        replacement.forEach(function(promise) {
+          // each promise gets the same name
+          replacementPromiseNames.push(name);
+
+          promises.push(promise);
+        });
+      } else {
+        finalReplacements[name] = replacement;
+      }
+    }
+  }
+
   return new Promise(function(resolve, reject) {
     function _resolve(result) {
       // If a custom resolve is passed in, pass it the result and resolve/reject handles
@@ -167,17 +274,32 @@ Utils.generateResultPromise = function(inRef, templateStr, replacements, customR
       }
     }
 
-    Promise.all([inRef.kernelP, inRef.refIdP]).then(function(values) {
+    Promise.all(promises).then(function(values) {
       var kernel = values[0];
       var inRefId = values[1];
 
-      if (!replacements) {
-        replacements = {};
+      finalReplacements["inRefId"] = inRefId;
+
+      // handle any replacement promises
+      for (var i = 0; i &lt; replacementPromiseNames.length; i++) {
+        var name = replacementPromiseNames[i];
+
+        // handle arrays of replacements
+        if (finalReplacements[name]) {
+          // if a Promise's name already is in the finalReplacements then we have an array of Promises so make the replacement
+          // an array of the results.
+          if (!Array.isArray(finalReplacements[name])) {
+            // make it an array
+            finalReplacements[name] = [finalReplacements[name]];
+          }
+
+          finalReplacements[name].push(values[1 + i]);
+        } else {
+          finalReplacements[name] = values[1 + i];
+        }
       }
 
-      replacements["inRefId"] = inRefId;
-
-      var code = Utils.processTemplate(templateStr, replacements);
+      var code = Utils.processTemplate(templateStr, finalReplacements);
 
       protocol.verifyResult(kernel.execute({code: code}), _resolve, reject);
     }).catch(reject);
@@ -230,6 +352,24 @@ Utils.generateVoidPromise = function(inRef, templateStr, replacements) {
   })
 };
 
+Utils.prepForReplacement = function(obj) {
+  if (obj &amp;&amp; obj.refIdP) {
+    return obj.refIdP;
+  } else if (typeof(obj) == "string") {
+    return '"' + obj + '"';
+  } else if (Array.isArray(obj)) {
+    var newArr = [];
+
+    obj.forEach(function(item) {
+      newArr.push(Utils.prepForReplacement(item));
+    });
+
+    return '['+newArr.join(',')+']';
+  } else {
+    return obj;
+  }
+};
+
 module.exports = Utils;
 </code></pre>
         </article>
@@ -241,13 +381,13 @@ module.exports = Utils;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Fri Dec 11 2015 15:14:01 GMT-0500 (EST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Tue Jan 12 2016 15:51:08 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>
