@@ -88,7 +88,7 @@ describe('SQL Test', function() {
           fields = [];
           fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));
         }, function(msg) {
-          expect(msg.code).equals('var sqlStructField1 = DataTypes.createStructField("name", org.apache.spark.sql.types.DataTypes.StringType, true);');
+          expect(msg.code).equals('var structField1 = DataTypes.createStructField("name", org.apache.spark.sql.types.DataTypes.StringType, true);');
         },
         done
       );
@@ -104,7 +104,7 @@ describe('SQL Test', function() {
 
           fields.push(DataTypes.createStructField("age", DataTypes.IntegerType, true));
         }, function(msg) {
-          expect(msg.code).equals('var sqlStructField2 = DataTypes.createStructField("age", org.apache.spark.sql.types.DataTypes.IntegerType, true);');
+          expect(msg.code).equals('var structField2 = DataTypes.createStructField("age", org.apache.spark.sql.types.DataTypes.IntegerType, true);');
         },
         done
       );
@@ -118,7 +118,7 @@ describe('SQL Test', function() {
           var DataTypes = sqlContext.types.DataTypes;
           schema = DataTypes.createStructType(fields);
         }, function(msg) {
-          expect(msg.code).equals('var sqlStructType1 = DataTypes.createStructType([sqlStructField1,sqlStructField2]);');
+          expect(msg.code).equals('var structType1 = DataTypes.createStructType([structField1,structField2]);');
         },
         done
       );
@@ -166,7 +166,7 @@ describe('SQL Test', function() {
         function() {
           peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema);
         }, function(msg) {
-          expect(msg.code).equals('var dataFrame1 = sqlContext.createDataFrame(rdd3, sqlStructType1);');
+          expect(msg.code).equals('var dataFrame1 = sqlContext.createDataFrame(rdd3, structType1);');
         },
         done
       );

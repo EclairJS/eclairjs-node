@@ -962,7 +962,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.schema()).then(callback);
         }, function(result) {
-          expect(result).equals('var structType1 = dataFrame1.schema();');
+          expect(result).equals('var structType2 = dataFrame1.schema();');
         },
         done
       );
