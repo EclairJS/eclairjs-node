@@ -55,11 +55,6 @@ function executeTest(run, checks, done) {
     return;
   }
 }
-
-var fileName = path.resolve(__dirname+'/../data/people.txt');
-
-var dataFrame;
-
 describe('sql.functions Test', function() {
   describe("DataFrameReader.jdbc(url, db, info)", function() {
     it("should connect to a running mysql db", function(done) {
