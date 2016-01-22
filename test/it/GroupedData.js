@@ -155,7 +155,7 @@ describe('GroupedData Test', function() {
           var gd = dataFrame.groupBy("name");
           gd.mean("age").toString().then(callback);
         }, function(result) {
-          expect(result).equals('[name: string, mean(age): double]');
+          expect(result).equals('[name: string, avg(age): double]');
         },
         done
       );
