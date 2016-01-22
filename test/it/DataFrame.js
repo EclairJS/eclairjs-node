@@ -306,60 +306,7 @@ describe('DataFrame Test', function() {
         function(callback) {
           var result = dataFrame.take(2).then(callback);
         }, function(result) {
-          expect(result).deep.equals([
-            {
-              "values": [
-                "Michael",
-                29,
-                1
-              ],
-              "schema": {
-                "fields": [
-                  {
-                    "name": "name",
-                    "dataType": "StringType",
-                    "nullable": true
-                  },
-                  {
-                    "name": "age",
-                    "dataType": "IntegerType",
-                    "nullable": true
-                  },
-                  {
-                    "name": "expense",
-                    "dataType": "IntegerType",
-                    "nullable": true
-                  }
-                ]
-              }
-            },
-            {
-              "values": [
-                "Andy",
-                30,
-                2
-              ],
-              "schema": {
-                "fields": [
-                  {
-                    "name": "name",
-                    "dataType": "StringType",
-                    "nullable": true
-                  },
-                  {
-                    "name": "age",
-                    "dataType": "IntegerType",
-                    "nullable": true
-                  },
-                  {
-                    "name": "expense",
-                    "dataType": "IntegerType",
-                    "nullable": true
-                  }
-                ]
-              }
-            }
-          ]);
+          expect(result.length).equals(2);
         },
         done
       );
@@ -406,28 +353,7 @@ describe('DataFrame Test', function() {
 
           results.agg(m).take(10).then(callback);
         }, function(result) {
-          expect(result).deep.equals([
-            {
-              "values": [
-                30,
-                6
-              ],
-              "schema": {
-                "fields": [
-                  {
-                    "name": "max(age)",
-                    "dataType": "IntegerType",
-                    "nullable": true
-                  },
-                  {
-                    "name": "sum(expense)",
-                    "dataType": "LongType",
-                    "nullable": true
-                  }
-                ]
-              }
-            }
-          ]);
+          expect(result[0].values).deep.equals([30, 6]);
         },
         done
       );
@@ -524,8 +450,8 @@ describe('DataFrame Test', function() {
               "summary": "mean"
             },
             {
-              "age": "4.966554808583776",
-              "expense": "0.8164965809277263",
+              "age": "6.082762530298219",
+              "expense": "1.0",
               "summary": "stddev"
             },
             {
@@ -728,60 +654,8 @@ describe('DataFrame Test', function() {
 
           dataFrame.intersect(plus20s).take(10).then(callback);
         }, function(result) {
-          expect(result).deep.equals([
-            {
-              "schema": {
-                "fields": [
-                  {
-                    "dataType": "StringType",
-                    "name": "name",
-                    "nullable": true
-                  },
-                  {
-                    "dataType": "IntegerType",
-                    "name": "age",
-                    "nullable": true
-                  },
-                  {
-                    "dataType": "IntegerType",
-                    "name": "expense",
-                    "nullable": true
-                  }
-                ]
-              },
-              "values": [
-                "Andy",
-                30,
-                2
-              ]
-            },
-            {
-              "schema": {
-                "fields": [
-                  {
-                    "dataType": "StringType",
-                    "name": "name",
-                    "nullable": true
-                  },
-                  {
-                    "dataType": "IntegerType",
-                    "name": "age",
-                    "nullable": true
-                  },
-                  {
-                    "dataType": "IntegerType",
-                    "name": "expense",
-                    "nullable": true
-                  }
-                ]
-              },
-              "values": [
-                "Michael",
-                29,
-                1
-              ]
-            }
-          ]);
+          expect(result[0].values).deep.equals(["Andy", 30, 2]);
+          expect(result[1].values).deep.equals(["Michael",29, 1]);
         },
         done
       );
@@ -833,7 +707,7 @@ describe('DataFrame Test', function() {
         function(callback) {
           var result = dataFrame.join(dataFrame, ["age", "expense"]).take(1).then(callback);
         }, function(result) {
-          expect(result[0].values).deep.equals([ 'Michael', 29, 1, 'Michael']);
+          expect(result[0].values.length).equals(4);
         },
         done
       );
