@@ -14,72 +14,26 @@
  * limitations under the License.
  */
 
+function EclairJS() {
+  var result = require('./SparkContext.js')();
 
-var MODE_RESULT = 0;
-var MODE_ASSIGN = 1;
-var MODE_VOID_ASSIGN = 2;
+  var kernelP = result[0];
 
-function FakeKernelExecuteHandle(mode) {
-  var self = this;
+  return {
+    SparkContext: result[1],
+    SQLContext: require('../../lib/sql/SQLContext.js'),
+    StreamingContext: require('../../lib/streaming/StreamingContext.js'),
+    KafkaUtils: require('../../lib/streaming/KafkaUtils.js'),
+    Duration: require('../../lib/streaming/Duration.js'),
 
-  setTimeout(function() {
-    if (self.handleMsg) {
-      var msg;
-      if (mode == MODE_ASSIGN) {
-        msg = {msg_type: 'status', content: {execution_state: 'idle'}};
-      } else if (mode == MODE_RESULT) {
-        msg =  {msg_type: 'execute_result', content: {data: {"text/plain": "{}"}}};
-      } else if (mode == MODE_VOID_ASSIGN) {
-        msg =  {msg_type: 'execute_reply', content: {status: 'ok'}};
-      }
+    sql: {
+      functions: require('../../lib/sql/functions.js')(kernelP)
+    },
 
-      self.handleMsg(msg);
-    }
-  }, 10);
-}
-
-function FakeKernel() {
-  this._listener = null;
-}
-
-FakeKernel.prototype.addExecuteListener = function(listener) {
-  this._listener = listener;
-}
-
-FakeKernel.prototype.removeExecuteListener = function(listener) {
-  this._listener = null;
-}
-
-FakeKernel.prototype.execute = function(msg) {
-  if (this._listener) {
-    this._listener(msg);
-  }
-
-  var mode = -1;
-  if (global.ECLAIRJS_TEST_MODE && global.ECLAIRJS_TEST_MODE == 'void') {
-    mode = MODE_VOID_ASSIGN;
-  }
-
-  // TODO: use futures
-  // TODO: registerTempTable is an exception here, need a better way
-  if (msg.code.indexOf("var ") == 0) {
-    return new FakeKernelExecuteHandle(MODE_ASSIGN);
-  } else {
-    if (mode == MODE_VOID_ASSIGN) {
-      return new FakeKernelExecuteHandle(MODE_VOID_ASSIGN);
-    } else {
-      return new FakeKernelExecuteHandle(MODE_RESULT);
+    storage: {
+      StorageLevel: require('../../lib/storage/StorageLevel.js')(kernelP)
     }
   }
-};
+}
 
-var fKernelP = new Promise(function(resolve, reject) {
-  resolve(new FakeKernel());
-});
-
-
-module.exports.SparkContext = require('../../lib/SparkContext.js')(fKernelP);
-module.exports.SQLContext = require('../../lib/sql/SQLContext.js');
-module.exports.storage = {
-  StorageLevel: require('../../lib/storage/StorageLevel.js')(fKernelP)
-};
+module.exports = new EclairJS();

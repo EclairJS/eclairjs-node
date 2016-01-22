@@ -57,7 +57,7 @@ describe('DataFrame', function() {
       }
     }
 
-    sc.kernel.then(function(kernel) {
+    sc.kernelP.then(function(kernel) {
       if (!listenerAdded) {
         listenerAdded = true;
         kernel.addExecuteListener(listener);
