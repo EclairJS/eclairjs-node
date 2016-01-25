@@ -634,11 +634,11 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
-          var fileName = path.resolve(__dirname+'/test.json');
+          var fileName = path.resolve(__dirname+'/../data/test.json');
 
           sqlContext.read().json(fileName).inputFiles().then(callback);
         }, function(result) {
-          expect(result).deep.equals(["file:"+path.resolve(__dirname+'/test.json')]);
+          expect(result).deep.equals(["file:"+path.resolve(__dirname+'/../data/test.json')]);
         },
         done
       );
