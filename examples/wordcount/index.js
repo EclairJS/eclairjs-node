@@ -20,8 +20,10 @@ var app = express();
 
 app.use(express.static('public'));
 
+var wc = new wordcount();
+
 app.get('/doWordCount', function (req, res) {
-  new wordcount().do(function(err, result) {
+  wc.do(function(err, result) {
     if (err) {
       res.status(500).send({error: err.msg});
     } else {
@@ -31,4 +33,14 @@ app.get('/doWordCount', function (req, res) {
 });
 
 var server = app.listen(3000, 'localhost', function () {
+});
+
+process.on('SIGINT', function() {
+  if (wc) {
+    wc.stop(function() {
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
 });

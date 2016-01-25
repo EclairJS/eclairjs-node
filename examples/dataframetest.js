@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-var spark = require('../spark.js');
+var spark = require('../lib/index.js');
 
 var sparkContext = new spark.SparkContext("local[*]", "dataframe test");
 var sqlContext = new spark.SQLContext(sparkContext);

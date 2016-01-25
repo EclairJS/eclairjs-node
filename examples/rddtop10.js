@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-var spark = require('../spark.js');
+var spark = require('../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "foo");
 
@@ -51,6 +51,17 @@ var rdd7 = rdd6.sortByKey(false);
 
 rdd7.take(10).then(function(val) {
   console.log("Success:", val);
+
+  sc.stop().then(function() {
+    process.exit();
+  }).catch(function(e) {
+    console.log(e);
+    process.exit();
+  });
+
 }).catch(function(err) {
   console.log("Error:", err);
+  sc.stop().then(function() {
+    process.exit();
+  });
 });

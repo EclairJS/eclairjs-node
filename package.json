@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Node.js API for Apache Spark with Remote Client",
   "author": "EclairJS <eclairjs@us.ibm.com>",
-  "main": "./spark.js",
+  "main": "./lib/index.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/EclairJS/eclairjs-node.git"
@@ -22,7 +22,6 @@
   "files": [
     "LICENSE",
     "README.md",
-    "spark.js",
     "lib/"
   ],
   "scripts": {
