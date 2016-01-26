@@ -21,17 +21,20 @@ function EclairJS() {
 
   return {
     SparkContext: result[1],
-    SQLContext: require('../../lib/sql/SQLContext.js'),
-    StreamingContext: require('../../lib/streaming/StreamingContext.js'),
-    KafkaUtils: require('../../lib/streaming/KafkaUtils.js'),
-    Duration: require('../../lib/streaming/Duration.js'),
 
+    SQLContext: require('../../lib/sql/SQLContext.js'),
     sql: {
-      functions: require('../../lib/sql/functions.js')(kernelP)
+      functions: require('../../lib/sql/functions.js')(kernelP),
     },
 
     storage: {
       StorageLevel: require('../../lib/storage/StorageLevel.js')(kernelP)
+    },
+
+    StreamingContext: require('../../lib/streaming/StreamingContext.js'),
+    streaming: {
+      KafkaUtils: require('../../lib/streaming/KafkaUtils.js'),
+      Duration: require('../../lib/streaming/Duration.js')
     }
   }
 }

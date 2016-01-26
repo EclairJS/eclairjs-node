@@ -20,9 +20,9 @@ var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
 
-var spark = require('../../spark.js');
+var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "row");
+var sc = new spark.SparkContext("local[*]", "sql.Row Integration Tests");
 var sqlContext = new spark.SQLContext(sc);
 
 function buildRockstarsTable(file, callback) {
@@ -382,7 +382,7 @@ describe('Row Test', function() {
           // Use firstrow of table
           firstrow.hashCode().then(callback);
         }, function(result) {
-          expect(result).equals(1304030203);
+          expect(Number.isInteger(result)).equals(true);
         },
         done
       );
@@ -460,6 +460,12 @@ describe('Row Test', function() {
         done
       );
     });
+  });
+
+  after(function(done) {
+    if (sc) {
+      sc.stop().then(done).catch(done);
+    }
   });
 
 });
