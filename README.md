@@ -26,7 +26,7 @@ Our goal is to keep the **EclairJS** master branch up to date with the latest ve
 
 | Branch | EclairJS Version | Apache Spark Version |
 | -------- | -------- | -------- |
-| master   | 0.1   | 1.5.1 |
+| master   | 0.1   | 1.6.0 |
 
 Please note as new APIs are implemented for **EclairJS** they will be added to the master branch.  Refer to the [API Documentation](https://github.com/EclairJS/eclairjs-node/wikis/API-Documentation) for a list of what is currently implemented.  **EclairJS** has been tested on OSX and Linux.
 
