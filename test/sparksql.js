@@ -44,7 +44,7 @@ describe('SQL Test', function() {
       done();
     }
 
-    ctx.kernel.then(function(kernel) {
+    ctx.kernelP.then(function(kernel) {
       k = kernel;
       kernel.addExecuteListener(listener);
 

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-var SparkContext = require('../../lib/sparkcontext.js');
+var SparkContext = require('../../lib/SparkContext.js');
+
 
 var MODE_RESULT = 0;
 var MODE_ASSIGN = 1;
@@ -72,14 +73,24 @@ FakeKernel.prototype.execute = function(msg) {
       return new FakeKernelExecuteHandle(MODE_RESULT);
     }
   }
+};
+
+var kernelP = new Promise(function(resolve, reject) {
+  resolve(new FakeKernel());
+});
+
+function FakeSparkContext(master, name, foo) {
+  console.log("fake")
+  this.kernelP = new Promise(function(resolve, reject) {
+    kernelP.then(function(k) {
+      console.log("res")
+      resolve(k);
+    }).catch(reject);
+  })
 }
 
-function FakeSparkContext(master, name) {
-  this.kernel = new Promise(function(resolve, reject) {
-    resolve(new FakeKernel());
-  });
-}
+FakeSparkContext.prototype = SparkContext()[1].prototype;
 
-FakeSparkContext.prototype = SparkContext.prototype;
-
-module.exports = FakeSparkContext;
+module.exports = function() {
+  return [kernelP, FakeSparkContext];
+};

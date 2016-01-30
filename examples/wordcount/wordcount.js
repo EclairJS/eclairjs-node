@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-var eclairjs = require('../../spark.js');
+var spark = require('../../lib/index.js');
+
+var sc;
 
 function WordCount() {
 }
 
 WordCount.prototype.do = function(callback) {
-  var sc = new eclairjs.SparkContext("local[*]", "foo");
+  sc = new spark.SparkContext("local[*]", "Wordcount Demo");
   var rdd = sc.textFile(__dirname + "/../dream.txt");
 
   var rdd2 = rdd.flatMap(function(sentence) {
@@ -67,6 +69,15 @@ WordCount.prototype.do = function(callback) {
     console.log(err);
     callback(err)
   });
-}
+};
+
+WordCount.prototype.stop = function(callback) {
+  if (sc) {
+    sc.stop().then(callback).catch(callback);
+  } else {
+    callback();
+  }
+};
+
 
 module.exports = WordCount;

@@ -28,9 +28,9 @@ var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
 
-var spark = require('../../spark.js');
+var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "foo");
+var sc = new spark.SparkContext("local[*]", "sql.DataFrameReader Integration Tests");
 var sqlContext = new spark.SQLContext(sc);
 
 var DataTypes = sqlContext.types.DataTypes;
@@ -118,5 +118,11 @@ describe('sql.functions Test', function() {
         done
       );
     });
+  });
+
+  after(function(done) {
+    if (sc) {
+      sc.stop().then(done).catch(done);
+    }
   });
 });
