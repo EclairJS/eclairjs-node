@@ -20,7 +20,7 @@ var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
 
-var spark = require('../../lib/index.js');
+var spark = require('../../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "sql.Row Integration Tests");
 var sqlContext = new spark.SQLContext(sc);
@@ -92,7 +92,7 @@ function executeTest(run, checks, done) {
   });
 }
 
-var fileName = path.resolve(__dirname+'/../../examples/rockers.txt');
+var fileName = path.resolve(__dirname+'/../../../examples/rockers.txt');
 
 var dataFrame, firstrow;
 

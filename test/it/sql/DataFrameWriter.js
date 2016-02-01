@@ -27,7 +27,7 @@ var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
 
-var spark = require('../../lib/index.js');
+var spark = require('../../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "sql.DataFrameWriter Integration Tests");
 var sqlContext = new spark.SQLContext(sc);

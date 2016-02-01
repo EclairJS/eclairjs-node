@@ -20,9 +20,9 @@ var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
 
-var spark = require('../../lib/index.js');
+var spark = require('../../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "sql.DataFrameStatFunctions Integration Tests");
+var sc = new spark.SparkContext("local[*]", "sql.DataFrameNaFunctions Integration Tests");
 var sqlContext = new spark.SQLContext(sc);
 
 var DataTypes = sqlContext.types.DataTypes;
@@ -35,7 +35,9 @@ function buildPeopleTable(file, callback) {
     return person = {
       name: parts[0],
       age: parseInt(parts[1].trim()),
-      expense: parseInt(parts[2].trim())
+      expense: parseInt(parts[2].trim()),
+      hasJob: parts[3] == "true" ? true: false,
+      isOld: parts[3] == "true" ? true: false
     };
   });
 
@@ -77,17 +79,17 @@ function executeTest(run, checks, done) {
       function(err) {
         done(new Error(err));
       });
-  } catch(e) {
+  } catch (e) {
     done(e);
     return;
   }
 }
 
-var fileName = path.resolve(__dirname+'/../data/people.txt');
+var fileName = path.resolve(__dirname+'/../../data/peopleNullValues.txt');
 
 var dataFrame;
 
-describe('DataFrameStatFunctions Test', function() {
+describe('sql.functions Test', function() {
   before(function(done) {
     this.timeout(100000);
 
@@ -97,47 +99,54 @@ describe('DataFrameStatFunctions Test', function() {
     });
   });
 
-  describe("DataFrameNaFunctions.cov()", function() {
-    it("should generate -5 for the columns age,expense", function(done) {
+  describe("DataFrameNaFunctions.drop()", function() {
+    it("should generate the correct output", function(done) {
       executeTest(
         function(callback, error) {
-          var stat = dataFrame.stat();
-          stat.cov("age", "expense").then(callback).catch(error);
+          var na = dataFrame.na();
+          na.drop().count().then(callback);
         }, function(result) {
-          expect(result).equals(-5);
+          expect(result).equals(2);
         },
         done
       );
     });
   });
 
-  describe("DataFrameNaFunctions.corr()", function() {
-    it("should generate -0 for the columns age,expense", function(done) {
+  describe("DataFrameNaFunctions.drop(0)", function() {
+    it("should generate the correct output", function(done) {
       executeTest(
         function(callback, error) {
-          var stat = dataFrame.stat();
-          stat.corr("age", "expense").then(callback).catch(error);
+          var na = dataFrame.na();
+          na.drop(0).count().then(callback).catch(error);
         }, function(result) {
-          expect(result).equals(-0);
+          expect(result).equals(2);
         },
         done
       );
     });
   });
 
-  describe("DataFrameStatFunctions.crosstab()", function() {
-    it("should generate a dataFrame with count 3", function(done) {
-      this.timeout(100000);
-
+  describe("DataFrameNaFunctions.drop(0, [name,age])", function() {
+    it("should generate the correct output", function(done) {
       executeTest(
         function(callback, error) {
-          var fields = [];
-          fields.push(DataTypes.createStructField("key", DataTypes.IntegerType, true));
-          fields.push(DataTypes.createStructField("value", DataTypes.IntegerType, true));
-          var schema = DataTypes.createStructType(fields);
-          var df = sqlContext.createDataFrame([[1,1], [1,2], [2,1], [2,1], [2,3], [3,2], [3,3]], schema);
+          var na = dataFrame.na();
+          na.drop(0, ["name", "age"]).count().then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals(2);
+        },
+        done
+      );
+    });
+  });
 
-          var ct = df.stat().crosstab("key", "value").count().then(callback).catch(error)
+  describe("DataFrameNaFunctions.drop(1, [name,age])", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var na = dataFrame.na();
+          na.drop(1, ["name", "age"]).count().then(callback).catch(error);
         }, function(result) {
           expect(result).equals(3);
         },
@@ -146,39 +155,42 @@ describe('DataFrameStatFunctions Test', function() {
     });
   });
 
-  describe("DataFrameStatFunctions.freqItems()", function() {
-    it("should generate a dataFrame with value [name_freqItems: array<string>, age_freqItems: array<int>]", function(done) {
-      this.timeout(100000);
-
+  describe("DataFrameNaFunctions.fill()", function() {
+    it("should generate the correct output", function(done) {
       executeTest(
         function(callback, error) {
-          dataFrame.stat().freqItems(["name", "age"]).toString().then(callback).catch(error);
+          var na = dataFrame.na();
+          na.fill(99).take(10).then(callback).catch(error);
         }, function(result) {
-          expect(result).equals("[name_freqItems: array<string>, age_freqItems: array<int>]");
+          expect(result[0].values[1]).equals(99);
         },
         done
       );
     });
   });
 
-  describe("DataFrameStatFunctions.freqItems()", function() {
-    it("should generate a dataFrame with value [name_freqItems: array<string>, age_freqItems: array<int>]", function(done) {
-      this.timeout(100000);
-
+  describe("DataFrameNaFunctions.fill(columns)", function() {
+    it("should generate the correct output", function(done) {
       executeTest(
         function(callback, error) {
-          var fields = [];
-          fields.push(DataTypes.createStructField("key", DataTypes.IntegerType, true));
-          fields.push(DataTypes.createStructField("value", DataTypes.IntegerType, true));
-          var schema = DataTypes.createStructType(fields);
-          var df = sqlContext.createDataFrame([[1,1], [1,2], [2,1], [2,1], [2,3], [3,2], [3,3]], schema);
-
-          var fractions = {"1": 1.0, "3": 0.5};
-          df.stat().sampleBy("key", fractions, 36).take(10).then(callback).catch(error)
+          var na = dataFrame.na();
+          na.fill(99, ["name", "age"]).take(10).then(callback).catch(error);
         }, function(result) {
-          expect(result[0].values).deep.equals([1,1]);
-          expect(result[1].values).deep.equals([1,2]);
-          expect(result[2].values).deep.equals([3,3]);
+          expect(result[0].values[1]).equals(99);
+        },
+        done
+      );
+    });
+  });
+
+  describe("DataFrameNaFunctions.replace(hash)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var na = dataFrame.na();
+          na.drop().na().replace(["name"], {"Andy": "Batman"}).take(10).then(callback).catch(error);
+        }, function(result) {
+          expect(result[0].values[0]).equals("Batman");
         },
         done
       );

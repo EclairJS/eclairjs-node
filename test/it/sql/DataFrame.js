@@ -20,7 +20,7 @@ var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
 
-var spark = require('../../lib/index.js');
+var spark = require('../../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "sql.DataFrame Integration Tests");
 var sqlContext = new spark.SQLContext(sc);
@@ -75,7 +75,7 @@ function executeTest(run, checks, done) {
   });
 }
 
-var fileName = path.resolve(__dirname+'/../data/people.txt');
+var fileName = path.resolve(__dirname+'/../../data/people.txt');
 
 var dataFrame, duplicateDataFrame;
 
@@ -501,7 +501,7 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
-          var fileName = path.resolve(__dirname+'/../data/duplicatePeople.txt');
+          var fileName = path.resolve(__dirname+'/../../data/duplicatePeople.txt');
 
           buildPeopleTable(fileName, function(df) {
             duplicateDataFrame = df;
@@ -767,7 +767,7 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback) {
-          var fileName = path.resolve(__dirname+'/../data/peopleNullValues.txt');
+          var fileName = path.resolve(__dirname+'/../../data/peopleNullValues.txt');
 
           buildPeopleTable(fileName, function(df) {
             df.na().drop().take(10).then(callback)

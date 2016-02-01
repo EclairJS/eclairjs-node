@@ -20,12 +20,10 @@ var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
 
-var spark = require('../../lib/index.js');
+var spark = require('../../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "sql.DataFrameNaFunctions Integration Tests");
+var sc = new spark.SparkContext("local[*]", "sql.GroupedData Integration Tests");
 var sqlContext = new spark.SQLContext(sc);
-
-var DataTypes = sqlContext.types.DataTypes;
 
 function buildPeopleTable(file, callback) {
   var rdd = sc.textFile(file);
@@ -35,11 +33,11 @@ function buildPeopleTable(file, callback) {
     return person = {
       name: parts[0],
       age: parseInt(parts[1].trim()),
-      expense: parseInt(parts[2].trim()),
-      hasJob: parts[3] == "true" ? true: false,
-      isOld: parts[3] == "true" ? true: false
+      expense: parseInt(parts[2].trim())
     };
   });
+
+  var DataTypes = sqlContext.types.DataTypes;
 
   var fields = [];
   fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));
@@ -84,113 +82,108 @@ function executeTest(run, checks, done) {
     return;
   }
 }
-
-var fileName = path.resolve(__dirname+'/../data/peopleNullValues.txt');
+var fileName = path.resolve(__dirname+'/../../data/people.txt');
 
 var dataFrame;
 
-describe('sql.functions Test', function() {
-  before(function(done) {
-    this.timeout(100000);
-
-    buildPeopleTable(fileName, function(df) {
-      dataFrame = df;
-      done();
-    });
-  });
-
-  describe("DataFrameNaFunctions.drop()", function() {
+describe('GroupedData Test', function() {
+  describe("programmaticallySpecifyingSchema", function() {
     it("should generate the correct output", function(done) {
+      // Starting the kernel is slow
+      this.timeout(100000);
+
       executeTest(
-        function(callback, error) {
-          var na = dataFrame.na();
-          na.drop().count().then(callback);
+        function(callback) {
+          buildPeopleTable(fileName, function(df) {
+            dataFrame = df;
+            dataFrame.columns().then(callback);
+          });
         }, function(result) {
-          expect(result).equals(2);
+          expect(result.toString()).equals('name,age,expense');
         },
         done
       );
     });
   });
 
-  describe("DataFrameNaFunctions.drop(0)", function() {
+  describe("GroupedData.agg()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback, error) {
-          var na = dataFrame.na();
-          na.drop(0).count().then(callback).catch(error);
+          var gd = dataFrame.groupBy("name");
+          gd.agg(spark.sql.functions.max(dataFrame.col("age"))).toString().then(callback).catch(error);
         }, function(result) {
-          expect(result).equals(2);
+          expect(result).equals('[name: string, max(age): int]');
         },
         done
       );
     });
   });
 
-  describe("DataFrameNaFunctions.drop(0, [name,age])", function() {
+  describe("GroupedData.avg()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
-        function(callback, error) {
-          var na = dataFrame.na();
-          na.drop(0, ["name", "age"]).count().then(callback).catch(error);
+        function(callback) {
+          var gd = dataFrame.groupBy("name");
+          gd.avg("age").toString().then(callback);
         }, function(result) {
-          expect(result).equals(2);
+          expect(result).equals('[name: string, avg(age): double]');
         },
         done
       );
     });
   });
 
-  describe("DataFrameNaFunctions.drop(1, [name,age])", function() {
+  describe("GroupedData.max()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
-        function(callback, error) {
-          var na = dataFrame.na();
-          na.drop(1, ["name", "age"]).count().then(callback).catch(error);
+        function(callback) {
+          var gd = dataFrame.groupBy("name");
+          gd.max("age").toString().then(callback);
         }, function(result) {
-          expect(result).equals(3);
+          expect(result).equals('[name: string, max(age): int]');
         },
         done
       );
     });
   });
 
-  describe("DataFrameNaFunctions.fill()", function() {
+  describe("GroupedData.mean()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
-        function(callback, error) {
-          var na = dataFrame.na();
-          na.fill(99).take(10).then(callback).catch(error);
+        function(callback) {
+          var gd = dataFrame.groupBy("name");
+          gd.mean("age").toString().then(callback);
         }, function(result) {
-          expect(result[0].values[1]).equals(99);
+          expect(result).equals('[name: string, avg(age): double]');
         },
         done
       );
     });
   });
 
-  describe("DataFrameNaFunctions.fill(columns)", function() {
+  describe("GroupedData.min()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
-        function(callback, error) {
-          var na = dataFrame.na();
-          na.fill(99, ["name", "age"]).take(10).then(callback).catch(error);
+        function(callback) {
+          var gd = dataFrame.groupBy("name");
+          gd.min("age").toString().then(callback);
         }, function(result) {
-          expect(result[0].values[1]).equals(99);
+          expect(result).equals('[name: string, min(age): int]');
         },
         done
       );
     });
   });
 
-  describe("DataFrameNaFunctions.replace(hash)", function() {
+  describe("GroupedData.sum()", function() {
     it("should generate the correct output", function(done) {
       executeTest(
-        function(callback, error) {
-          var na = dataFrame.na();
-          na.drop().na().replace(["name"], {"Andy": "Batman"}).take(10).then(callback).catch(error);
+        function(callback) {
+          var gd = dataFrame.groupBy("name");
+          gd.sum("age").toString().then(callback);
         }, function(result) {
-          expect(result[0].values[0]).equals("Batman");
+          expect(result).equals('[name: string, sum(age): bigint]');
         },
         done
       );
@@ -203,4 +196,3 @@ describe('sql.functions Test', function() {
     }
   });
 });
-
