@@ -55,7 +55,7 @@ describe('SparkContext Test', function() {
 
       executeTest(
         function(callback, error) {
-          accumulator = sc.accumulator(0);
+          accumulator = sc.accumulator(0, new spark.AccumulableParam.IntAccumulatorParam());
           sc.parallelize([1, 2, 3, 4]).foreach(function(x, accumulator1) {
             accumulator1.add(x);
           }).then(function() {
@@ -90,7 +90,7 @@ describe('SparkContext Test', function() {
         function(callback, error) {
           var floatAccumParam = new spark.AccumulableParam.FloatAccumulatorParam();
 
-          floatAccumable = sc.accumulable((0.0).toFixed(1), floatAccumParam);
+          floatAccumable = sc.accumulable(0, floatAccumParam);
           sc.parallelize([1.10, 2.2, 3.3, 4.4]).foreach(function(x, accumulable1) {
             accumulable1.add(x);
           }).then(function() {
