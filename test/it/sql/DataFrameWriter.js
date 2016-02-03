@@ -26,32 +26,12 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
+var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "sql.DataFrameWriter Integration Tests");
 var sqlContext = new spark.SQLContext(sc);
-
-function executeTest(run, checks, done) {
-  try {
-    run(function(result) {
-        try {
-          checks(result);
-        } catch (e) {
-          done(e);
-          return;
-        }
-
-        done();
-      },
-      function(err) {
-        done(new Error(err));
-      });
-  } catch (e) {
-    done(e);
-    return;
-  }
-}
 
 function buildPeopleTable(file, callback) {
   var rdd = sc.textFile(file);
@@ -96,7 +76,7 @@ describe('sql.functions Test', function() {
   before(function(done) {
     this.timeout(100000);
 
-    var fileName = path.resolve(__dirname+'/../data/people.txt');
+    var fileName = path.resolve(__dirname+'/../../data/people.txt');
 
     buildPeopleTable(fileName, function(df) {
       dataFrame = df;
@@ -108,7 +88,7 @@ describe('sql.functions Test', function() {
     it("should connect to a running mysql db", function(done) {
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           dataFrame.write().jdbc("jdbc:mysql://localhost:3306/test", "newdb", {user: "root", password: "mypass"}).then(
             function() {

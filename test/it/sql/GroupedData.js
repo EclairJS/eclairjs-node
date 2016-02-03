@@ -19,6 +19,7 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
+var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
@@ -62,26 +63,6 @@ function buildPeopleTable(file, callback) {
   });
 }
 
-function executeTest(run, checks, done) {
-  try {
-    run(function(result) {
-        try {
-          checks(result);
-        } catch (e) {
-          done(e);
-          return;
-        }
-
-        done();
-      },
-      function(err) {
-        done(new Error(err));
-      });
-  } catch (e) {
-    done(e);
-    return;
-  }
-}
 var fileName = path.resolve(__dirname+'/../../data/people.txt');
 
 var dataFrame;
@@ -92,7 +73,7 @@ describe('GroupedData Test', function() {
       // Starting the kernel is slow
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           buildPeopleTable(fileName, function(df) {
             dataFrame = df;
@@ -108,7 +89,7 @@ describe('GroupedData Test', function() {
 
   describe("GroupedData.agg()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var gd = dataFrame.groupBy("name");
           gd.agg(spark.sql.functions.max(dataFrame.col("age"))).toString().then(callback).catch(error);
@@ -122,7 +103,7 @@ describe('GroupedData Test', function() {
 
   describe("GroupedData.avg()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var gd = dataFrame.groupBy("name");
           gd.avg("age").toString().then(callback);
@@ -136,7 +117,7 @@ describe('GroupedData Test', function() {
 
   describe("GroupedData.max()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var gd = dataFrame.groupBy("name");
           gd.max("age").toString().then(callback);
@@ -150,7 +131,7 @@ describe('GroupedData Test', function() {
 
   describe("GroupedData.mean()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var gd = dataFrame.groupBy("name");
           gd.mean("age").toString().then(callback);
@@ -164,7 +145,7 @@ describe('GroupedData Test', function() {
 
   describe("GroupedData.min()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var gd = dataFrame.groupBy("name");
           gd.min("age").toString().then(callback);
@@ -178,7 +159,7 @@ describe('GroupedData Test', function() {
 
   describe("GroupedData.sum()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var gd = dataFrame.groupBy("name");
           gd.sum("age").toString().then(callback);

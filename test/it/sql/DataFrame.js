@@ -19,6 +19,7 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
+var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
@@ -62,19 +63,6 @@ function buildPeopleTable(file, callback) {
   });
 }
 
-function executeTest(run, checks, done) {
-  run(function(result) {
-    try {
-      checks(result);
-    } catch(e) {
-      done(e);
-      return;
-    }
-
-    done();
-  });
-}
-
 var fileName = path.resolve(__dirname+'/../../data/people.txt');
 
 var dataFrame, duplicateDataFrame;
@@ -85,7 +73,7 @@ describe('DataFrame Test', function() {
       // Starting the kernel is slow
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           buildPeopleTable(fileName, function(df) {
             dataFrame = df;
@@ -109,7 +97,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.col()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var col = dataFrame.col("age");
           col.toString().then(callback);
@@ -123,7 +111,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.filter()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.filter("age > 20");
 
@@ -142,7 +130,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.filter(column)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var col = dataFrame.col("age");
           var testCol = col.gt("20");
@@ -163,7 +151,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.flatMap()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.flatMap(function(row) {
             var r = [];
@@ -182,7 +170,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.groupBy(column)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var gd = dataFrame.groupBy(dataFrame.col("name"));
           var df2 = gd.count();
@@ -198,7 +186,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.groupBy(columnName)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var gd = dataFrame.groupBy("name");
           var df2 = gd.count();
@@ -214,7 +202,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.head()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var row = dataFrame.head();
           row.mkString().then(callback);
@@ -228,7 +216,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.head(separator)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var row = dataFrame.head();
           row.mkString(" - ").then(callback);
@@ -242,7 +230,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.head(separator, start, end)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var row = dataFrame.head();
           row.mkString(" - ", "(", ")").then(callback);
@@ -257,7 +245,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.map", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var names = dataFrame.map(function(row) {
             return "Name: " + row.getString(0);
@@ -274,7 +262,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.select(columnName)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.select("name", "age");
           result.toString().then(callback);
@@ -288,7 +276,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.select(column)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.select(dataFrame.col("name"), dataFrame.col("age"));
           result.toString().then(callback);
@@ -302,7 +290,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.take()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.take(2).then(callback);
         }, function(result) {
@@ -315,7 +303,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.where(sql)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.where("age > 20");
           result.count().then(callback);
@@ -329,7 +317,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.where(column)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.where(dataFrame.col("age").gt("20"));
           result.count().then(callback);
@@ -343,7 +331,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.agg()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var results = sqlContext.sql("SELECT name, age, expense FROM people");
 
@@ -362,7 +350,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.as()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.as("myAlias");
           result.toString().then(callback);
@@ -376,7 +364,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.apply()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.apply("name");
           result.toString().then(callback);
@@ -390,7 +378,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.collect()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.filter('age > 20');
           result.collect().then(function(rows) {
@@ -406,7 +394,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.cube(columnName)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var cube = dataFrame.cube("name", "expense");
           cube.avg("age").toString().then(callback);
@@ -420,7 +408,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.cube(column)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var cube = dataFrame.cube(dataFrame.col("name"), dataFrame.col("expense"));
           cube.avg("age").toString().then(callback);
@@ -434,7 +422,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.describe(columnName)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.describe("age", "expense").toJSON().toArray().then(callback);
         }, function(result) {
@@ -473,7 +461,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.drop(columnName)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.drop("age").toJSON().toArray().then(callback);
         }, function(result) {
@@ -486,7 +474,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.drop(column)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.drop(dataFrame.col("age")).toJSON().toArray().then(callback);
         }, function(result) {
@@ -499,7 +487,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.distinct()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var fileName = path.resolve(__dirname+'/../../data/duplicatePeople.txt');
 
@@ -519,7 +507,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.dropDuplicates()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           duplicateDataFrame.dropDuplicates(["expense"]).count().then(callback);
         }, function(result) {
@@ -532,7 +520,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.dtypes()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.dtypes().then(callback);
         }, function(result) {
@@ -545,7 +533,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.except()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var df2 = dataFrame.filter("age > 20");
 
@@ -566,7 +554,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.explain()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.explain().then(callback);
         }, function(result) {
@@ -579,7 +567,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.first()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var row = dataFrame.first();
           row.mkString().then(callback);
@@ -593,7 +581,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.foreach()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.foreach(function(row){}).then(callback);
         }, function(result) {
@@ -606,7 +594,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.foreachPartition()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.foreachPartition(function(partition){}).then(callback);
         }, function(result) {
@@ -619,7 +607,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.show()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.show().then(callback);
         }, function(result) {
@@ -632,13 +620,13 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.inputFiles()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
-          var fileName = path.resolve(__dirname+'/../data/test.json');
+          var fileName = path.resolve(__dirname+'/../../data/test.json');
 
           sqlContext.read().json(fileName).inputFiles().then(callback);
         }, function(result) {
-          expect(result).deep.equals(["file:"+path.resolve(__dirname+'/../data/test.json')]);
+          expect(result).deep.equals(["file:"+path.resolve(__dirname+'/../../data/test.json')]);
         },
         done
       );
@@ -648,7 +636,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.inputFiles()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var plus20s = dataFrame.filter("age > 20");
 
@@ -664,7 +652,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.isLocal()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.isLocal().then(callback);
         }, function(result) {
@@ -677,7 +665,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.join(df)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.join(dataFrame).take(1).then(callback);
         }, function(result) {
@@ -690,7 +678,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.join(df, col)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.join(dataFrame, "name").take(1).then(callback);
         }, function(result) {
@@ -703,7 +691,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.join(df, [col,col])", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var result = dataFrame.join(dataFrame, ["age", "expense"]).take(1).then(callback);
         }, function(result) {
@@ -716,7 +704,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.join(df, colExp)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var df1 = sqlContext.sql("SELECT name, age FROM people");
           var df2 = sqlContext.sql("SELECT name, expense FROM people");
@@ -736,7 +724,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.limit()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.limit(1).count().then(callback)
         }, function(result) {
@@ -750,7 +738,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.mapPartitions()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.mapPartitions(function(rows) {
             return [rows.length];
@@ -765,7 +753,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.na()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var fileName = path.resolve(__dirname+'/../../data/peopleNullValues.txt');
 
@@ -783,7 +771,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.orderBy()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.orderBy("age", "name").take(10).then(callback);
         }, function(result) {
@@ -796,7 +784,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.persist()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.persist(spark.storage.StorageLevel.MEMORY_ONLY()).head().mkString().then(callback);
         }, function(result) {
@@ -810,7 +798,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.queryExecution()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.queryExecution().simpleString().then(callback);
         }, function(result) {
@@ -823,7 +811,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.rdd()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.rdd().count().then(callback);
         }, function(result) {
@@ -837,7 +825,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.rollup()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var df = dataFrame.repartition(1);
           df.rollup("age", "expense").count().count().then(callback);
@@ -851,7 +839,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.sample()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var df = dataFrame.sample(true, 0.5).take(10).then(callback);
         }, function(result) {
@@ -864,7 +852,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.schema()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var df = dataFrame.schema().simpleString().then(callback);
         }, function(result) {
@@ -877,7 +865,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.sort()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.sort("age", "name").take(10).then(callback);
         }, function(result) {
@@ -890,7 +878,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.toDF()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var nameAgeDF = dataFrame.select("name", "age");
           nameAgeDF.toDF("newName", "newAge").toString().then(callback);
@@ -904,7 +892,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.selectExpr()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.selectExpr("name", "age > 19").take(10).then(callback);
         }, function(result) {
@@ -919,7 +907,7 @@ describe('DataFrame Test', function() {
 
   describe("dataFrame.unionAll()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var df1 = dataFrame.selectExpr("name", "age < 30");
           var df2 = dataFrame.selectExpr("name", "age > 20");

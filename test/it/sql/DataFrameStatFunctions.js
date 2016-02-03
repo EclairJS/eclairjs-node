@@ -19,6 +19,7 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
+var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
@@ -62,27 +63,6 @@ function buildPeopleTable(file, callback) {
   });
 }
 
-function executeTest(run, checks, done) {
-  try {
-    run(function(result) {
-        try {
-          checks(result);
-        } catch (e) {
-          done(e);
-          return;
-        }
-
-        done();
-      },
-      function(err) {
-        done(new Error(err));
-      });
-  } catch(e) {
-    done(e);
-    return;
-  }
-}
-
 var fileName = path.resolve(__dirname+'/../../data/people.txt');
 
 var dataFrame;
@@ -99,7 +79,7 @@ describe('DataFrameStatFunctions Test', function() {
 
   describe("DataFrameNaFunctions.cov()", function() {
     it("should generate -5 for the columns age,expense", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var stat = dataFrame.stat();
           stat.cov("age", "expense").then(callback).catch(error);
@@ -113,7 +93,7 @@ describe('DataFrameStatFunctions Test', function() {
 
   describe("DataFrameNaFunctions.corr()", function() {
     it("should generate -0 for the columns age,expense", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var stat = dataFrame.stat();
           stat.corr("age", "expense").then(callback).catch(error);
@@ -129,7 +109,7 @@ describe('DataFrameStatFunctions Test', function() {
     it("should generate a dataFrame with count 3", function(done) {
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var fields = [];
           fields.push(DataTypes.createStructField("key", DataTypes.IntegerType, true));
@@ -150,7 +130,7 @@ describe('DataFrameStatFunctions Test', function() {
     it("should generate a dataFrame with value [name_freqItems: array<string>, age_freqItems: array<int>]", function(done) {
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           dataFrame.stat().freqItems(["name", "age"]).toString().then(callback).catch(error);
         }, function(result) {
@@ -165,7 +145,7 @@ describe('DataFrameStatFunctions Test', function() {
     it("should generate a dataFrame with value [name_freqItems: array<string>, age_freqItems: array<int>]", function(done) {
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var fields = [];
           fields.push(DataTypes.createStructField("key", DataTypes.IntegerType, true));
