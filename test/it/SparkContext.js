@@ -19,31 +19,11 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
+var TestUtils = require('../lib/utils.js');
 
 var spark = require('../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "SparkContext Integration Tests");
-
-function executeTest(run, checks, done) {
-  try {
-    run(function(result) {
-        try {
-          checks(result);
-        } catch (e) {
-          done(e);
-          return;
-        }
-
-        done();
-      },
-      function(err) {
-        done(new Error(err));
-      });
-  } catch (e) {
-    done(e);
-    return;
-  }
-}
 
 var accumulator;
 
@@ -53,7 +33,7 @@ describe('SparkContext Test', function() {
     it("should equal 10", function(done) {
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           accumulator = sc.accumulator(0, new spark.AccumulableParam.IntAccumulatorParam());
           sc.parallelize([1, 2, 3, 4]).foreach(function(x, accumulator1) {
@@ -71,7 +51,7 @@ describe('SparkContext Test', function() {
 
   describe("accumulator.add(5)", function() {
     it("should equal 15", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           accumulator.add(5).then(function() {
             accumulator.localValue().then(callback).catch(error);
@@ -86,7 +66,7 @@ describe('SparkContext Test', function() {
 
   describe("SparkContext.accumulable()", function(FloatAccumulatorParam) {
     it("should equal 11", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var floatAccumParam = new spark.AccumulableParam.FloatAccumulatorParam();
 
@@ -107,7 +87,7 @@ describe('SparkContext Test', function() {
 
   describe("SparkContext.accumulable(IntAccumulatorParam)", function() {
     it("should equal 10", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var intAccumParam = new spark.AccumulableParam.IntAccumulatorParam();
 

@@ -19,14 +19,18 @@
 /*
   This test requires a local mysql database, int id, string name, int age with data 1, "batman", 44
 
-  To get the mysql jdbc drivers to load, edit Kernel.json's env section and add:
- "SPARK_CLASSPATH": "/path/to/mysql-connector-java-5.1.36-bin.jar"
+  CREATE DATABASE test;
+  CREATE TABLE test.test (id int, name varchar(255), age int);
+  INSERT INTO test.test VALUES (1, "batman", 44);
 
+  To get the mysql jdbc drivers to load, edit Kernel.json's env section and add:
+  "SPARK_CLASSPATH": "/path/to/mysql-connector-java-5.1.36-bin.jar"
  */
 
 var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
+var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
@@ -35,32 +39,12 @@ var sqlContext = new spark.SQLContext(sc);
 
 var DataTypes = sqlContext.types.DataTypes;
 
-function executeTest(run, checks, done) {
-  try {
-    run(function(result) {
-        try {
-          checks(result);
-        } catch (e) {
-          done(e);
-          return;
-        }
-
-        done();
-      },
-      function(err) {
-        done(new Error(err));
-      });
-  } catch (e) {
-    done(e);
-    return;
-  }
-}
 describe('sql.functions Test', function() {
   describe("DataFrameReader.jdbc(url, db, info)", function() {
     it("should connect to a running mysql db", function(done) {
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
 
           var url = "jdbc:mysql://localhost:3306/test";
@@ -77,7 +61,7 @@ describe('sql.functions Test', function() {
     it("should connect to a running mysql db", function(done) {
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
 
           var url = "jdbc:mysql://localhost:3306/test";
@@ -94,7 +78,7 @@ describe('sql.functions Test', function() {
     it("should connect to a running mysql db", function(done) {
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           sqlContext.read().format("jdbc").option("url", "jdbc:mysql://localhost:3306/test?user=root&password=mypass").option("dbtable", "test").load().count().then(callback).catch(error);
         }, function(result) {
@@ -109,7 +93,7 @@ describe('sql.functions Test', function() {
     it("should connect to a running mysql db", function(done) {
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           sqlContext.read().format("jdbc").options({url: "jdbc:mysql://localhost:3306/test?user=root&password=mypass", dbtable: "test"}).load().count().then(callback).catch(error);
         }, function(result) {

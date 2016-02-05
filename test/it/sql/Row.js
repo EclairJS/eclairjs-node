@@ -19,6 +19,7 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
+var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
@@ -79,19 +80,6 @@ function buildRockstarsTable(file, callback) {
   });
 }
 
-function executeTest(run, checks, done) {
-  run(function(result) {
-    try {
-      checks(result);
-    } catch(e) {
-      done(e)
-      return;
-    }
-
-    done();
-  });
-}
-
 var fileName = path.resolve(__dirname+'/../../../examples/rockers.txt');
 
 var dataFrame, firstrow;
@@ -102,7 +90,7 @@ describe('Row Test', function() {
       // Starting the kernel is slow
       this.timeout(100000);
 
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           buildRockstarsTable(fileName, function(df) {
             dataFrame = df;
@@ -127,7 +115,7 @@ describe('Row Test', function() {
 
   describe("row.anyNull()", function() {
     it("should generate the correct output e.g. no nulls in header row", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Get the first row of the table.
           firstrow = dataFrame.head();
@@ -142,7 +130,7 @@ describe('Row Test', function() {
 
   describe("row.anyNull()", function() {
     it("should generate the correct output e.g. null found in Jagger row", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
             var results = sqlContext.sql("SELECT * FROM rockstars WHERE surname = 'Jagger'");
             var mick = results.toRDD().map(function(row) {
@@ -159,7 +147,7 @@ describe('Row Test', function() {
 
   describe("row.apply()", function() {
     it("should generate the correct output e.g. should be surname", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.apply(0).then(callback);
@@ -173,7 +161,7 @@ describe('Row Test', function() {
 
   describe("row.apply()", function() {
     it("should generate the correct output e.g. should be Bon Jovi is married", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.apply(5).then(callback);
@@ -187,7 +175,7 @@ describe('Row Test', function() {
 
   describe("row.copy()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.copy().mkString().then(callback);
@@ -201,7 +189,7 @@ describe('Row Test', function() {
 
   describe("row.equals()", function() {
     it("should generate the correct output e.g. firstrow should equal itself", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.equals(firstrow).then(callback);
@@ -215,7 +203,7 @@ describe('Row Test', function() {
 
   describe("row.fieldIndex()", function() {
     it("should generate the correct output e.g. should be index 1 for forename", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.fieldIndex('forename').then(callback);
@@ -229,7 +217,7 @@ describe('Row Test', function() {
 
   describe("row.get()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's forename", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.get(1).then(callback);
@@ -243,7 +231,7 @@ describe('Row Test', function() {
 
   describe("row.get()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's weight", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.get(7).then(callback);
@@ -257,7 +245,7 @@ describe('Row Test', function() {
 
   describe("row.getBoolean()", function() {
     it("should generate the correct output e.g. should be Bon Jovi is married", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.getBoolean(5).then(callback);
@@ -271,7 +259,7 @@ describe('Row Test', function() {
 
   describe("row.getDate()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's birthday as date", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.getDate(3).toString().then(callback);
@@ -285,7 +273,7 @@ describe('Row Test', function() {
 
   describe("row.getTimestamp()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's birthday as timestamp", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.getTimestamp(9).toString().then(callback);
@@ -299,7 +287,7 @@ describe('Row Test', function() {
 
   describe("row.getDouble()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's networth", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.getDouble(6).then(callback);
@@ -313,7 +301,7 @@ describe('Row Test', function() {
 
   describe("row.getFloat()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's weight", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.getFloat(7).then(callback);
@@ -327,7 +315,7 @@ describe('Row Test', function() {
 
   describe("row.getInt()", function() {
     it("should generate the correct output e.g. should be Bon Jovi's age", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.getInt(2).then(callback);
@@ -345,7 +333,7 @@ describe('Row Test', function() {
   /*
   describe("row.getStruct()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.getStruct(2).mkString().then(callback);
@@ -361,7 +349,7 @@ describe('Row Test', function() {
   /** Need to implement SqlTimestamp for node
   describe("row.getTimestamp()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.getTimestamp(3).then(callback);
@@ -377,7 +365,7 @@ describe('Row Test', function() {
   /** have to come back and revisit - just times out **/
   describe("row.hashCode()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.hashCode().then(callback);
@@ -391,7 +379,7 @@ describe('Row Test', function() {
 
   describe("row.isNullAt()", function() {
     it("should generate the correct output e.g. null found in Jagger row for networth", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
             var results = sqlContext.sql("SELECT * FROM rockstars WHERE surname = 'Jagger'");
             var mick = results.toRDD().map(function(row) {
@@ -408,7 +396,7 @@ describe('Row Test', function() {
 
   describe("row.length()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.length().then(callback);
@@ -422,7 +410,7 @@ describe('Row Test', function() {
 
   describe("row.mkString()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.mkString(',').then(callback);
@@ -436,7 +424,7 @@ describe('Row Test', function() {
 
   describe("row.schema()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.schema().simpleString().then(callback);
@@ -450,7 +438,7 @@ describe('Row Test', function() {
 
   describe("row.size()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
           firstrow.size().then(callback);

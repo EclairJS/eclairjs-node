@@ -19,6 +19,7 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
+var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
@@ -65,28 +66,6 @@ function buildPeopleTable(file, callback) {
     console.log("Error", e);
   });
 }
-
-function executeTest(run, checks, done) {
-  try {
-    run(function(result) {
-        try {
-          checks(result);
-        } catch (e) {
-          done(e);
-          return;
-        }
-
-        done();
-      },
-      function(err) {
-        done(new Error(err));
-      });
-  } catch (e) {
-    done(e);
-    return;
-  }
-}
-
 var fileName = path.resolve(__dirname+'/../../data/people.txt');
 
 var dataFrame;
@@ -94,7 +73,7 @@ var dataFrame;
 function runTest(method, args, expected) {
   describe("function."+method+"()", function() {
     it("should return a Column with value "+expected, function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           spark.sql.functions[method].apply(this, typeof(args) == "function" ? args() : args).toString().then(callback).catch(error);
         }, function(result) {

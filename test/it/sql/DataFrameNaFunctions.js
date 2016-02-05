@@ -19,6 +19,7 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
+var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
@@ -64,27 +65,6 @@ function buildPeopleTable(file, callback) {
   });
 }
 
-function executeTest(run, checks, done) {
-  try {
-    run(function(result) {
-        try {
-          checks(result);
-        } catch (e) {
-          done(e);
-          return;
-        }
-
-        done();
-      },
-      function(err) {
-        done(new Error(err));
-      });
-  } catch (e) {
-    done(e);
-    return;
-  }
-}
-
 var fileName = path.resolve(__dirname+'/../../data/peopleNullValues.txt');
 
 var dataFrame;
@@ -101,7 +81,7 @@ describe('sql.functions Test', function() {
 
   describe("DataFrameNaFunctions.drop()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var na = dataFrame.na();
           na.drop().count().then(callback);
@@ -115,7 +95,7 @@ describe('sql.functions Test', function() {
 
   describe("DataFrameNaFunctions.drop(0)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var na = dataFrame.na();
           na.drop(0).count().then(callback).catch(error);
@@ -129,7 +109,7 @@ describe('sql.functions Test', function() {
 
   describe("DataFrameNaFunctions.drop(0, [name,age])", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var na = dataFrame.na();
           na.drop(0, ["name", "age"]).count().then(callback).catch(error);
@@ -143,7 +123,7 @@ describe('sql.functions Test', function() {
 
   describe("DataFrameNaFunctions.drop(1, [name,age])", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var na = dataFrame.na();
           na.drop(1, ["name", "age"]).count().then(callback).catch(error);
@@ -157,7 +137,7 @@ describe('sql.functions Test', function() {
 
   describe("DataFrameNaFunctions.fill()", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var na = dataFrame.na();
           na.fill(99).take(10).then(callback).catch(error);
@@ -171,7 +151,7 @@ describe('sql.functions Test', function() {
 
   describe("DataFrameNaFunctions.fill(columns)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var na = dataFrame.na();
           na.fill(99, ["name", "age"]).take(10).then(callback).catch(error);
@@ -185,7 +165,7 @@ describe('sql.functions Test', function() {
 
   describe("DataFrameNaFunctions.replace(hash)", function() {
     it("should generate the correct output", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var na = dataFrame.na();
           na.drop().na().replace(["name"], {"Andy": "Batman"}).take(10).then(callback).catch(error);

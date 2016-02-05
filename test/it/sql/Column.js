@@ -19,6 +19,7 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 var path = require('path');
+var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
@@ -66,28 +67,6 @@ function buildPeopleTable(file, callback) {
     console.log("Error", e);
   });
 }
-
-function executeTest(run, checks, done) {
-  try {
-    run(function(result) {
-      try {
-        checks(result);
-      } catch (e) {
-        done(e);
-        return;
-      }
-
-      done();
-    },
-    function(err) {
-      done(new Error(err));
-    });
-  } catch (e) {
-    done(e);
-    return;
-  }
-}
-
 var fileName = path.resolve(__dirname+'/../../data/people.txt');
 
 var dataFrame;
@@ -104,7 +83,7 @@ describe('Column Test', function() {
 
   describe("Column.alias()", function() {
     it("should create an alias of age called newAge", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var col = dataFrame.col("age");
           col.alias("newAge").toString().then(callback);
@@ -119,7 +98,7 @@ describe('Column Test', function() {
 
   describe("Column.and()", function() {
     it("should work in a select()", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.select(dataFrame.col("isOld").and(dataFrame.col("hasJob"))).toString().then(callback);
         }, function(result) {
@@ -132,7 +111,7 @@ describe('Column Test', function() {
 
   describe("Column.as()", function() {
     it("should create an ArrayBuffer alias", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           var col = dataFrame.col("age");
           col.as(["newAge", "ventage"]).toString().then(callback);
@@ -146,7 +125,7 @@ describe('Column Test', function() {
 
   describe("Column.asc()", function() {
     it("should sort ascending", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").asc().toString().then(callback);
 
@@ -161,7 +140,7 @@ describe('Column Test', function() {
 
   describe("Column.between()", function() {
     it("should remove any datasets outside the range", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.select(dataFrame.col("age").between(10, 29)).take(10).then(callback);
         }, function(result) {
@@ -176,7 +155,7 @@ describe('Column Test', function() {
 
   describe("Column.bitwiseAnd()", function() {
     it("should create a Column of (age & expense)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").bitwiseAND(dataFrame.col("expense")).toString().then(callback);
         }, function(result) {
@@ -189,7 +168,7 @@ describe('Column Test', function() {
 
   describe("Column.bitwiseOR()", function() {
     it("should create a Column of (age | expense)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").bitwiseOR(dataFrame.col("expense")).toString().then(callback);
         }, function(result) {
@@ -202,7 +181,7 @@ describe('Column Test', function() {
 
   describe("Column.bitwiseXOR()", function() {
     it("should create a Column of (age ^ expense)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").bitwiseXOR(dataFrame.col("expense")).toString().then(callback);
         }, function(result) {
@@ -216,7 +195,7 @@ describe('Column Test', function() {
 
   describe("Column.cast(DataType.StringType)", function() {
     it("should cast to string", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").cast(DataTypes.StringType).toString().then(callback);
         }, function(result) {
@@ -229,7 +208,7 @@ describe('Column Test', function() {
 
   describe("Column.cast(string)", function() {
     it("should cast to string", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").cast('string').toString().then(callback);
         }, function(result) {
@@ -243,7 +222,7 @@ describe('Column Test', function() {
 
   describe("Column.contains(dog)", function() {
     it("should return a column of Contains(name, dog)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("name").contains("dog").toString().then(callback);
         }, function(result) {
@@ -256,7 +235,7 @@ describe('Column Test', function() {
 
   describe("Column.desc()", function() {
     it("should sort descending", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").desc().toString().then(callback);
         }, function(result) {
@@ -269,7 +248,7 @@ describe('Column Test', function() {
 
   describe("Column.divide()", function() {
     it("should divide", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.select(dataFrame.col("expense").divide(dataFrame.col("age"))).take(10).then(callback);
         }, function(result) {
@@ -283,7 +262,7 @@ describe('Column Test', function() {
 
   describe("Column.endsWith('n')", function() {
     it("should return false,false,true", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.select(dataFrame.col('name').endsWith('n')).take(10).then(callback);
         }, function(result) {
@@ -298,7 +277,7 @@ describe('Column Test', function() {
 
   describe("Column.eqNullSafe()", function() {
     it("should generate (name <=> Andy)t", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("name").eqNullSafe("Andy").toString().then(callback);
         }, function(result) {
@@ -311,7 +290,7 @@ describe('Column Test', function() {
 
   describe("Column.equals()", function() {
     it("should return true for any 2 columns", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("name").equals(dataFrame.col("age")).then(callback);
         }, function(result) {
@@ -324,7 +303,7 @@ describe('Column Test', function() {
 
   describe("Column.equalTo()", function() {
     it("should generate a Column of value (name = age)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("name").equalTo(dataFrame.col("age")).toString().then(callback);
         }, function(result) {
@@ -337,7 +316,7 @@ describe('Column Test', function() {
 
   describe("Column.geq(21)", function() {
     it("should generate a Column of value (age >= 21)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").geq(21).toString().then(callback);
         }, function(result) {
@@ -350,7 +329,7 @@ describe('Column Test', function() {
 
   describe("Column.geq(column)", function() {
     it("should generate a Column of value (name >= expense)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").geq(dataFrame.col("expense")).toString().then(callback);
         }, function(result) {
@@ -363,7 +342,7 @@ describe('Column Test', function() {
 
   describe("Column.getField()", function() {
     it("should generate a Column of value (age[expense])", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").getField("expense").toString().then(callback);
         }, function(result) {
@@ -376,7 +355,7 @@ describe('Column Test', function() {
 
   describe("Column.getItem()", function() {
     it("should generate a Column of value (age[expense])", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").getItem("expense").toString().then(callback);
         }, function(result) {
@@ -389,7 +368,7 @@ describe('Column Test', function() {
 
   describe("Column.gt(20)", function() {
     it("should generate a Column of value (age > 20)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").gt(20).toString().then(callback);
         }, function(result) {
@@ -402,7 +381,7 @@ describe('Column Test', function() {
 
   describe("Column.hashCode()", function() {
     it("should return an int", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").hashCode().then(callback);
         }, function(result) {
@@ -415,7 +394,7 @@ describe('Column Test', function() {
 
   describe("Column.in([20,19])", function() {
     it("should false,false,true", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.select(dataFrame.col("age").in([20,19])).take(10).then(callback);
         }, function(result) {
@@ -431,7 +410,7 @@ describe('Column Test', function() {
 
   describe("Column.isNaN(age)", function() {
     it("should generate a Column of value isnan(age)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").isNaN().toString().then(callback);
         }, function(result) {
@@ -445,7 +424,7 @@ describe('Column Test', function() {
 
   describe("Column.isNull(age)", function() {
     it("should generate a Column of value isnull(age)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").isNull().toString().then(callback);
         }, function(result) {
@@ -458,7 +437,7 @@ describe('Column Test', function() {
 
   describe("Column.isNotNull(age)", function() {
     it("should generate a Column of value isnotnull(age)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").isNotNull().toString().then(callback);
         }, function(result) {
@@ -471,7 +450,7 @@ describe('Column Test', function() {
 
   describe("Column.leq(21)", function() {
     it("should generate a Column of value (age <= 21)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").leq(21).toString().then(callback);
         }, function(result) {
@@ -485,7 +464,7 @@ describe('Column Test', function() {
 
   describe("Column.like(3)", function() {
     it("should generate a Column of value age LIKE 3", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").like("3").toString().then(callback);
         }, function(result) {
@@ -498,7 +477,7 @@ describe('Column Test', function() {
 
   describe("Column.lt(21)", function() {
     it("should generate a Column of value (age < 21)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("age").lt(21).toString().then(callback);
         }, function(result) {
@@ -511,7 +490,7 @@ describe('Column Test', function() {
 
   describe("Column.minus(age)", function() {
     it("should generate a Column of value (expense - age)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("expense").minus(dataFrame.col("age")).toString().then(callback);
         }, function(result) {
@@ -524,7 +503,7 @@ describe('Column Test', function() {
 
   describe("Column.mod(age)", function() {
     it("should generate a Column of value (expense % age)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("expense").mod(dataFrame.col("age")).toString().then(callback);
         }, function(result) {
@@ -538,7 +517,7 @@ describe('Column Test', function() {
 
   describe("Column.multiply(age)", function() {
     it("should generate a Column of value (expense * age)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("expense").multiply(dataFrame.col("age")).toString().then(callback);
         }, function(result) {
@@ -551,7 +530,7 @@ describe('Column Test', function() {
 
   describe("Column.notEqual(age)", function() {
     it("should generate a Column of value NOT (expense = age)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("expense").notEqual(dataFrame.col("age")).toString().then(callback);
         }, function(result) {
@@ -564,7 +543,7 @@ describe('Column Test', function() {
 
   describe("Column.or(age)", function() {
     it("should generate a Column of value (expense|| age)", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback) {
           dataFrame.col("expense").or(dataFrame.col("age")).toString().then(callback);
         }, function(result) {
@@ -577,7 +556,7 @@ describe('Column Test', function() {
 
   describe("Column.otherwise()", function() {
     it("should when with sql.functions.when correctly", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var select = spark.sql.functions.when(dataFrame.col("age").notEqual(19), true).otherwise(false);
           dataFrame.select(select).take(10).then(callback).catch(error);
@@ -593,7 +572,7 @@ describe('Column Test', function() {
 
   describe("Column.when()", function() {
     it("should generate a Column", function(done) {
-      executeTest(
+      TestUtils.executeTest(
         function(callback, error) {
           var whenCol = spark.sql.functions.when(dataFrame.col("name").equalTo("Andy"), 0);
           whenCol.when(dataFrame.col("age").equalTo(10), 100).toString().then(callback).catch(error);
