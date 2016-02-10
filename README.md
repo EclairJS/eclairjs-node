@@ -33,4 +33,4 @@ Please note as new APIs are implemented for **EclairJS** they will be added to t
 
 Resources
 ===================
-More detailed information is available in the Eclair Node [Wiki](https://github.com/EclairJS/eclairjs-node/wikis/home) and find out how to get involved under [Project and Community](https://github.com/EclairJS/eclairjs-node/wikis/Project-and-Community).
+More detailed information is available in the Eclair Node [Wiki](https://github.com/EclairJS/eclairjs-node/wikis/home). Presentations and information about getting involved is under [Project and Community](https://github.com/EclairJS/eclairjs-node/wikis/Project-and-Community).
