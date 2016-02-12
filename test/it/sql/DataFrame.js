@@ -242,7 +242,6 @@ describe('DataFrame Test', function() {
     });
   });
 
-
   describe("dataFrame.map", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
@@ -250,6 +249,23 @@ describe('DataFrame Test', function() {
           var names = dataFrame.map(function(row) {
             return "Name: " + row.getString(0);
           });
+
+          names.take(10).then(callback);
+        }, function(result) {
+          expect(result).deep.equals(["Name: Michael", "Name: Andy", "Name: Justin"]);
+        },
+        done
+      );
+    });
+  });
+
+  describe("dataFrame.map", function() {
+    it("should generate the correct output", function(done) {
+      TestUtils.executeTest(
+        function(callback) {
+          var names = dataFrame.map(function(row, prefix) {
+            return prefix + row.getString(0);
+          }, ["Name: "]);
 
           names.take(10).then(callback);
         }, function(result) {

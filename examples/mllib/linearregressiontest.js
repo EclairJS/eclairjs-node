@@ -18,7 +18,7 @@ function exit() {
   process.exit();
 }
 
-var spark = require('../lib/index.js');
+var spark = require('../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "Linear Regression Test");
 
@@ -34,18 +34,17 @@ var numIterations = 3;
 var linearRegressionModel = spark.mllib.regression.LinearRegressionWithSGD.train(parsedData, numIterations);
 
 var delta = 17;
-var valuesAndPreds = parsedData.mapToPair(function(lp, linearRegressionModel1) { // FIXME
+var valuesAndPreds = parsedData.mapToPair(function(lp, linearRegressionModel) { // FIXME
   var label = lp.getLabel();
   var f = lp.getFeatures();
-  var prediction = linearRegressionModel1.predict(f) + 17;
+  var prediction = linearRegressionModel.predict(f) + 17;
   return [prediction, label];
-
-}); // end MapToPair
+}, [linearRegressionModel]); // end MapToPair
 
 valuesAndPreds.take(10).then(function(results) {
   console.log(results);
   sc.stop().then(exit).catch(exit);
 }).catch(function(e) {
-  console.log(e)
+  console.log(e);
   sc.stop().then(exit).catch(exit);
 });

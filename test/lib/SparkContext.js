@@ -80,7 +80,6 @@ var kernelP = new Promise(function(resolve, reject) {
 });
 
 function FakeSparkContext(master, name, foo) {
-  console.log("fake")
   this.kernelP = new Promise(function(resolve, reject) {
     kernelP.then(function(k) {
       console.log("res")
