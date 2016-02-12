@@ -25,7 +25,7 @@ var spark = require('../../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "mllib.regression.LinearRegressionWithSGD Integration Tests");
 
-var fileName = path.resolve(__dirname+'/../../../examples/lpsa.txt');
+var fileName = path.resolve(__dirname+'/../../../examples/mllib/lpsa.txt');
 
 function onceDone(obj) {
   return new Promise(function(resolve, reject) {
