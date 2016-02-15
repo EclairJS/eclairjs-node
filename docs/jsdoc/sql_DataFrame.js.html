@@ -42,9 +42,7 @@
  * limitations under the License.
  */
 
-var protocol = require('../kernel.js');
 var Utils = require('../utils.js');
-var serialize = require('../serialize.js');
 
 var RDD = require('../RDD.js');
 var Column = require('./Column.js');
@@ -372,40 +370,37 @@ DataFrame.prototype.first = function() {
 /**
  * Returns a new RDD by first applying a function to all rows of this DataFrame, and then flattening the results.
  * @param {function} func
+ * @param {Object[]} bindArgs - Optional array whose values will be added to func's argument list.
  * @returns {RDD}
  */
-DataFrame.prototype.flatMap = function(func) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.flatMap({{udf}});';
+DataFrame.prototype.flatMap = function(func, bindArgs) {
+  var templateStr = bindArgs ? 'var {{refId}} = {{inRefId}}.flatMap({{udf}}, [{{bindArgs}}]);' : 'var {{refId}} = {{inRefId}}.flatMap({{udf}});';
 
-  var udfP = (typeof func === 'function') ? serialize.serializeFunction(func) : Promise.resolve(func);
-
-  return Utils.generateAssignment(this, RDD, templateStr, {udf: udfP});
+  return Utils.generateAssignment(this, RDD, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
 };
 
 /**
  * Applies a function func to all rows.
  * @param {function} func
+ * @param {Object[]} bindArgs - Optional array whose values will be added to func's argument list.
  * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
  */
-DataFrame.prototype.foreach = function(func) {
-  var udfP = (typeof func === 'function') ? serialize.serializeFunction(func) : Promise.resolve(func);
+DataFrame.prototype.foreach = function(func, bindArgs) {
+  var templateStr = bindArgs ? '{{inRefId}}.foreach({{udf}}, [{{bindArgs}}]);' : '{{inRefId}}.foreach({{udf}});';
 
-  var templateStr = '{{inRefId}}.foreach({{udf}});';
-
-  return Utils.generateVoidPromise(this, templateStr, {udf: udfP});
+  return Utils.generateVoidPromise(this, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
 };
 
 /**
  * Applies a function to each partition of this DataFrame.
  * @param {function} func
+ * @param {Object[]} bindArgs - Optional array whose values will be added to func's argument list.
  * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
  */
-DataFrame.prototype.foreachPartition = function(func) {
-  var udfP = (typeof func === 'function') ? serialize.serializeFunction(func) : Promise.resolve(func);
+DataFrame.prototype.foreachPartition = function(func, bindArgs) {
+  var templateStr = bindArgs ? '{{inRefId}}.foreachPartition({{udf}}, [{{bindArgs}}]);' : '{{inRefId}}.foreachPartition({{udf}});';
 
-  var templateStr = '{{inRefId}}.foreachPartition({{udf}});';
-
-  return Utils.generateVoidPromise(this, templateStr, {udf: udfP});
+  return Utils.generateVoidPromise(this, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
 };
 
 /**
@@ -562,14 +557,13 @@ DataFrame.prototype.limit = function(number) {
 /**
  * Returns a new RDD by applying a function to all rows of this DataFrame.
  * @param {function} func
+ * @param {Object[]} bindArgs - Optional array whose values will be added to func's argument list.
  * @returns {RDD}
  */
-DataFrame.prototype.map = function(func) {
-  var udfP = (typeof func === 'function') ? serialize.serializeFunction(func) : Promise.resolve(func);
+DataFrame.prototype.map = function(func, bindArgs) {
+  var templateStr = bindArgs ? 'var {{refId}} = {{inRefId}}.map({{udf}}, [{{bindArgs}}]);' : 'var {{refId}} = {{inRefId}}.map({{udf}});';
 
-  var templateStr = 'var {{refId}} = {{inRefId}}.map({{udf}});';
-
-  return Utils.generateAssignment(this, RDD, templateStr, {udf: udfP});
+  return Utils.generateAssignment(this, RDD, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
 };
 
 /**
@@ -577,14 +571,13 @@ DataFrame.prototype.map = function(func) {
  * Similar to map, but runs separately on each partition (block) of the DataFrame, so func must accept an Array.
  * func should return a array rather than a single item.
  * @param {function} func
+ * @param {Object[]} bindArgs - Optional array whose values will be added to func's argument list.
  * @returns {RDD}
  */
-DataFrame.prototype.mapPartitions = function(func) {
-  var udfP = (typeof func === 'function') ? serialize.serializeFunction(func) : Promise.resolve(func);
+DataFrame.prototype.mapPartitions = function(func, bindArgs) {
+  var templateStr = bindArgs ? 'var {{refId}} = {{inRefId}}.mapPartitions({{udf}}, [{{bindArgs}}]);' : 'var {{refId}} = {{inRefId}}.mapPartitions({{udf}});';
 
-  var templateStr = 'var {{refId}} = {{inRefId}}.mapPartitions({{udf}});';
-
-  return Utils.generateAssignment(this, RDD, templateStr, {udf: udfP});
+  return Utils.generateAssignment(this, RDD, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
 };
 
 /**
@@ -667,13 +660,9 @@ DataFrame.prototype.queryExecution = function() {
  * @returns {Promise.&lt;DataFrame[]>} A Promise that resolves to an array containing the DataFrames.
  */
 DataFrame.prototype.randomSplit = function(weights, seed) {
-  throw "not implemented by ElairJS";
+  var templateStr = 'var {{refId}} = {{inRefId}}.randomSplit({{weights}}, {{seed}});';
 
-  /*
-  var templateStr = 'var {{refId}} = {{inRefId}}.randomSplit([{{weights}}, {{seed}}]);';
-
-  return Utils.generateResultPromise(this, templateStr, {weights: weights.join(','), seed: seed}, _resolve);
-  */
+  return Utils.generateResultArrayPromise(this, DataFrame, templateStr, {weights: Utils.prepForReplacement(weights), seed: Utils.prepForReplacement(seed)});
 };
 
 /**
@@ -880,6 +869,21 @@ DataFrame.prototype.sqlContext = function() {
 };
 
 /**
+ * Returns a DataFrameStatFunctions for working statistic functions support.
+ * @example
+ * var stat = peopleDataFrame.stat().cov("income", "networth");
+ *
+ * @returns {DataFrameStatFunctions}
+ */
+DataFrame.prototype.stat = function() {
+  var DataFrameStatFunctions = require('./DataFrameStatFunctions.js');
+
+  var templateStr = 'var {{refId}} = {{inRefId}}.stat();';
+
+  return Utils.generateAssignment(this, DataFrameStatFunctions, templateStr, {});
+};
+
+/**
  * Returns the first n rows in the DataFrame.
  * @param {integer} num
  * @returns {Promise.&lt;Array>} A Promise that resolves to an array containing the first num elements in this DataFrame.
@@ -1003,13 +1007,13 @@ module.exports = DataFrame;</code></pre>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Accumulable.html">Accumulable</a></li><li><a href="AccumulableParam.html">AccumulableParam</a></li><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Accumulator">Accumulator</a></li><li><a href="global.html#DataFrameStatFunctions">DataFrameStatFunctions</a></li><li><a href="global.html#LogisticRegressionWithLBFGS">LogisticRegressionWithLBFGS</a></li><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Tue Jan 12 2016 15:51:08 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Mon Feb 15 2016 12:14:36 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -42,11 +42,8 @@
  * limitations under the License.
  */
 
-var gw = require('jupyter-js-services');
 var RDD = require('../RDD.js');
-var protocol = require('../kernel.js');
 var Utils = require('../utils.js');
-var request = require('request');
 
 var DataTypes = require('./types/DataTypes.js');
 var DataFrame = require('./DataFrame.js');
@@ -60,25 +57,24 @@ var DataFrameReader = require('./DataFrameReader.js');
 function SQLContext(SparkContext) {
   this.context = SparkContext;
 
+  this.kernelP = this.context.kernelP;
+
   this.types = {};
-  this.types.DataTypes = new DataTypes(this.context.kernel);
+  this.types.DataTypes = new DataTypes(this.kernelP);
 
   var self = this;
 
-  this.sqlContextP = new Promise(function(resolve, reject) {
+  this.refIdP = new Promise(function(resolve, reject) {
     // generate the SQLContext source code
-    self.context.kernel.then(function(kernel) {
-      var refId = "sqlContext";
-      var templateStr = 'var {{refId}} = new SQLContext(jsc);';
-      var code = Utils.processTemplate(templateStr, {refId: refId});
+    var refId = 'sqlContext';
+    var templateStr = 'var {{refId}} = new SQLContext(jsc);';
 
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        resolve,
-        reject,
-        refId);
-    });
+    Utils.execute(self.context.kernelP, templateStr, {refId: refId}).then(function() {
+      // finally resolve our refIdP to the refId
+      resolve(refId);
+    }).catch(reject);
   });
-};
+}
 
 /**
  * Creates a DataFrame from RDD of Rows using the schema
@@ -87,33 +83,9 @@ function SQLContext(SparkContext) {
  * @returns {DataFrame}
  */
 SQLContext.prototype.createDataFrame = function(rowRDD, schema) {
-  var refId = protocol.genVariable('dataFrame');
-  var self = this;
+  var templateStr = 'var {{refId}} = {{inRefId}}.createDataFrame({{rowRDD}}, {{schema}});';
 
-  return new DataFrame(this.context.kernel, new Promise(function(resolve, reject) {
-    Promise.all([self.context.kernel, self.sqlContextP]).then(function(values) {
-      var kernel = values[0];
-      var sqlContextId = values[1];
-
-      // gather all the refIds of the arguments(which are promises)
-      var promises = [rowRDD.refIdP, schema.refIdP];
-
-      Promise.all(promises).then(function(values) {
-        var templateStr = 'var {{refId}} = {{sqlContextId}}.createDataFrame({{rowRDD}}, {{schema}});';
-        var code = Utils.processTemplate(templateStr, {
-          refId: refId,
-          sqlContextId: sqlContextId,
-          rowRDD: values[0],
-          schema: values[1]
-        });
-
-        protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-          resolve,
-          reject,
-          refId);
-      }).catch(reject);
-    })
-  }), rowRDD, schema);
+  return Utils.generateAssignment(this, DataFrame, templateStr, {rowRDD: Utils.prepForReplacement(rowRDD), schema: Utils.prepForReplacement(schema)});
 };
 
 /**
@@ -121,23 +93,9 @@ SQLContext.prototype.createDataFrame = function(rowRDD, schema) {
  * @returns {DataFrameReader}
  */
 SQLContext.prototype.read = function() {
-  var refId = protocol.genVariable('dataFrameReader');
-  var self = this;
+  var templateStr = 'var {{refId}} = {{inRefId}}.read();';
 
-  return new DataFrameReader(this.context.kernel, new Promise(function(resolve, reject) {
-    Promise.all([self.context.kernel, self.sqlContextP]).then(function(values) {
-      var kernel = values[0];
-      var sqlContextId = values[1];
-
-      var templateStr = 'var {{refId}} = {{sqlContextId}}.read();';
-      var code = Utils.processTemplate(templateStr, {refId: refId, sqlContextId: sqlContextId});
-
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        resolve,
-        reject,
-        refId);
-    })
-  }));
+  return Utils.generateAssignment(this, DataFrameReader, templateStr);
 };
 
 /**
@@ -146,27 +104,9 @@ SQLContext.prototype.read = function() {
  * @returns {DataFrame}
  */
 SQLContext.prototype.sql = function(sqlString) {
-  var refId = protocol.genVariable('dataFrame');
-  var self = this;
+  var templateStr = 'var {{refId}} = {{inRefId}}.sql({{sqlString}});';
 
-  return new DataFrame(this.context.kernel, new Promise(function(resolve, reject) {
-    Promise.all([self.context.kernel, self.sqlContextP]).then(function(values) {
-      var kernel = values[0];
-      var sqlContextId = values[1];
-
-      var templateStr = 'var {{refId}} = {{sqlContextId}}.sql("{{sqlString}}");';
-      var code = Utils.processTemplate(templateStr, {
-        refId: refId,
-        sqlContextId: sqlContextId,
-        sqlString: sqlString
-      });
-
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        resolve,
-        reject,
-        refId);
-    }).catch(reject);
-  }));
+  return Utils.generateAssignment(this, DataFrame, templateStr, {sqlString: Utils.prepForReplacement(sqlString)});
 };
 
 module.exports = SQLContext;
@@ -180,13 +120,13 @@ module.exports = SQLContext;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Accumulable.html">Accumulable</a></li><li><a href="AccumulableParam.html">AccumulableParam</a></li><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Accumulator">Accumulator</a></li><li><a href="global.html#DataFrameStatFunctions">DataFrameStatFunctions</a></li><li><a href="global.html#LogisticRegressionWithLBFGS">LogisticRegressionWithLBFGS</a></li><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Tue Jan 12 2016 15:51:08 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Mon Feb 15 2016 12:14:36 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

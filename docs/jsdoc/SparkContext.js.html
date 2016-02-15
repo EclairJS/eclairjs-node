@@ -43,12 +43,26 @@
  */
 
 var RDD = require('./RDD.js');
-var protocol = require('./kernel.js');
 var Utils = require('./utils.js');
-var request = require('request');
+var kernel = require('./kernel.js');
 
 // our shared kernel promise
-var kernelP;
+// TODO: is there a better way to create a Promise and resolve it from the outside?
+var kernelPResolve;
+var kernelPReject;
+
+var session;
+
+var kernelP = new Promise(function(resolve, reject) {
+  kernelPResolve = function(kernelSession) {
+    session = kernelSession;
+    resolve(kernelSession.kernel)
+  };
+
+  kernelPReject = function(e) {
+    reject(e)
+  };
+});
 
 /**
  *
@@ -60,21 +74,80 @@ var kernelP;
  * @param {string} name - A name for your application, to display on the cluster web UI
  */
 function SparkContext(master, name) {
-  this.kernel = new Promise(function(resolve, reject) {
-    kernelP.then(function(k) {
+  kernel.createKernelSession(name).then(kernelPResolve).catch(kernelPReject);
+
+  this.kernelP = new Promise(function(resolve, reject) {
+    kernelP.then(function(kernel) {
       var templateStr = 'var jsc = new SparkContext("{{master}}", "{{name}}");';
-      var code = Utils.processTemplate(templateStr, {master: master, name: name});
-      k.execute({
-        code: code
-      }).handleMsg = msg => {
-        if(msg.msg_type === 'status' &amp;&amp;
-          msg.content.execution_state === 'idle') {
-          resolve(k);
-        }
-      }
+
+      Utils.execute(kernelP, templateStr, {master: master, name: name}).then(function() {
+        // Check version
+        templateStr = 'jsc.version();';
+        // This is somewhat ugly, since SparkContext's kernelP hasn't been resolved yet.
+        Utils.generateResultPromise({kernelP: kernelP}, templateStr).then(function(version) {
+          if (version === 'EclairJS-nashorn 0.1 Spark 1.6.0') {
+            // correct version
+            resolve(kernel);
+          } else {
+            throw "Wrong version of EclairJS-nashorn detected: "+version;
+          }
+        }).catch(reject);
+      }).catch(reject);
     });
   });
+
+  this.refIdP = new Promise(function(resolve, reject) {
+    this.kernelP.then(function() {
+      resolve('jsc');
+    }).catch(reject);
+  }.bind(this));
 }
+
+/**
+ * Create an {@link Accumulable} shared variable of the given type, to which tasks can "add" values with add.
+ * Only the master can access the accumuable's value.
+ *
+ * @param {object} initialValue
+ * @param {AccumulableParam} param
+ * @param {string} name of  the accumulator for display in Spark's web UI.
+ * @returns {Accumulable}
+ */
+SparkContext.prototype.accumulable = function() {
+  var Accumulable = require('./Accumulable.js');
+
+  if (arguments.length == 3) {
+    var templateStr = 'var {{refId}} = jsc.accumulable({{initialValue}}, {{name}}, {{param}});';
+
+    return Utils.evaluate(this.kernelP, Accumulable, templateStr, {initialValue: arguments[0], name: Utils.prepForReplacement(arguments[1]), param: Utils.prepForReplacement(arguments[2])});
+  } else {
+    var templateStr = 'var {{refId}} = jsc.accumulable({{initialValue}}, {{param}});';
+
+    return Utils.evaluate(this.kernelP, Accumulable, templateStr, {initialValue: arguments[0], param: Utils.prepForReplacement(arguments[1])});
+  }
+};
+
+/**
+ * Create an {@link Accumulator}  variable, which tasks can "add" values to using the add method.
+ * Only the master can access the accumulator's value.
+ *
+ * @param {int | float} initialValue
+ * @param {string} name of  the accumulator for display in Spark's web UI. Optional
+ * @param {AccumulableParam} param Optional defaults to FloatAccumulatorParam
+ * @returns {Accumulator}
+ */
+SparkContext.prototype.accumulator = function() {
+  var Accumulator = require('./Accumulator.js');
+
+  if (arguments.length == 3) {
+    var templateStr = 'var {{refId}} = jsc.accumulator({{initialValue}}, {{name}}, {{param}});';
+
+    return Utils.evaluate(this.kernelP, Accumulator, templateStr, {initialValue: arguments[0], name: Utils.prepForReplacement(arguments[1]), param: Utils.prepForReplacement(arguments[2])});
+  } else {
+    var templateStr = 'var {{refId}} = jsc.accumulator({{initialValue}}, {{param}});';
+
+    return Utils.evaluate(this.kernelP, Accumulator, templateStr, {initialValue: arguments[0], param: Utils.prepForReplacement(arguments[1])});
+  }
+};
 
 /**
  * Distribute a local Scala collection to form an RDD.
@@ -82,20 +155,10 @@ function SparkContext(master, name) {
  * @returns {RDD}
  */
 SparkContext.prototype.parallelize = function(arr) {
-  var refId = kernel.genVariable();
-  var self = this;
-  return new RDD(this.kernel, new Promise(function(resolve, reject) {
-    self.kernel.then(kernel => {
-      var templateStr = 'var {{refId}} = jsc.parallelize("{{arr}}");';
-      var code = Utils.processTemplate(templateStr, {refId: refId, arr: arr.join(",")});
+  var templateStr = 'var {{refId}} = jsc.parallelize([{{arr}}]);';
 
-      protocol.verifyAssign(kernel.execute({code: code }),
-                            resolve,
-                            reject,
-                            refId);
-    })
-  }))
-}
+  return Utils.evaluate(this.kernelP, RDD, templateStr, {arr: arr.join(',')});
+};
 
 /**
  * Read a text file from HDFS, a local file system (available on all nodes), or any Hadoop-supported file system URI,
@@ -104,25 +167,29 @@ SparkContext.prototype.parallelize = function(arr) {
  * @returns {RDD}
  */
 SparkContext.prototype.textFile = function(path) {
-  var refId = protocol.genVariable('rdd');
-  var self = this;
-  return new RDD(this.kernel, new Promise(function(resolve, reject) {
-    self.kernel.then(kernel => {
-      var templateStr = 'var {{refId}} = jsc.textFile("{{path}}");';
-      var code = Utils.processTemplate(templateStr, {refId: refId, path: path});
+  var templateStr = 'var {{refId}} = jsc.textFile({{path}});';
 
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-                            resolve,
-                            reject,
-                            refId);
-    })
-  }))
-}
+  return Utils.evaluate(this.kernelP, RDD, templateStr, {path: Utils.prepForReplacement(path)});
+};
 
-module.exports = function(kP) {
-  kernelP = kP;
-  return SparkContext;
-}
+SparkContext.prototype.stop = function() {
+  /*
+  var templateStr = 'var {{refId}} = jsc.stop();';
+
+  return Utils.generateVoidPromise(this.kernelP, templateStr);
+  */
+
+  return new Promise(function(resolve, reject) {
+    kernelP.then(function(kernel) {
+      session.shutdown().then(resolve).catch(reject);
+    });
+
+  });
+};
+
+module.exports = function() {
+  return [kernelP, SparkContext];
+};
 </code></pre>
         </article>
     </section>
@@ -133,13 +200,13 @@ module.exports = function(kP) {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Accumulable.html">Accumulable</a></li><li><a href="AccumulableParam.html">AccumulableParam</a></li><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Accumulator">Accumulator</a></li><li><a href="global.html#DataFrameStatFunctions">DataFrameStatFunctions</a></li><li><a href="global.html#LogisticRegressionWithLBFGS">LogisticRegressionWithLBFGS</a></li><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Tue Jan 12 2016 15:51:08 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Mon Feb 15 2016 12:14:36 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>

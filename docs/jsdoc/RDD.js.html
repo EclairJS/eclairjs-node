@@ -42,37 +42,7 @@
  * limitations under the License.
  */
 
-var protocol = require('./kernel.js');
-var serialize = require('./serialize.js');
 var Utils = require('./utils.js');
-
-function genCallPromise(refId, rdd, templateStr, arg) {
-  return new Promise(function(resolve, reject) {
-    var argP = (typeof arg === 'function') ? serialize.serializeFunction(arg) : Promise.resolve(arg)
-    var p = Promise.all([rdd.kernelP, rdd.refIdP, argP]);
-    p.then(function(values) {
-      var replacements = {refId: refId, inRefId: values[1]};
-
-      if (typeof(values[2]) == "string") {
-        replacements.udf = values[2];
-      } else {
-        for (var item in values[2]) {
-          replacements[item] = values[2][item];
-        }
-      }
-
-      var code = Utils.processTemplate(templateStr, replacements);
-      protocol.verifyAssign(values[0].execute({code: code}),
-                            resolve,
-                            reject,
-                            refId);
-    }).catch(function(err) {
-      console.log("genCallPromise Error:");
-      console.log(err);
-      reject(err);
-    })
-  })
-}
 
 /**
  * @constructor
@@ -85,32 +55,29 @@ function RDD(kernelP, refIdP) {
 }
 
 /**
+ * Persist this RDD with the default storage level (`MEMORY_ONLY`).
+ * @returns {RDD}
+ */
+RDD.prototype.cache = function() {
+  var templateStr = 'var {{refId}} = {{inRefId}}.cache();';
+
+  return Utils.generateAssignment(this, RDD, templateStr);
+};
+
+/**
  * Asynchronously returns the number of elements in the RDD.
  *
  * @returns {Promise.&lt;Number>} A Promise that resolves to the number of elements in the RDD.
  */
 RDD.prototype.count = function() {
-  var self = this;
+  function _resolve(result, resolve, reject) {
+    resolve(parseInt(result));
+  }
 
-  return new Promise(function(resolve, reject) {
-    function _resolve(result) {
-      try {
-        resolve(parseInt(result));
-      } catch (e) {
-        var err = new Error("Parse Error: "+ e.message);
-        reject(err);
-      }
-    }
+  var templateStr = '{{inRefId}}.count();';
 
-    Promise.all([self.refIdP, self.kernelP]).then(function(values) {
-      var templateStr = '{{inRefId}}.count();';
-      var code = Utils.processTemplate(templateStr, {inRefId: values[0]});
-      protocol.verifyResult(values[1].execute({code: code}), _resolve, reject);
-    }).catch(function(err) {
-      reject(err);
-    });
-  })
-}
+  return Utils.generateResultPromise(this, templateStr, null, _resolve);
+};
 
 /**
  * Asynchronously returns all elements of the RDD.
@@ -118,17 +85,20 @@ RDD.prototype.count = function() {
  * @returns {Promise.&lt;Array>} A Promise that resolves to an array containing all elements in the RDD.
  */
 RDD.prototype.collect = function() {
-  var self = this;
-  return new Promise(function(resolve, reject) {
-    Promise.all([self.refIdP, self.kernelP]).then(function(values) {
-      var templateStr = 'JSON.stringify({{inRefId}}.collect());';
-      var code = Utils.processTemplate(templateStr, {inRefId: values[0]});
-      protocol.verifyResult(values[1].execute({code: code}), resolve, reject);
-    }).catch(function(err) {
+  function _resolve(result, resolve, reject) {
+    try {
+      // take returns a stringified json result so parse it here
+      resolve(JSON.parse(result));
+    } catch (e) {
+      var err = new Error("Parse Error: "+ e.message);
       reject(err);
-    });
-  })
-}
+    }
+  }
+
+  var templateStr = 'JSON.stringify({{inRefId}}.collect());';
+
+  return Utils.generateResultPromise(this, templateStr, null, _resolve);
+};
 
 /**
  * Asynchronously returns the first num elements in this RDD.
@@ -137,137 +107,129 @@ RDD.prototype.collect = function() {
  * @returns {Promise.&lt;Array>} A Promise that resolves to an array containing the first num elements in this RDD.
  */
 RDD.prototype.take = function(num) {
-  var self = this;
-  return new Promise(function(resolve, reject) {
-    function _resolve(result) {
-      try {
-        // take returns a stringified json result so parse it here
-        resolve(JSON.parse(result));
-      } catch (e) {
-        var err = new Error("Parse Error: "+ e.message);
-        reject(err);
-      }
-    }
-
-    Promise.all([self.refIdP, self.kernelP]).then(function(values) {
-      var templateStr = 'JSON.stringify({{inRefId}}.take({{num}}));';
-      var code = Utils.processTemplate(templateStr, {inRefId: values[0], num: num});
-      protocol.verifyResult(values[1].execute({code: code}), _resolve, reject);
-    }).catch(function(err) {
+  function _resolve(result, resolve, reject) {
+    try {
+      // take returns a stringified json result so parse it here
+      resolve(JSON.parse(result));
+    } catch (e) {
+      var err = new Error("Parse Error: "+ e.message);
       reject(err);
-    });
-  })
-}
+    }
+  }
+
+  var templateStr = 'JSON.stringify({{inRefId}}.take({{num}}));';
+
+  return Utils.generateResultPromise(this, templateStr, {num: num}, _resolve);
+};
 
 /**
  * Return an array that contains all of the elements in this RDD.
  * @returns {Promise.&lt;Array>} A Promise that resolves to an array containing all elements in this RDD.
  */
 RDD.prototype.toArray = function() {
-  var self = this;
-  return new Promise(function(resolve, reject) {
-    function _resolve(result) {
-      try {
-        // take returns a stringified json result so parse it here
-        var res = JSON.parse(result);
+  function _resolve(result, resolve, reject) {
+    try {
+      // take returns a stringified json result so parse it here
+      var res = JSON.parse(result);
 
-        // TODO: why do we need to reparse each row?
-        for (var i = 0; i &lt; res.length; i++) {
-          res[i] = JSON.parse(res[i]);
-        }
-
-        resolve(res);
-      } catch (e) {
-        var err = new Error("Parse Error: "+ e.message);
-        reject(err);
+      // TODO: why do we need to reparse each row?
+      for (var i = 0; i &lt; res.length; i++) {
+        res[i] = JSON.parse(res[i]);
       }
-    }
 
-    Promise.all([self.refIdP, self.kernelP]).then(function(values) {
-      var templateStr = 'JSON.stringify({{inRefId}}.toArray());';
-      var code = Utils.processTemplate(templateStr, {inRefId: values[0]});
-      protocol.verifyResult(values[1].execute({code: code}), _resolve, reject);
-    }).catch(function(err) {
+      resolve(res);
+    } catch (e) {
+      var err = new Error("Parse Error: "+ e.message);
       reject(err);
-    });
-  });
+    }
+  }
+
+  var templateStr = 'JSON.stringify({{inRefId}}.toArray());';
+
+  return Utils.generateResultPromise(this, templateStr, null, _resolve);
 };
 
 RDD.prototype.toString = function() {
-  var self = this;
+  var templateStr = '{{inRefId}}.toString();';
 
-  return new Promise(function(resolve, reject) {
-    Promise.all([self.refIdP, self.kernelP]).then(function(values) {
-      var refId = values[0];
-      var kernel = values[1];
-
-      var templateStr = '{{inRefId}}.toString();';
-      var code = Utils.processTemplate(templateStr, {inRefId: refId});
-      protocol.verifyResult(kernel.execute({code: code}), resolve, reject);
-    }).catch(reject);
-  })
+  return Utils.generateResultPromise(this, templateStr);
 };
 
 
 /**
  * Return a new RDD by applying a function to all elements of this RDD.
  * @param {Function} func
+ * @param {Object[]} bindArgs - Optional array whose values will be added to func's argument list.
  * @returns {RDD}
  */
-RDD.prototype.map = function(func) {
-  var refId = protocol.genVariable('rdd');
-  var templateStr = 'var {{refId}} = {{inRefId}}.map({{udf}});';
-  return new RDD(this.kernelP,
-                 genCallPromise(refId, this, templateStr, func))
-}
+RDD.prototype.map = function(func, bindArgs) {
+  var templateStr = bindArgs ? 'var {{refId}} = {{inRefId}}.map({{udf}}, [{{bindArgs}}]);' : 'var {{refId}} = {{inRefId}}.map({{udf}});';
+
+  return Utils.generateAssignment(this, RDD, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
+
+};
 
 /**
  * Return a new RDD by first applying a function to all elements of this RDD, and then flattening the results.
  * @param {Function} func
+ * @param {Object[]} bindArgs - Optional array whose values will be added to func's argument list.
  * @returns {RDD}
  */
-RDD.prototype.flatMap = function(func) {
-  var refId = protocol.genVariable('rdd');
-  var templateStr = 'var {{refId}} = {{inRefId}}.flatMap({{udf}});';
-  return new RDD(this.kernelP,
-                 genCallPromise(refId, this, templateStr, func))
-}
+RDD.prototype.flatMap = function(func, bindArgs) {
+  var templateStr = bindArgs ? 'var {{refId}} = {{inRefId}}.flatMap({{udf}}, [{{bindArgs}}]);' : 'var {{refId}} = {{inRefId}}.flatMap({{udf}});';
+
+  return Utils.generateAssignment(this, RDD, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
+};
 
 /**
  * Return a new RDD containing only the elements that satisfy a predicate.
  * @param {Function} func
+ * @param {Object[]} bindArgs - Optional array whose values will be added to func's argument list.
  * @returns {RDD}
  */
-RDD.prototype.filter = function(func) {
-  var refId = protocol.genVariable('rdd');
-  var templateStr = 'var {{refId}} = {{inRefId}}.filter({{udf}});';
-  return new RDD(this.kernelP,
-                 genCallPromise(refId, this, templateStr, func))
-}
+RDD.prototype.filter = function(func, bindArgs) {
+  var templateStr = bindArgs ? 'var {{refId}} = {{inRefId}}.filter({{udf}}, [{{bindArgs}}]);' : 'var {{refId}} = {{inRefId}}.filter({{udf}});';
+
+  return Utils.generateAssignment(this, RDD, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
+};
 
 /**
  * Return a new RDD by applying a function to all elements of this RDD.
  * @param {Function} func
+ * @param {Object[]} bindArgs - Optional array whose values will be added to func's argument list.
  * @returns {RDD}
  */
-RDD.prototype.mapToPair = function(func) {
-  var refId = protocol.genVariable('rdd');
-  var templateStr = 'var {{refId}} = {{inRefId}}.mapToPair({{udf}});';
-  return new RDD(this.kernelP,
-                 genCallPromise(refId, this, templateStr, func))
-}
+RDD.prototype.mapToPair = function(func, bindArgs) {
+  var templateStr = bindArgs ? 'var {{refId}} = {{inRefId}}.mapToPair({{udf}}, [{{bindArgs}}]);' : 'var {{refId}} = {{inRefId}}.mapToPair({{udf}});';
+
+  return Utils.generateAssignment(this, RDD, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
+};
+
+/**
+ * Randomly splits this RDD with the provided weights.
+ *
+ * @param {number[]} weights - weights for splits, will be normalized if they don't sum to 1
+ * @param {number} seed - random seed
+ * @returns {Promise.&lt;RDD[]>} A Promise that resolves to the array of split up RDDs
+ * @private
+ */
+RDD.prototype.randomSplit = function(weights, seed) {
+  var templateStr = 'var {{refId}} = {{inRefId}}.randomSplit({{weights}}, {{seed}});';
+
+  return Utils.generateResultArrayPromise(this, RDD, templateStr, {weights: Utils.prepForReplacement(weights), seed: Utils.prepForReplacement(seed)});
+};
 
 /**
  * Reduces the elements of this RDD using the specified function.
  * @param {Function} func
+ * @param {Object[]} bindArgs - Optional array whose values will be added to func's argument list.
  * @returns {RDD}
  */
-RDD.prototype.reduceByKey = function(func) {
-  var refId = protocol.genVariable('rdd');
-  var templateStr = 'var {{refId}} = {{inRefId}}.reduceByKey({{udf}});';
-  return new RDD(this.kernelP,
-                 genCallPromise(refId, this, templateStr, func))
-}
+RDD.prototype.reduceByKey = function(func, bindArgs) {
+  var templateStr = bindArgs ? 'var {{refId}} = {{inRefId}}.reduceByKey({{udf}}, [{{bindArgs}}]);' : 'var {{refId}} = {{inRefId}}.reduceByKey({{udf}});';
+
+  return Utils.generateAssignment(this, RDD, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
+};
 
 /**
  * Return this RDD sorted by the given key function.
@@ -275,14 +237,23 @@ RDD.prototype.reduceByKey = function(func) {
  * @returns {RDD}
  */
 RDD.prototype.sortByKey = function(ascending) {
-  var refId = protocol.genVariable('rdd');
   var templateStr = 'var {{refId}} = {{inRefId}}.sortByKey({{ascending}});';
-  return new RDD(this.kernelP,
-                 genCallPromise(refId, this, templateStr, {ascending: ascending}))
-}
 
-module.exports = RDD;
-</code></pre>
+  return Utils.generateAssignment(this, RDD, templateStr, {ascending: Utils.prepForReplacement(ascending)});
+};
+
+/**
+ * Applies a function func to all rows.
+ * @param {function} func
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+RDD.prototype.foreach = function(func, bindArgs) {
+  var templateStr = bindArgs ? '{{inRefId}}.foreach({{udf}}, [{{bindArgs}}]);' : '{{inRefId}}.foreach({{udf}});';
+
+  return Utils.generateVoidPromise(this, templateStr, {udf: Utils.serializeLambda(func), bindArgs: Utils.prepBindArgs(bindArgs)});
+};
+
+module.exports = RDD;</code></pre>
         </article>
     </section>
 
@@ -292,13 +263,13 @@ module.exports = RDD;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Accumulable.html">Accumulable</a></li><li><a href="AccumulableParam.html">AccumulableParam</a></li><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Accumulator">Accumulator</a></li><li><a href="global.html#DataFrameStatFunctions">DataFrameStatFunctions</a></li><li><a href="global.html#LogisticRegressionWithLBFGS">LogisticRegressionWithLBFGS</a></li><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Tue Jan 12 2016 15:51:08 GMT-0800 (PST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Mon Feb 15 2016 12:14:36 GMT-0800 (PST)
 </footer>
 
 <script> prettyPrint(); </script>
