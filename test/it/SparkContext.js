@@ -48,7 +48,7 @@ describe('SparkContext Test', function() {
       );
     });
   });
-/*
+
   describe("accumulator.add(5)", function() {
     it("should equal 15", function(done) {
       TestUtils.executeTest(
@@ -71,9 +71,9 @@ describe('SparkContext Test', function() {
           var floatAccumParam = new spark.AccumulableParam.FloatAccumulatorParam();
 
           floatAccumable = sc.accumulable(0, floatAccumParam);
-          sc.parallelize([1.10, 2.2, 3.3, 4.4]).foreach(function(x, accumulable1) {
-            accumulable1.add(x);
-          }).then(function() {
+          sc.parallelize([1.10, 2.2, 3.3, 4.4]).foreach(function(x, accumulable) {
+            accumulable.add(x);
+          }, [floatAccumable]).then(function() {
             floatAccumable.value().then(callback).catch(error);
           }).catch(error);
         }, function(result) {
@@ -92,9 +92,9 @@ describe('SparkContext Test', function() {
           var intAccumParam = new spark.AccumulableParam.IntAccumulatorParam();
 
           intAccumable = sc.accumulable(0, intAccumParam);
-          sc.parallelize([1, 2, 3, 4]).foreach(function(x, accumulable2) {
+          sc.parallelize([1, 2, 3, 4]).foreach(function(x, accumulable) {
             accumulable2.add(x);
-          }).then(function() {
+          }, [intAccumable]).then(function() {
             intAccumable.value().then(callback).catch(error);
           }).catch(error);
         }, function(result) {
@@ -104,7 +104,7 @@ describe('SparkContext Test', function() {
       );
     });
   });
-*/
+
   after(function(done) {
     if (sc) {
       sc.stop().then(done).catch(done);
