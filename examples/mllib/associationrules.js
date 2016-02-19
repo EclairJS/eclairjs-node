@@ -27,30 +27,20 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var rank = 12;
-var iterations = 4;
-var blocks = -1;
+var sc = new spark.SparkContext("local[*]", "Association Rules");
 
-function featuresToString(tuple) {
-  return tuple[0] + "," + tuple[2];
-}
+var freqItemsets = sc.parallelize(
+  [
+    new spark.mllib.fpm.FPGrowth.FreqItemset(["a"], 15),
+    new spark.mllib.fpm.FPGrowth.FreqItemset(["b"], 35),
+    new spark.mllib.fpm.FPGrowth.FreqItemset(["a","b"], 12)
+  ]
+);
 
-var sc = new spark.SparkContext("local[*]", "JavaScript ALS");
+var arules = new spark.mllib.fpm.AssociationRules().setMinConfidence(0.8);
+var results = arules.run(freqItemsets);
 
-var lines = sc.textFile(__dirname + "/alsdata.txt");
-
-var ratings = lines.map(function(line){
-  var tok = line.split(",");
-  var x = parseInt(tok[0]);
-  var y = parseInt(tok[1]);
-  var rating = parseFloat(tok[2]);
-  return new Rating(x, y, rating);
-});
-
-var model = spark.mllib.recommendation.ALS.train(ratings, rank, iterations, 0.01, blocks);
-
-var userFeatureRDD = model.userFeatures()
-  .map(featuresToString)
-  .saveAsTextFile(__dirname + "/userFeatures").then(function() {
-    stop();
-  }).catch(stop);
+results.collect().then(function(results) {
+  console.log(results);
+  stop();
+}).catch(stop);
