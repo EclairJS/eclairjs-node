@@ -289,10 +289,23 @@ describe('Column Test', function() {
   })
 
   describe("Column.equals()", function() {
-    it("should return true for any 2 columns", function(done) {
+    it("should return false for any 2 columns", function(done) {
       TestUtils.executeTest(
         function(callback) {
           dataFrame.col("name").equals(dataFrame.col("age")).then(callback);
+        }, function(result) {
+          expect(result).equals(false);
+        },
+        done
+      );
+    });
+  })
+
+  describe("Column.equals()", function() {
+    it("should return ture for the same column", function(done) {
+      TestUtils.executeTest(
+        function(callback) {
+          dataFrame.col("name").equals(dataFrame.col("name")).then(callback);
         }, function(result) {
           expect(result).equals(true);
         },
