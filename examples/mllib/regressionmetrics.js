@@ -29,7 +29,7 @@ var spark = require('../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "Regression Metrics Example");
 
-var data = sc.textFile(__dirname + "/sample_linear_regression_data.txt");
+var data = sc.textFile(__dirname + "/data/sample_linear_regression_data.txt");
 
 var parsedData = data.map(function(line) {
   var arr = line.split(" ");

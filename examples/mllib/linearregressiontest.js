@@ -22,7 +22,7 @@ var spark = require('../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "Linear Regression Test");
 
-var data = sc.textFile(__dirname + "/lpsa.txt");
+var data = sc.textFile(__dirname + "/data/lpsa.txt");
 
 var parsedData = data.map( function(s) {
   var parts = s.split(",");

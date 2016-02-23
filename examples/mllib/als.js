@@ -37,7 +37,7 @@ function featuresToString(tuple) {
 
 var sc = new spark.SparkContext("local[*]", "ALS");
 
-var lines = sc.textFile(__dirname + "/alsdata.txt");
+var lines = sc.textFile(__dirname + "/data/alsdata.txt");
 
 var ratings = lines.map(function(line){
   var tok = line.split(",");
