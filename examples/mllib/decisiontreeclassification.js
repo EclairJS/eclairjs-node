@@ -29,7 +29,7 @@ var spark = require('../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "Decision Tree Classificatio");
 
-var data = spark.mllib.utils.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
+var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
 
 data.randomSplit([0.7, 0.3]).then(function(splits) {
   var trainingData = splits[0];

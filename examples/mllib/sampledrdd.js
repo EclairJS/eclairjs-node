@@ -29,7 +29,7 @@ var spark = require('../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "Sampled RDDs");
 
-var examples = spark.mllib.utils.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
+var examples = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
 
 examples.count().then(function(numExamples) {
   if (numExamples > 0) {

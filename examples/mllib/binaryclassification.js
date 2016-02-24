@@ -29,7 +29,7 @@ var spark = require('../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "Binary Classification Metrics Test");
 
-var data = spark.mllib.utils.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
+var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
 
 // Split data into training (60%) and test (40%)
 data.randomSplit([0.6, 0.4], 11).then(function(split) {
