@@ -1,0 +1,181 @@
+.leaflet-popup-content {
+    margin: 10px 16px;
+}
+
+.leaflet-popup-content p {
+    margin: 13px 0 10px;
+    max-width: 225;
+}
+
+.frame {
+    fill: none;
+    stroke: #000;
+}
+
+.axis text {
+    font: 10px sans-serif;
+}
+
+.axis line,
+.axis circle {
+    fill: none;
+    stroke: #777;
+    stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+    stroke: #333;
+    stroke-dasharray: none;
+}
+
+div.polar-chart {
+    width: 225;
+    height: 225;
+}
+
+#opts {
+    font-size: 1.1em;
+    margin: 5px;
+    text-align: right;
+}
+
+#opts a {
+    text-decoration: none;
+}
+
+div.polar-chart-options,
+nav .prev {
+    display: none;
+}
+
+.polar-chart-options {
+    width: 90%;
+    padding-bottom: 15px;
+    margin: 0 auto;
+}
+
+.polar-chart-options .ui-slider {
+    width: 200px;
+    margin: 5px 0;
+}
+
+.polar-chart-options .delay-text {
+    border:0; 
+    color:#f6931f; 
+    font-weight:bold;
+}
+
+.polar-chart-options label {
+    margin-top: 5px;
+    font-weight: normal;
+}
+
+.polar-chart-options label.polar_main {
+    margin-top: 10px;
+    font-weight: 700;
+}
+
+.polar-chart-options .airline-code,
+.polar-chart-options .ui-selectmenu-text,
+.ui-selectmenu-menu .ui-menu-item {
+    text-transform: uppercase;
+    /*margin-bottom: 20px;*/
+}
+
+nav a {
+    display: block;
+    outline: medium none;
+    position: absolute;
+    text-align: left;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;
+}
+
+nav a.prev {
+    left: -3px;
+}
+
+nav a.next {
+    right: 0;
+}
+
+nav a svg {
+    display: block;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.nav-fillpath a {
+    height: 25px;
+    width: 25px;
+}
+
+.nav-fillpath .icon-wrap {
+    display: block;
+    height: 100%;
+    position: relative;
+    width: 100%;
+}
+
+.nav-fillpath a::before, .nav-fillpath a::after, .nav-fillpath .icon-wrap::before, .nav-fillpath .icon-wrap::after {
+    backface-visibility: hidden;
+    background: #ccc none repeat scroll 0 0;
+    content: "";
+    height: 50%;
+    left: 50%;
+    outline: 1px solid transparent;
+    position: absolute;
+    transition: transform 0.3s ease 0s;
+    width: 3px;
+}
+
+.nav-fillpath .icon-wrap::before, .nav-fillpath .icon-wrap::after {
+    background: #0078A8 none repeat scroll 0 0;
+    height: 0;
+    transition: height 0.3s ease 0s, transform 0.3s ease 0s;
+    z-index: 100;
+}
+
+.nav-fillpath a::before, .nav-fillpath .icon-wrap::before {
+    top: 50%;
+    transform: translateX(-50%) rotate(-135deg);
+    transform-origin: 50% 0 0;
+}
+
+.nav-fillpath a.next::before, .nav-fillpath a.next .icon-wrap::before {
+    transform: translateX(-50%) rotate(135deg);
+    transform-origin: 50% 0 0;
+}
+
+.nav-fillpath a::after, .nav-fillpath .icon-wrap::after {
+    top: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+    transform-origin: 0 0 0;
+}
+
+.nav-fillpath a.next::after, .nav-fillpath a.next .icon-wrap::after {
+    transform: translateX(-50%) rotate(45deg);
+    transform-origin: 100% 0 0;
+}
+
+.nav-fillpath a:hover .icon-wrap::before, .nav-fillpath a:hover .icon-wrap::after {
+    height: 50%;
+}
+
+.nav-fillpath a:hover::before, .nav-fillpath a:hover .icon-wrap::before {
+    transform: translateX(-50%) rotate(-125deg);
+}
+
+.nav-fillpath a.next:hover::before, .nav-fillpath a.next:hover .icon-wrap::before {
+    transform: translateX(-50%) rotate(125deg);
+}
+
+.nav-fillpath a:hover::after, .nav-fillpath a:hover .icon-wrap::after {
+    transform: translateX(-50%) rotate(-55deg);
+}
+
+.nav-fillpath a.next:hover::after, .nav-fillpath a.next:hover .icon-wrap::after {
+    transform: translateX(-50%) rotate(55deg);
+}
+

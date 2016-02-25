@@ -1,0 +1,8 @@
+Applications:
+- disk_quota: 1024M
+  host: airlinedemo
+  name: airlinedemo
+  path: .
+  domain: mybluemix.net
+  instances: 1
+  memory: 512M
