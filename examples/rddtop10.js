@@ -36,15 +36,15 @@ var rdd3 = rdd2.filter(function(word) {
 });
 
 var rdd4 = rdd3.mapToPair(function(word) {
-  return [word.toLowerCase(),1]
+  return new Tuple(word.toLowerCase(), 1);
 });
 
-var rdd5 = rdd4.reduceByKey(function(acc, v) {
-  return acc + v;
+var rdd5 = rdd4.reduceByKey(function(value1, value2) {
+  return value1 + value2;
 });
 
 var rdd6 = rdd5.mapToPair(function(tuple) {
-  return [tuple[1]+0.0, tuple[0]];
+  return new Tuple(tuple[1] + 0.0, tuple[0]);
 });
 
 var rdd7 = rdd6.sortByKey(false);

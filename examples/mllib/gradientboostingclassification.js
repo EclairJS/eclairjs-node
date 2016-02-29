@@ -57,7 +57,7 @@ data.randomSplit([0.7, 0.3]).then(function(splits) {
       var model = spark.mllib.tree.GradientBoostedTrees.train(trainingData, boostingStrategy);
 
       var predictionAndLabel = testData.mapToPair(function (lp, model) {
-        return [model.predict(lp.getFeatures()), lp.getLabel()]
+        return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
       }, [model]);
 
       var filtered = predictionAndLabel.filter(function (tuple) {

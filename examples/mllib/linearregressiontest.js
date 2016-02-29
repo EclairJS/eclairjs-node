@@ -38,7 +38,7 @@ var valuesAndPreds = parsedData.mapToPair(function(lp, linearRegressionModel) { 
   var label = lp.getLabel();
   var f = lp.getFeatures();
   var prediction = linearRegressionModel.predict(f) + 17;
-  return [prediction, label];
+  return new Tuple(prediction, label);
 }, [linearRegressionModel]); // end MapToPair
 
 valuesAndPreds.take(10).then(function(results) {

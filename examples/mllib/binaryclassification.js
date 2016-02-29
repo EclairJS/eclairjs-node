@@ -42,7 +42,7 @@ data.randomSplit([0.6, 0.4], 11).then(function(split) {
     .run(training);
 
   var predictionAndLabels = test.mapToPair(function(lp, model) {
-    return [model.predict(lp.getFeatures()), lp.getLabel()];
+    return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
   }, [model]);
 
   var metrics = new spark.mllib.evaluation.BinaryClassificationMetrics(predictionAndLabels);

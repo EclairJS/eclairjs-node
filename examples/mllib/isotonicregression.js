@@ -50,7 +50,6 @@ parsedData.randomSplit([0.6, 0.4], 11).then(function(splits) {
   var predictionAndLabel = test.mapToPair(function (point, model) {
     var predictedLabel = model.predict(point[1]);
     return new Tuple(predictedLabel, point[0]);
-
   }, [model]);
 
   // Calculate mean squared error between predicted and real labels.

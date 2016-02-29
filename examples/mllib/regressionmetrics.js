@@ -44,10 +44,10 @@ var numIterations = 100;
 var model = spark.mllib.regression.LinearRegressionWithSGD.train(parsedData, numIterations);
 
 var valuesAndPreds = parsedData.mapToPair(function(lp, model) {
-  return [
+  return new Tuple(
     model.predict(lp.getFeatures()),
     lp.getLabel()
-  ];
+  );
 }, [model]); // end MapToPair
 
 //Instantiate metrics object

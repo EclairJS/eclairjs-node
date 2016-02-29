@@ -44,7 +44,7 @@ WordCount.prototype.do = function(callback) {
     // remove trailing punctuation
     newWord = newWord.replace(/(\.|\"|\'|\,)*$/g, "");
 
-    return [newWord,1]
+    return new Tuple(newWord,1);
   });
 
   var rdd5 = rdd4.reduceByKey(function(acc, v) {
@@ -52,7 +52,7 @@ WordCount.prototype.do = function(callback) {
   });
 
   var rdd6 = rdd5.mapToPair(function(tuple) {
-    return [tuple[1]+0.0, tuple[0]];
+    return new Tuple(tuple[1]+0.0, tuple[0]);
   });
 
   var rdd7 = rdd6.sortByKey(false);

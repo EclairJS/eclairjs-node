@@ -48,7 +48,7 @@ data.randomSplit([0.7, 0.3]).then(function(splits) {
 
   // Evaluate model on test instances and compute test error
   var predictionAndLabel = testData.mapToPair(function (labeledPoint, model) {
-    return [model.predict(labeledPoint.getFeatures()), labeledPoint.getLabel()];
+    return new Tuple(model.predict(labeledPoint.getFeatures()), labeledPoint.getLabel());
   }, [model]);
 
   var result = predictionAndLabel.filter(function (tuple2) {
