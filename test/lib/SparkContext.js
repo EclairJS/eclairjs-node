@@ -82,10 +82,16 @@ var kernelP = new Promise(function(resolve, reject) {
 function FakeSparkContext(master, name, foo) {
   this.kernelP = new Promise(function(resolve, reject) {
     kernelP.then(function(k) {
-      console.log("res")
+      //console.log("res");
       resolve(k);
     }).catch(reject);
-  })
+  });
+
+  this.refIdP = new Promise(function(resolve, reject) {
+    this.kernelP.then(function() {
+      resolve('jsc');
+    }).catch(reject);
+  }.bind(this));
 }
 
 FakeSparkContext.prototype = SparkContext()[1].prototype;
