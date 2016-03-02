@@ -489,7 +489,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var groupedData3 = dataFrame1.cube("name","expense");');
+          expect(result).equals('var groupedData3 = dataFrame1.cube("name", "expense");');
         },
         done
       );
@@ -504,7 +504,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var dataFrame12 = dataFrame1.describe("name","expense");');
+          expect(result).equals('var dataFrame12 = dataFrame1.describe("name", "expense");');
         },
         done
       );
@@ -1060,6 +1060,21 @@ describe('DataFrame', function() {
           onceDone(df.write()).then(callback);
         }, function(result) {
           expect(result).equals('var dataFrameWriter1 = dataFrame1.write();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("drop(col)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.drop(df.col("name"));
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result[1]).equals('var dataFrame37 = dataFrame1.drop(column16);');
         },
         done
       );
