@@ -335,7 +335,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var dataFrame6 = dataFrame1.select("name","age");');
+          expect(result).equals('var dataFrame6 = dataFrame1.select("name", "age");');
         },
         done
       );
@@ -352,7 +352,7 @@ describe('DataFrame', function() {
         }, function(result) {
           expect(result[0]).equals('var column5 = dataFrame1.col("name");');
           expect(result[1]).equals('var column6 = dataFrame1.col("age");');
-          expect(result[2]).equals('var dataFrame7 = dataFrame1.select(column5,column6);');
+          expect(result[2]).equals('var dataFrame7 = dataFrame1.select(column5, column6);');
         },
         done
       );
@@ -831,7 +831,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.orderBy("name", "age")).then(callback);
         }, function(result) {
-          expect(result).equals('var dataFrame24 = dataFrame1.orderBy(\"name\",\"age\");');
+          expect(result).equals('var dataFrame24 = dataFrame1.orderBy(\"name\", \"age\");');
         },
         done
       );
@@ -844,7 +844,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.orderBy(df.col("name"), df.col("age"))).then(callback);
         }, function(result) {
-          expect(result[2]).equals('var dataFrame25 = dataFrame1.orderBy(column12,column13);');
+          expect(result[2]).equals('var dataFrame25 = dataFrame1.orderBy(column12, column13);');
         },
         done
       );
@@ -923,7 +923,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.rollup("age", "name")).then(callback);
         }, function(result) {
-          expect(result).equals('var groupedData4 = dataFrame1.rollup(\"age\",\"name\");');
+          expect(result).equals('var groupedData4 = dataFrame1.rollup(\"age\", \"name\");');
         },
         done
       );
@@ -975,7 +975,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.sort("name", "age")).then(callback);
         }, function(result) {
-          expect(result).equals('var dataFrame31 = dataFrame1.sort(\"name\",\"age\");');
+          expect(result).equals('var dataFrame31 = dataFrame1.sort(\"name\", \"age\");');
         },
         done
       );
@@ -988,7 +988,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.sort(df.col("name"), df.col("age"))).then(callback);
         }, function(result) {
-          expect(result[2]).equals('var dataFrame32 = dataFrame1.sort(column14,column15);');
+          expect(result[2]).equals('var dataFrame32 = dataFrame1.sort(column14, column15);');
         },
         done
       );
@@ -1001,7 +1001,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.toDF("newName", "newAge")).then(callback);
         }, function(result) {
-          expect(result).equals('var dataFrame33 = dataFrame1.toDF("newName","newAge");');
+          expect(result).equals('var dataFrame33 = dataFrame1.toDF("newName", "newAge");');
         },
         done
       );
@@ -1014,7 +1014,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.selectExpr("name", "age > 19")).then(callback);
         }, function(result) {
-          expect(result).equals('var dataFrame34 = dataFrame1.selectExpr("name","age > 19");');
+          expect(result).equals('var dataFrame34 = dataFrame1.selectExpr("name", "age > 19");');
         },
         done
       );
