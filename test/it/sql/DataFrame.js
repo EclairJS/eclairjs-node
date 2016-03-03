@@ -869,6 +869,21 @@ describe('DataFrame Test', function() {
     });
   });
 
+  describe("dataFrame.rollup(col)", function() {
+    it("should generate the correct output", function(done) {
+      TestUtils.executeTest(
+        function(callback) {
+          var df = dataFrame.repartition(1);
+          df.rollup(df.col("age"), df.col("expense")).count().count().then(callback);
+        }, function(result) {
+          expect(result).equals(7);
+        },
+        done
+      );
+    });
+  });
+
+
   describe("dataFrame.sample()", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
@@ -954,10 +969,21 @@ describe('DataFrame Test', function() {
     });
   });
 
+  describe("dataFrame.randomSplit()", function() {
+    it("should generate the correct output", function(done) {
+      TestUtils.executeTest(
+        function(callback, error) {
+          var df1 = dataFrame.randomSplit([0.6,0.4]).then(callback).catch(error);
+        }, function(result) {
+          expect(result.length).equals(2);
+        },
+        done
+      );
+    });
+  });
   after(function(done) {
     if (sc) {
       sc.stop().then(done).catch(done);
     }
   });
 });
-
