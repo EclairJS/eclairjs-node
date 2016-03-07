@@ -95,7 +95,7 @@ describe('SparkContext Test', function() {
           sc.parallelize([1, 2, 3, 4]).foreach(function(x, accumulable) {
             accumulable2.add(x);
           }, [intAccumable]).then(function() {
-            intAccumable.localValue().then(callback).catch(error);
+            intAccumable.value().then(callback).catch(error);
           }).catch(error);
         }, function(result) {
           expect(result).equals(10);

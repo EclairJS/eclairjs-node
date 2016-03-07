@@ -540,7 +540,23 @@ describe('DataFrame Test', function() {
         function(callback) {
           dataFrame.dtypes().then(callback);
         }, function(result) {
-          expect(result).deep.equals([["name","StringType"],["age","IntegerType"],["expense","IntegerType"]]);
+          expect(result).deep.equals([
+            {
+              "0": "name",
+              "1": "StringType",
+              "length": 2
+            },
+            {
+              "0": "age",
+              "1": "IntegerType",
+              "length": 2
+            },
+            {
+              "0": "expense",
+              "1": "IntegerType",
+              "length": 2
+            }
+          ]);
         },
         done
       );
