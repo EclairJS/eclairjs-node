@@ -55,6 +55,8 @@ var userRecommendedScaled = userRecs.map(function(val) {
 var userRecommended = spark.rdd.PairRDD.fromRDD(userRecommendedScaled);
 
 var binarizedRatings = ratings.map(function(r) {
+  var binaryRating;
+
   if (r.rating() > 0.0) {
     binaryRating = 1.0;
   } else {
