@@ -95,6 +95,19 @@ describe('DataFrame Test', function() {
     });
   });
 
+  describe("dataFrame.columns()", function() {
+    it("should generate the correct output", function(done) {
+      TestUtils.executeTest(
+        function(callback, error) {
+          dataFrame.columns().then(callback).catch(error);
+        }, function(result) {
+          expect(result).deep.equals(["name", "age", "expense"]);
+        },
+        done
+      );
+    });
+  });
+
   describe("dataFrame.col()", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
@@ -981,6 +994,7 @@ describe('DataFrame Test', function() {
       );
     });
   });
+
   after(function(done) {
     if (sc) {
       sc.stop().then(done).catch(done);
