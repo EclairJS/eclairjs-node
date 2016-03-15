@@ -121,7 +121,7 @@ promises.push(createResulPromise("NDCG at 1", metrics.ndcgAt(1)));
 promises.push(createResulPromise("Precision at 3", metrics.precisionAt(3)));
 promises.push(createResulPromise("NDCG at 3", metrics.ndcgAt(3)));
 promises.push(createResulPromise("Precision at 5", metrics.precisionAt(5)));
-//promises.push(createResulPromise("NDCG at 5", metrics.ndcgAt(5)));
+promises.push(createResulPromise("NDCG at 5", metrics.ndcgAt(5)));
 promises.push(createResulPromise("Mean average precision", metrics.meanAveragePrecision()));
 promises.push(createResulPromise("RMSE", regressionMetrics.rootMeanSquaredError()));
 promises.push(createResulPromise("R-squared", regressionMetrics.r2()));
