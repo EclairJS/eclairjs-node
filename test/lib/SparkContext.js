@@ -85,7 +85,13 @@ function FakeSparkContext(master, name, foo) {
       console.log("res")
       resolve(k);
     }).catch(reject);
-  })
+  });
+
+  this.refIdP = new Promise(function(resolve, reject) {
+    this.kernelP.then(function() {
+      resolve('jsc');
+    }).catch(reject);
+  }.bind(this));
 }
 
 FakeSparkContext.prototype = SparkContext()[1].prototype;
