@@ -84,7 +84,6 @@ describe('SparkContext Test', function() {
     });
   });
 
-
   describe("SparkContext.accumulable(IntAccumulatorParam)", function() {
     it("should equal 10", function(done) {
       TestUtils.executeTest(
@@ -93,7 +92,7 @@ describe('SparkContext Test', function() {
 
           intAccumable = sc.accumulable(0, intAccumParam);
           sc.parallelize([1, 2, 3, 4]).foreach(function(x, accumulable) {
-            accumulable2.add(x);
+            accumulable.add(x);
           }, [intAccumable]).then(function() {
             intAccumable.value().then(callback).catch(error);
           }).catch(error);
