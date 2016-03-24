@@ -45,4 +45,6 @@ var model = prefixSpan.run(sequences);
 
 model.freqSequences().collect().then(function(result) {
   console.log(JSON.stringify(result));
+
+  stop();
 }).catch(stop);
