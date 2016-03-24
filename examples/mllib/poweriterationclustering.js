@@ -44,4 +44,5 @@ var model = pic.run(similarities);
 
 model.assignments().collect().then(function(results) {
   console.log(results);
+  stop();
 }).then().catch(stop);
