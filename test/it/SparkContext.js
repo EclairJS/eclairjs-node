@@ -109,6 +109,4 @@ describe('SparkContext Test', function() {
       sc.stop().then(done).catch(done);
     }
   });
-
 });
-

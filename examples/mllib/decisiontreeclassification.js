@@ -61,7 +61,8 @@ data.randomSplit([0.7, 0.3]).then(function(splits) {
   promises.push(testData.count());
 
   Promise.all(promises).then(function(results) {
-    console.log("Test Error:", results[0] / results[1])
+    console.log("Test Error:", results[0] / results[1]);
+    stop();
   }).catch(stop);
 }).catch(stop);
 

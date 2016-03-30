@@ -18,6 +18,7 @@ var assert = require('assert');
 var expect = require('chai').expect;
 
 var spark = require('./lib/spark.js');
+var Utils = require('../lib/utils');
 var sc = new spark.SparkContext("local[*]", "foo");
 
 var testOutput = [];
@@ -27,142 +28,249 @@ function listener(msg) {
   testOutput.push(msg.code);
 }
 
-describe('Utils Test', function() {
-  var rdd, rdd2, rdd3, rdd4, rdd5, rdd6, rdd7;
 
+function onceDone(obj) {
+  return new Promise(function(resolve, reject) {
+    if (obj.kernelP && obj.refIdP) {
+      Promise.all([obj.kernelP, obj.refIdP]).then(resolve).catch(reject);
+    } else if (typeof obj.then == "function") {
+      obj.then(resolve).catch(reject);
+    }
+  });
+}
+
+function executeTest(run, checks, done) {
+  // called once the test is complete
+  function callback() {
+    try {
+      checks(testOutput.length == 1 ? testOutput[0] : testOutput);
+      done();
+    } catch (e) {
+      done(e);
+    }
+  }
+
+  function error(e) {
+    console.log(e)
+
+    done(e);
+  }
+
+  sc.kernelP.then(function(kernel) {
+    if (!listenerAdded) {
+      listenerAdded = true;
+      kernel.addExecuteListener(listener);
+    }
+
+    // clear the output
+    testOutput = [];
+
+    run(callback, error);
+  });
+}
+
+function TestClass(kernelP, refIdP) {
+  this.kernelP = kernelP;
+  this.refIdP = refIdP;
+}
+
+var testClassInstance = new TestClass(sc.kernelP, Promise.resolve('tci'));
+
+describe('Utils Test', function() {
   before(function() {
     var protocol = require('../lib/kernel.js');
     protocol.resetVariables();
   });
 
-  function onceDone(obj) {
-    return new Promise(function(resolve, reject) {
-      if (obj.kernelP && obj.refIdP) {
-        Promise.all([obj.kernelP, obj.refIdP]).then(resolve).catch(reject);
-      } else if (typeof obj.then == "function") {
-        obj.then(resolve).catch(reject);
-      }
-    });
-  }
-
-  function executeTest(run, checks, done) {
-    // called once the test is complete
-    function callback() {
-      try {
-        checks(testOutput.length == 1 ? testOutput[0] : testOutput);
-        done();
-      } catch (e) {
-        done(e);
-      }
-    }
-
-    function error(e) {
-      console.log(e)
-
-      done(e);
-    }
-
-    sc.kernelP.then(function(kernel) {
-      if (!listenerAdded) {
-        listenerAdded = true;
-        kernel.addExecuteListener(listener);
-      }
-
-      // clear the output
-      testOutput = [];
-
-      run(callback, error);
-    });
-  }
-
-  describe("Basic method call", function() {
-    it("should generate the correct output", function(done) {
-      executeTest(
-        function(callback) {
-          rdd = sc.textFile("/tmp/examples/dream.txt");
-          onceDone(rdd).then(callback);
-        }, function(result) {
-          expect(result).equals('var rdd1 = jsc.textFile("/tmp/examples/dream.txt");');
-        },
-        done
-      );
-
-    });
-  });
-
-  describe("Lambda without lambda args test", function() {
-    it("should generate the correct output", function(done) {
-      executeTest(
-        function(callback) {
-          rdd2 = rdd.flatMap(function(sentence) {
-            return sentence.split(" ");
-          });
-
-          onceDone(rdd2).then(callback);
-        }, function(result) {
-          expect(result).equals('var rdd2 = rdd1.flatMap(function (sentence) {\n            return sentence.split(" ");\n          });');
-        },
-        done
-      );
-    });
-  });
-
-  describe("Lambda and lambda args test", function() {
-    it("should generate the correct output", function(done) {
-      executeTest(
-        function(callback) {
-          var x = rdd.flatMap(function(sentence) {
-            return sentence.split(" ");
-          }, [rdd, 2, 'test']);
-
-          onceDone(x).then(callback);
-        }, function(result) {
-          expect(result).equals('var rdd3 = rdd1.flatMap(function (sentence) {\n            return sentence.split(" ");\n          }, [rdd1, 2, "test"]);');
-        },
-        done
-      );
-    });
-  });
-
-  describe("Retrieving a native result", function() {
-    it("should generate the correct output", function(done) {
-      executeTest(
-        function(callback) {
-          onceDone(rdd2.count()).then(callback);
-        }, function(result) {
-          expect(result).equals('rdd2.count();');
-        },
-        done
-      );
-    });
-  });
-
-  describe("Void execution", function() {
-    it("should generate the correct output", function(done) {
-      executeTest(
-        function(callback) {
-          global.ECLAIRJS_TEST_MODE = 'void';
-          onceDone(rdd2.foreach(function(){})).then(callback);
-        }, function(result) {
-          delete global.ECLAIRJS_TEST_MODE;
-          expect(result).equals('rdd2.foreach(function (){});');
-        },
-        done
-      );
-    });
-  });
-
-  describe("Static execution", function() {
+  describe("Basic method call without arguments", function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback, error) {
-          onceDone(spark.storage.StorageLevel.NONE()).then(callback).catch(error);
+          var args = {
+            target: testClassInstance,
+            method: 'agg',
+            returnType: TestClass
+          };
+
+          onceDone(Utils.generate(args)).then(callback).catch(error);
         }, function(result) {
-          expect(result).equals('var storageLevel1 = StorageLevel.NONE();');
+          expect(result).equals('var testClass1 = tci.agg();');
         },
         done
       );
     });
   });
+
+  describe("Basic method call with arguments", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var args = {
+            target: testClassInstance,
+            method: 'agg',
+            args: [
+              {value: 'a string', type: 'string'},
+              {value: 1, type: 'number'},
+              {value: {foo: 'bar'}, type: 'map'},
+              {value: testClassInstance}
+            ],
+            returnType: TestClass
+          };
+
+          onceDone(Utils.generate(args)).then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('var testClass2 = tci.agg("a string", 1, {"foo":"bar"}, tci);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("Basic method call with array argument", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var args = {
+            target: testClassInstance,
+            method: 'agg',
+            args: [
+              {value: [
+                {value: 1, type: 'number'},
+                {value: '1', type: 'string'},
+                {value: testClassInstance}
+              ]}
+            ],
+            returnType: TestClass
+          };
+
+          onceDone(Utils.generate(args)).then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('var testClass3 = tci.agg([1,\"1\",tci]);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("Basic method call with optional arguments", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var args = {
+            target: testClassInstance,
+            method: 'agg',
+            args: [
+              {value: 1, type: 'number'},
+              {value: null, type: 'string', optional: true},
+              {value: 3, type: 'string', optional: true}
+            ],
+            returnType: TestClass
+          };
+
+          onceDone(Utils.generate(args)).then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('var testClass4 = tci.agg(1);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("Basic method call with lambda argument", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var bindArgs = [1,'123',testClassInstance];
+
+          var args = {
+            target: testClassInstance,
+            method: 'agg',
+            args: [
+              {value: function(){return 'foo'}, type: 'lambda'},
+              {value: Utils.wrapArray(bindArgs), optional: true}
+            ],
+            returnType: TestClass
+          };
+
+          onceDone(Utils.generate(args)).then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('var testClass5 = tci.agg(function (){return \'foo\'}, [1,"123",tci]);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("Basic method call with [String] returntype", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var bindArgs = [1,'123',testClassInstance];
+
+          var args = {
+            target: testClassInstance,
+            method: 'agg',
+            returnType: [String],
+            stringify: true
+          };
+
+          onceDone(Utils.generate(args)).then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('JSON.stringify(tci.agg());');
+        },
+        done
+      );
+    });
+  });
+
+  describe("Basic method call with [SparkClass] returntype", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var bindArgs = [1,'123',testClassInstance];
+
+          var args = {
+            target: testClassInstance,
+            method: 'agg',
+            returnType: [TestClass]
+          };
+
+          onceDone(Utils.generate(args)).then(callback).catch(error);
+        }, function(result) {
+          expect(result.length).equals(2);
+          expect(result[0]).equals('var testClassArray1 = tci.agg();');
+          expect(result[1]).equals('testClassArray1.length;');
+        },
+        done
+      );
+    });
+  });
+
+  describe("Basic static method call", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var bindArgs = [1,'123',testClassInstance];
+
+          var args = {
+            kernelP: sc.kernelP,
+            target: TestClass,
+            method: 'agg',
+            static: true,
+            returnType: TestClass
+          };
+
+          onceDone(Utils.generate(args)).then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('var testClass6 = TestClass.agg();');
+        },
+        done
+      );
+    });
+  });
+  
+  /*
+    Tests: resolver, wrapArray
+   */
 
 });

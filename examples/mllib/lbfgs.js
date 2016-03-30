@@ -88,6 +88,7 @@ data.take(1).then(function(results) {
 
     metrics.areaUnderROC().then(function(result) {
       console.log('Area under ROC:', result);
+      stop();
     }).catch(stop);
   }).catch(stop);
 }).catch(stop);

@@ -57,6 +57,7 @@ parsedData.randomSplit([0.6, 0.4], 11).then(function(splits) {
     return Math.pow(pl[0] - pl[1], 2);
   })).mean().then(function(mean) {
     console.log("Mean Squared Error:", mean);
+    stop();
   }).catch(stop);
 
 }).catch(stop);

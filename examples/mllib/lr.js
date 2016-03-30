@@ -59,4 +59,5 @@ var model = spark.mllib.classification.LogisticRegressionWithSGD.train(points, i
 
 model.weights().then(function(weights) {
   console.log('Final weight:', weights);
+  stop();
 }).catch(stop);

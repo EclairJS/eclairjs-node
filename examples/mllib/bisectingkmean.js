@@ -53,15 +53,9 @@ Promise.all(promises).then(function(results) {
   console.log("Compute cost:", results[0]);
 
   var promises2 = [];
-  results[1].forEach(function(v) {
-    promises2.push(v.toString());
+  results[1].forEach(function(v, i) {
+    console.log("Cluster_Center "+i, v);
   });
-
-  Promise.all(promises2).then(function(vectors) {
-    vectors.forEach(function(v, i) {
-      console.log("Cluster_Center "+i, v);
-    });
-
-    stop();
-  }).catch(stop);
+  
+  stop();
 }).catch(stop);

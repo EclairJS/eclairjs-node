@@ -55,4 +55,5 @@ var projected = mat.multiply(pc);
 //Vector[] collectPartitions = (Vector[])projected.rows().collect();
 projected.rows().collect().then(function(results) {
   console.log('Projected vector of principal component:', results);
+  stop();
 }).catch(stop);
