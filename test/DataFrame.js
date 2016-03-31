@@ -884,7 +884,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.queryExecution()).then(callback);
         }, function(result) {
-          expect(result).equals('var sQLContextQueryExecution1 = dataFrame1.queryExecution();');
+          expect(result).equals('var sqlcontextQueryExecution1 = dataFrame1.queryExecution();');
         },
         done
       );

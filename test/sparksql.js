@@ -58,7 +58,7 @@ describe('SQL Test', function() {
         function() {
           sqlContext = new spark.SQLContext(ctx);
         }, function(msg) {
-          expect(msg.code).equals('var sqlContext = new SQLContext(jsc);');
+          expect(msg.code).equals('var sqlcontext1 = new SQLContext(jsc);');
         },
         done
       );
@@ -118,7 +118,7 @@ describe('SQL Test', function() {
           var DataTypes = sqlContext.types.DataTypes;
           schema = DataTypes.createStructType(fields);
         }, function(msg) {
-          expect(msg.code).equals('var structType1 = DataTypes.createStructType([structField1,structField2]);');
+          expect(msg.code).equals('var structType1 = DataTypes.createStructType([structField1, structField2]);');
         },
         done
       );
@@ -166,7 +166,7 @@ describe('SQL Test', function() {
         function() {
           peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema);
         }, function(msg) {
-          expect(msg.code).equals('var dataFrame1 = sqlContext.createDataFrame(rdd3, structType1);');
+          expect(msg.code).equals('var dataFrame1 = sqlcontext1.createDataFrame(rdd3, structType1);');
         },
         done
       );
@@ -192,7 +192,7 @@ describe('SQL Test', function() {
         function() {
           results = sqlContext.sql("SELECT name FROM people");
         }, function(msg) {
-          expect(msg.code).equals('var dataFrame2 = sqlContext.sql("SELECT name FROM people");');
+          expect(msg.code).equals('var dataFrame2 = sqlcontext1.sql("SELECT name FROM people");');
         },
         done
       );
