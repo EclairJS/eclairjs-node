@@ -47,7 +47,7 @@ examples.count().then(function(numExamples) {
     Promise.all(promises).then(function(results) {
       console.log('RDD.sample(): sample has ' + results[0] + ' examples, expected '+expectedSampleSize);
       console.log('RDD.takeSample(): sample has ' + results[1].length + ' examples, expected '+expectedSampleSize);
-
+      stop();
     }).catch(stop);
   } else {
     stop();

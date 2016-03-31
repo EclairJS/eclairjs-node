@@ -452,8 +452,8 @@ describe('DataFrame Test', function() {
   describe("dataFrame.describe(columnName)", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
-        function(callback) {
-          dataFrame.describe("age", "expense").toJSON().toArray().then(callback);
+        function(callback, error) {
+          dataFrame.describe("age", "expense").toJSON().toArray().then(callback).catch(error);
         }, function(result) {
           expect(result).deep.equals([
             {

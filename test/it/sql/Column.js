@@ -196,8 +196,8 @@ describe('Column Test', function() {
   describe("Column.cast(DataType.StringType)", function() {
     it("should cast to string", function(done) {
       TestUtils.executeTest(
-        function(callback) {
-          dataFrame.col("age").cast(DataTypes.StringType).toString().then(callback);
+        function(callback, error) {
+          dataFrame.col("age").cast(DataTypes.StringType).toString().then(callback).catch(error);
         }, function(result) {
           expect(result).contain('cast(age as string)');
         },

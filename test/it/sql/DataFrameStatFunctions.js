@@ -98,7 +98,7 @@ describe('DataFrameStatFunctions Test', function() {
           var stat = dataFrame.stat();
           stat.corr("age", "expense").then(callback).catch(error);
         }, function(result) {
-          expect(result).equals(-0);
+          expect(result).equals(-0.8219949365267865);
         },
         done
       );

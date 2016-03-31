@@ -55,12 +55,9 @@ var userRecommendedScaled = userRecs.map(function(val) {
 var userRecommended = spark.rdd.PairRDD.fromRDD(userRecommendedScaled);
 
 var binarizedRatings = ratings.map(function(r) {
-  var binaryRating;
-
+  var binaryRating = 0.0;
   if (r.rating() > 0.0) {
     binaryRating = 1.0;
-  } else {
-    binaryRating = 0.0;
   }
 
   return new Rating(r.user(), r.product(), binaryRating);
@@ -71,19 +68,21 @@ var userMovies = binarizedRatings.groupBy(function(r) {
 });
 
 var userMoviesList = userMovies.mapValues(function(docs) {
-  return docs.reduce(function(prev, curr) {
-    if(curr.rating() > 0.0) {
-      return prev.concat(curr.product());
+  var products = new List();
+  docs.forEach(function (r) {
+    if (r.rating() > 0.0) {
+      products.add(r.product());
     }
-
-    return prev;
-  }, []);
+  });
+  return products;
 });
 
 var userRecommendedList = userRecommended.mapValues(function(docs) {
-  return docs.map(function(rating) {
-    return rating.product();
+  var products = new List();
+  docs.forEach(function (r) {
+    products.add(r.product());
   });
+  return products;
 });
 
 var relevantDocs = userMoviesList.join(userRecommendedList).values();
@@ -118,13 +117,13 @@ var promises = [];
 
 promises.push(createResulPromise("Precision at 1", metrics.precisionAt(1)));
 promises.push(createResulPromise("NDCG at 1", metrics.ndcgAt(1)));
-//promises.push(createResulPromise("Precision at 3", metrics.precisionAt(3)));
-//promises.push(createResulPromise("NDCG at 3", metrics.ndcgAt(3)));
-//promises.push(createResulPromise("Precision at 5", metrics.precisionAt(5)));
-//promises.push(createResulPromise("NDCG at 5", metrics.ndcgAt(5)));
-//promises.push(createResulPromise("Mean average precision", metrics.meanAveragePrecision()));
-//promises.push(createResulPromise("RMSE", regressionMetrics.rootMeanSquaredError()));
-//promises.push(createResulPromise("R-squared", regressionMetrics.r2()));
+promises.push(createResulPromise("Precision at 3", metrics.precisionAt(3)));
+promises.push(createResulPromise("NDCG at 3", metrics.ndcgAt(3)));
+promises.push(createResulPromise("Precision at 5", metrics.precisionAt(5)));
+promises.push(createResulPromise("NDCG at 5", metrics.ndcgAt(5)));
+promises.push(createResulPromise("Mean average precision", metrics.meanAveragePrecision()));
+promises.push(createResulPromise("RMSE", regressionMetrics.rootMeanSquaredError()));
+promises.push(createResulPromise("R-squared", regressionMetrics.r2()));
 
 Promise.all(promises).then(function(results) {
   results.forEach(function(result) {
