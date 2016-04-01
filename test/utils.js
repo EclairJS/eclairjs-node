@@ -187,7 +187,7 @@ describe('Utils Test', function() {
             method: 'agg',
             args: [
               {value: function(){return 'foo'}, type: 'lambda'},
-              {value: Utils.wrapArray(bindArgs), optional: true}
+              {value: Utils.wrapBindArgs(bindArgs), optional: true}
             ],
             returnType: TestClass
           };

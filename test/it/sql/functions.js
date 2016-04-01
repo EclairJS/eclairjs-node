@@ -23,7 +23,14 @@ var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "sql.functions Integration Tests");
+var sc;
+
+if (global.SC) {
+  sc = global.SC;
+} else {
+  sc = new spark.SparkContext("local[*]", "sql.functions Integration Tests");
+}
+
 var sqlContext = new spark.SQLContext(sc);
 
 var DataTypes = sqlContext.types.DataTypes;
@@ -242,8 +249,11 @@ describe('sql.functions Test', function() {
   runTest("sort_array", function(){return [dataFrame.col("name"), true]}, "sort_array(name,true)");
 
   after(function(done) {
-    if (sc) {
+    if (!global.SC && sc) {
       sc.stop().then(done).catch(done);
+    } else {
+      // global sc, so don't stop it
+      done();
     }
   });
 });

@@ -23,11 +23,16 @@ var TestUtils = require('../lib/utils.js');
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "SparkContext Integration Tests");
+var sc;
 
-var accumulator;
+if (global.SC) {
+  sc = global.SC;
+} else {
+  sc = new spark.SparkContext("local[*]", "SparkContext Integration Tests");
+}
 
 describe('SparkContext Test', function() {
+  var accumulator;
 
   describe("SparkContext.accumulator()", function() {
     it("should equal 10", function(done) {
@@ -105,8 +110,11 @@ describe('SparkContext Test', function() {
   });
 
   after(function(done) {
-    if (sc) {
+    if (!global.SC && sc) {
       sc.stop().then(done).catch(done);
+    } else {
+      // global sc, so don't stop it
+      done();
     }
   });
 });

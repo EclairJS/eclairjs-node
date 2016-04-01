@@ -23,7 +23,14 @@ var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "sql.GroupedData Integration Tests");
+var sc;
+
+if (global.SC) {
+  sc = global.SC;
+} else {
+  sc = new spark.SparkContext("local[*]", "sql.GroupedData Integration Tests");
+}
+
 var sqlContext = new spark.SQLContext(sc);
 
 function buildPeopleTable(file, callback) {
@@ -172,8 +179,11 @@ describe('GroupedData Test', function() {
   });
 
   after(function(done) {
-    if (sc) {
+    if (!global.SC && sc) {
       sc.stop().then(done).catch(done);
+    } else {
+      // global sc, so don't stop it
+      done();
     }
   });
 });
