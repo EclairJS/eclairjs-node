@@ -31,11 +31,11 @@ var sc = new spark.SparkContext("local[*]", "Linear Regression Test");
 
 var data = sc.textFile(__dirname + "/data/lpsa.txt");
 
-var parsedData = data.map( function(s) {
+var parsedData = data.map( function(s, LabeledPoint, DenseVector) {
   var parts = s.split(",");
   var features = parts[1].split(" ");
   return new LabeledPoint(parts[0], new DenseVector(features));
-});
+}, [spark.mllib.regression.LabeledPoint, spark.mllib.linalg.DenseVector]);
 
 var numIterations = 3;
 var linearRegressionModel = spark.mllib.regression.LinearRegressionWithSGD.train(parsedData, numIterations);

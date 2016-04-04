@@ -28,7 +28,6 @@ function listener(msg) {
   testOutput.push(msg.code);
 }
 
-
 function onceDone(obj) {
   return new Promise(function(resolve, reject) {
     if (obj.kernelP && obj.refIdP) {
@@ -74,6 +73,8 @@ function TestClass(kernelP, refIdP) {
   this.refIdP = refIdP;
 }
 
+TestClass.moduleLocation = 'test/TestClass';
+
 var testClassInstance = new TestClass(sc.kernelP, Promise.resolve('tci'));
 
 describe('Utils Test', function() {
@@ -94,7 +95,7 @@ describe('Utils Test', function() {
 
           onceDone(Utils.generate(args)).then(callback).catch(error);
         }, function(result) {
-          expect(result).equals('var testClass1 = tci.agg();');
+          expect(result).equals('var TestClass = require(\'test/TestClass\');\nvar testClass1 = tci.agg();');
         },
         done
       );
@@ -250,8 +251,6 @@ describe('Utils Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback, error) {
-          var bindArgs = [1,'123',testClassInstance];
-
           var args = {
             kernelP: sc.kernelP,
             target: TestClass,
@@ -268,9 +267,60 @@ describe('Utils Test', function() {
       );
     });
   });
-  
+
+  describe("Basic method call with lambda argument thant contains a class reference", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var bindArgs = [TestClass];
+
+          var args = {
+            target: testClassInstance,
+            method: 'agg',
+            args: [
+              {value: function(){return 'foo'}, type: 'lambda'},
+              {value: Utils.wrapBindArgs(bindArgs), optional: true}
+            ],
+            returnType: TestClass
+          };
+
+          onceDone(Utils.generate(args)).then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('var testClass7 = tci.agg(function (){return \'foo\'}, [TestClass]);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("Basic static method call with lambda args", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var bindArgs = [1,'123',testClassInstance];
+
+          var args = {
+            kernelP: sc.kernelP,
+            target: TestClass,
+            method: 'agg',
+            args: [
+              {value: function(){return 'foo'}, type: 'lambda'},
+              {value: Utils.wrapBindArgs(bindArgs), optional: true}
+            ],
+            static: true,
+            returnType: TestClass
+          };
+
+          onceDone(Utils.generate(args)).then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('var testClass8 = TestClass.agg(function (){return \'foo\'}, [1,\"123\",tci]);');
+        },
+        done
+      );
+    });
+  });
+
   /*
     Tests: resolver, wrapArray
    */
-
 });
