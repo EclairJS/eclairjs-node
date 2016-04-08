@@ -41,9 +41,16 @@ function onceDone(obj) {
 
 function executeTest(run, checks, done) {
   // called once the test is complete
-  function callback() {
+  function callback(result) {
     try {
-      checks(testOutput.length == 1 ? testOutput[0] : testOutput);
+      var res;
+
+      if (result && testOutput.length == 0) {
+        res = result;
+      } else {
+        res = testOutput.length == 1 ? testOutput[0] : testOutput;
+      }
+      checks(res);
       done();
     } catch (e) {
       done(e);
@@ -268,7 +275,28 @@ describe('Utils Test', function() {
       );
     });
   });
-  
+
+  describe("Utils.wrapArray", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback, error) {
+          var arr = [1,'123',[1], false, {}];
+
+          var x = Utils.wrapArray(arr);
+
+          callback(x);
+        }, function(result) {
+          expect(result[0].type).equals('number');
+          expect(result[1].type).equals('string');
+          expect(result[2].type).equals('array');
+          expect(result[3].type).equals('boolean');
+          expect(result[4].type).equals('map');
+        },
+        done
+      );
+    });
+  });
+
   /*
     Tests: resolver, wrapArray
    */
