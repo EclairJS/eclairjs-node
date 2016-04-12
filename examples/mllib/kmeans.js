@@ -35,14 +35,14 @@ var sc = new spark.SparkContext("local[*]", "K Means Example");
 
 var data = sc.textFile(__dirname + "/data/kmeans_data.txt");
 
-var points = data.map(function (line) {
+var points = data.map(function(line, Vectors) {
   var tok = line.split(" ");
   var point = [];
   tok.forEach(function (t) {
     point.push(parseFloat(t));
   });
   return Vectors.dense(point);
-});
+}, [spark.mllib.linalg.Vectors]);
 
 var model = spark.mllib.clustering.KMeans.train(points, k, iterations, runs, spark.mllib.clustering.KMeans.K_MEANS_PARALLEL);
 

@@ -40,7 +40,7 @@ var sc = new spark.SparkContext("local[*]", "LR Example");
 
 var data = sc.textFile(__dirname + "/data/random.data");
 
-var points = data.map(function (line) {
+var points = data.map(function (line, LabeledPoint, Vectors) {
   var parts = line.split(",");
   var y = parseFloat(parts[0]);
   var tok = parts[1].split(" ");
@@ -50,7 +50,7 @@ var points = data.map(function (line) {
   }
 
   return new LabeledPoint(y, Vectors.dense(x));
-}).cache();
+}, [spark.mllib.regression.LabeledPoint, spark.mllib.linalg.Vectors]).cache();
 
 var stepSize = 3.0;
 var iterations = 10;
