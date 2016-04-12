@@ -40,10 +40,10 @@ var sc = new spark.SparkContext("local[*]", "Collaborative Filtering Example");
 
 var data = sc.textFile(__dirname + "/data/alsdata.txt");
 
-var ratings = data.map(function (s) {
+var ratings = data.map(function(s, Rating) {
   var sarray = s.split(",");
   return new Rating(parseInt(sarray[0]), parseInt(sarray[1]), parseFloat(sarray[2]));
-});
+}, [spark.mllib.recommendation.Rating]);
 
 // Build the recommendation model using ALS
 var rank = 10;

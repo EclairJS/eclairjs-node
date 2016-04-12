@@ -39,13 +39,13 @@ var sc = new spark.SparkContext("local[*]", "ALS");
 
 var lines = sc.textFile(__dirname + "/data/alsdata.txt");
 
-var ratings = lines.map(function(line){
+var ratings = lines.map(function(line, Rating){
   var tok = line.split(",");
   var x = parseInt(tok[0]);
   var y = parseInt(tok[1]);
   var rating = parseFloat(tok[2]);
   return new Rating(x, y, rating);
-});
+}, [spark.mllib.recommendation.Rating]);
 
 var model = spark.mllib.recommendation.ALS.train(ratings, rank, iterations, 0.01, blocks);
 

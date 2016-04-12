@@ -870,7 +870,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.persist(spark.storage.StorageLevel.NONE())).then(callback);
         }, function(result) {
-          expect(result[0]).equals('var storageLevel1 = StorageLevel.NONE();');
+          expect(result[0]).equals('var StorageLevel = require(EclairJS_Globals.NAMESPACE + \'/storage/StorageLevel\');\nvar storageLevel1 = StorageLevel.NONE();');
           expect(result[1]).equals('var dataFrame27 = dataFrame1.persist(storageLevel1);');
         },
         done

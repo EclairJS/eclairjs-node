@@ -31,13 +31,13 @@ var sc = new spark.SparkContext("local[*]", "Ranking Metrics Example");
 
 var data = sc.textFile(__dirname + "/data/sample_movielens_data.txt");
 
-var ratings = data.map(function(line) {
+var ratings = data.map(function(line, Rating) {
   var arr = line.split("::");
   var r = new Rating(parseInt(arr[0]),
                      parseInt(arr[1]),
                      parseFloat(arr[2]) - 2.5);
   return r;
-}).cache();
+}, [spark.mllib.recommendation.Rating]).cache();
 
 var model = spark.mllib.recommendation.ALS.train(ratings, 10, 10, 0.01);
 
