@@ -31,14 +31,14 @@ var sc = new spark.SparkContext("local[*]", "Regression Metrics Example");
 
 var data = sc.textFile(__dirname + "/data/sample_linear_regression_data.txt");
 
-var parsedData = data.map(function(line) {
+var parsedData = data.map(function(line, LabeledPoint, Vectors) {
   var arr = line.split(" ");
   var features = arr.slice(1).map(function(item) {
     return parseFloat(item.split(":")[1]);
   });
 
   return new LabeledPoint(parseFloat(arr[0]), new Vectors.dense(features));
-}).cache();
+}, [spark.mllib.regression.LabeledPoint, spark.mllib.linalg.Vectors]).cache();
 
 var numIterations = 100;
 var model = spark.mllib.regression.LinearRegressionWithSGD.train(parsedData, numIterations);

@@ -40,14 +40,14 @@ var sc = new spark.SparkContext("local[*]", "LDA Example");
 
 var data = sc.textFile(__dirname + "/data/sample_lda_data.txt");
 
-var parsedData = data.map(function (s) {
+var parsedData = data.map(function (s, Vectors) {
   var sarray = s.trim().split(" ");
   var values = [];
   for (var i = 0; i < sarray.length; i++) {
     values[i] = parseFloat(sarray[i]);
   }
   return Vectors.dense(values);
-});
+}, [spark.mllib.linalg.Vectors]);
 
 // Index documents with unique IDs
 var zipIndex = parsedData.zipWithIndex().map(function (doc_id) {

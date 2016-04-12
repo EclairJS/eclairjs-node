@@ -61,4 +61,5 @@ Promise.all(promises).then(function(results) {
   console.log('Generated RDD examples of length-2 vectors:',results[2]);
   console.log('  First 5:',results[3]);
 
+  stop();
 }).catch(stop);
