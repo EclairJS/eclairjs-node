@@ -68,13 +68,13 @@ function buildRockstarsTable(file, callback) {
   var schema = DataTypes.createStructType(fields);
 
   // Convert records of the RDD (rocker) to Rows.
-  var rowRDD = rockers.map(function(rocker){
+  var rowRDD = rockers.map(function(rocker, RowFactory){
     //print('create rocker: ',JSON.stringify(rocker));
     // Have to convert the Date and Timestamp fields
     var bday = new SqlDate(rocker.birthday);
     var bdaytime = new SqlTimestamp(rocker.birthday);
     return RowFactory.create([rocker.surname, rocker.forename, rocker.age, bday, rocker.numkids, rocker.married, rocker.networth, rocker.weight, rocker.percent, bdaytime]);
-  });
+  }, [spark.sql.RowFactory]);
 
   //Apply the schema to the RDD.
   var rockstarsDataFrame = sqlContext.createDataFrame(rowRDD, schema);

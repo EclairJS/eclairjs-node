@@ -60,9 +60,9 @@ function buildPeopleTable(file, callback) {
   var schema = DataTypes.createStructType(fields);
 
   // Convert records of the RDD (people) to Rows.
-  var rowRDD = people.map(function(person){
+  var rowRDD = people.map(function(person, RowFactory){
     return RowFactory.create([person.name, person.age, person.expense, person.hasJob, person.isOld]);
-  });
+  }, [spark.sql.RowFactory]);
 
   //Apply the schema to the RDD.
   var peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema);
