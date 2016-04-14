@@ -34,9 +34,9 @@ var numPartition = -1;
 
 var data = sc.textFile(__dirname + "/data/sample_fpgrowth.txt")
 
-var transactions = data.map(function(s) {
+var transactions = data.map(function(s, List) {
   return new List(s.split(" "));
-});
+}, [spark.List]);
 
 var model = new spark.mllib.fpm.FPGrowth()
   .setMinSupport(minSupport)

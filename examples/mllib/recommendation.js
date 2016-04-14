@@ -51,23 +51,22 @@ var numIterations = 10;
 var model = spark.mllib.recommendation.ALS.train(ratings, rank, numIterations, 0.01);
 
 // Evaluate the model on rating data
-var userProducts = ratings.map(function (r) {
+var userProducts = ratings.map(function (r, Tuple) {
   return new Tuple(r.user(), r.product());
-});
+}, [spark.Tuple]);
 
-
-var predictions = spark.rdd.PairRDD.fromRDD(model.predict(userProducts).map(function (r) {
+var predictions = spark.rdd.PairRDD.fromRDD(model.predict(userProducts).map(function(r, Tuple) {
   return new Tuple(new Tuple(r.user(), r.product()), r.rating());
-}));
+}, [spark.Tuple]));
 
-var ratesAndPreds = spark.rdd.PairRDD.fromRDD(ratings.map(function (r) {
+var ratesAndPreds = spark.rdd.PairRDD.fromRDD(ratings.map(function(r, Tuple) {
   return new Tuple(new Tuple(r.user(), r.product()), r.rating());
-})).join(predictions).values();
+}, [spark.Tuple])).join(predictions).values();
 
-var MSE = spark.rdd.FloatRDD.fromRDD(ratesAndPreds.map(function (pair) {
+var MSE = spark.rdd.FloatRDD.fromRDD(ratesAndPreds.map(function(pair) {
   var err = pair[0] - pair[1];
   return err * err;
-}))
+}));
 
 var x = MSE.mean();
 

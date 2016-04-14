@@ -27,28 +27,38 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Linear Regression Test");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = sc.textFile(__dirname + "/data/lpsa.txt");
 
-var data = sc.textFile(__dirname + "/data/lpsa.txt");
+    var parsedData = data.map(function (s, LabeledPoint, DenseVector) {
+      var parts = s.split(",");
+      var features = parts[1].split(" ");
+      return new LabeledPoint(parts[0], new DenseVector(features));
+    }, [spark.mllib.regression.LabeledPoint, spark.mllib.linalg.DenseVector]);
 
-var parsedData = data.map( function(s, LabeledPoint, DenseVector) {
-  var parts = s.split(",");
-  var features = parts[1].split(" ");
-  return new LabeledPoint(parts[0], new DenseVector(features));
-}, [spark.mllib.regression.LabeledPoint, spark.mllib.linalg.DenseVector]);
+    var numIterations = 3;
+    var linearRegressionModel = spark.mllib.regression.LinearRegressionWithSGD.train(parsedData, numIterations);
 
-var numIterations = 3;
-var linearRegressionModel = spark.mllib.regression.LinearRegressionWithSGD.train(parsedData, numIterations);
+    var delta = 17;
+    var valuesAndPreds = parsedData.mapToPair(function (lp, linearRegressionModel, Tuple) {
+      var label = lp.getLabel();
+      var f = lp.getFeatures();
+      var prediction = linearRegressionModel.predict(f) + 17;
+      return new Tuple(prediction, label);
+    }, [linearRegressionModel, spark.Tuple]); // end MapToPair
 
-var delta = 17;
-var valuesAndPreds = parsedData.mapToPair(function(lp, linearRegressionModel) {
-  var label = lp.getLabel();
-  var f = lp.getFeatures();
-  var prediction = linearRegressionModel.predict(f) + 17;
-  return new Tuple(prediction, label);
-}, [linearRegressionModel]); // end MapToPair
+    valuesAndPreds.take(10).then(resolve).catch(reject);
+  });
+}
 
-valuesAndPreds.take(10).then(function(results) {
-  console.log(results);
-  stop();
-}).catch(stop);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Linear Regression Test");
+  run(sc).then(function(result) {
+    console.log(result);
+    stop();
+  }).catch(stop);
+}

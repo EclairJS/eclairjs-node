@@ -43,14 +43,14 @@ var model = spark.mllib.recommendation.ALS.train(ratings, 10, 10, 0.01);
 
 var userRecs = model.recommendProductsForUsers(10);
 
-var userRecommendedScaled = userRecs.map(function(val) {
+var userRecommendedScaled = userRecs.map(function(val, Tuple) {
   var newRatings = val[1].map(function(r) {
     var newRating = Math.max(Math.min(r.rating(), 1.0), 0.0);
     return new Rating(r.user(), r.product(), newRating);
   });
 
   return new Tuple(val[0], newRatings);
-});
+}, [spark.Tuple]);
 
 var userRecommended = spark.rdd.PairRDD.fromRDD(userRecommendedScaled);
 
@@ -67,7 +67,7 @@ var userMovies = binarizedRatings.groupBy(function(r) {
   return r.user();
 });
 
-var userMoviesList = userMovies.mapValues(function(docs) {
+var userMoviesList = userMovies.mapValues(function(docs, List) {
   var products = new List();
   docs.forEach(function (r) {
     if (r.rating() > 0.0) {
@@ -75,7 +75,7 @@ var userMoviesList = userMovies.mapValues(function(docs) {
     }
   });
   return products;
-});
+}, [spark.List]);
 
 var userRecommendedList = userRecommended.mapValues(function(docs) {
   var products = new List();
@@ -89,17 +89,17 @@ var relevantDocs = userMoviesList.join(userRecommendedList).values();
 
 var metrics = spark.mllib.evaluation.RankingMetrics.of(relevantDocs);
 
-var userProducts = ratings.map(function(r) {
+var userProducts = ratings.map(function(r, Tuple) {
   return new Tuple(r.user(), r.product());
-});
+}, [spark.Tuple]);
 
-var predictions = spark.rdd.PairRDD.fromRDD(model.predict(userProducts).map(function(r) {
+var predictions = spark.rdd.PairRDD.fromRDD(model.predict(userProducts).map(function(r, Tuple) {
   return new Tuple(new Tuple(r.user(), r.product()), r.rating());
-}));
+}, [spark.Tuple]));
 
-var ratesAndPreds = spark.rdd.PairRDD.fromRDD(ratings.map(function(r) {
+var ratesAndPreds = spark.rdd.PairRDD.fromRDD(ratings.map(function(r, Tuple) {
   return new Tuple(new Tuple(r.user(), r.product()), r.rating());
-})).join(predictions).values();
+}, [spark.Tuple])).join(predictions).values();
 
 // Create regression metrics object
 var regressionMetrics = new spark.mllib.evaluation.RegressionMetrics(ratesAndPreds);

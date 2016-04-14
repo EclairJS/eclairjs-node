@@ -37,9 +37,9 @@ data.randomSplit([0.6, 0.4], 12345).then(function(splits) {
 
   var model = spark.mllib.classification.NaiveBayes.train(trainingData, 1.0);
 
-  var predictionAndLabel = testData.mapToPair(function (lp, model) {
+  var predictionAndLabel = testData.mapToPair(function (lp, model, Tuple) {
     return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
-  }, [model]);
+  }, [model, spark.Tuple]);
 
   var filtered = predictionAndLabel.filter(function (tuple) {
     return tuple[0] == tuple[1];

@@ -49,10 +49,10 @@ data.randomSplit([0.6, 0.4], 11).then(function(splits) {
   var model = new spark.mllib.classification.LogisticRegressionWithLBFGS().setNumClasses(3).run(training);
 
   // Compute raw scores on the test set.
-  var predictionAndLabels = test.map(function (lp, model) {
+  var predictionAndLabels = test.map(function (lp, model, Tuple) {
     var prediction = model.predict(lp.getFeatures());
     return new Tuple(prediction, lp.getLabel());
-  }, [model]);
+  }, [model, spark.Tuple]);
 
   var metrics = new spark.mllib.evaluation.MulticlassMetrics(predictionAndLabels);
 

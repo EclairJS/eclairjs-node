@@ -64,9 +64,9 @@ data.randomSplit([0.7, 0.3]).then(function(splits) {
   );
 
   // Evaluate model on test instances and compute test error
-  var predictionAndLabel = testData.mapToPair(function(p, model) {
+  var predictionAndLabel = testData.mapToPair(function(p, model, Tuple) {
     return new Tuple(model.predict(p.getFeatures()), p.getLabel());
-  }, [model]);
+  }, [model, spark.Tuple]);
 
 
   var promises = [];

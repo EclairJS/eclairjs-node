@@ -55,9 +55,9 @@ data.randomSplit([0.7, 0.3]).then(function(splits) {
     Promise.all(promises).then(function() {
       var model = spark.mllib.tree.GradientBoostedTrees.train(trainingData, boostingStrategy);
 
-      var predictionAndLabel = testData.mapToPair(function (lp, model) {
+      var predictionAndLabel = testData.mapToPair(function (lp, model, Tuple) {
         return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
-      }, [model]);
+      }, [model, spark.Tuple]);
 
       var testMSE = predictionAndLabel.map(function (tuple2) {
         var diff = parseFloat(tuple2[0] - tuple2[1]);

@@ -44,10 +44,10 @@ var model = spark.mllib.classification.SVMWithSGD.train(training, numIterations)
 model.clearThreshold();
 
 // Compute raw scores on the test set.
-var scoreAndLabels = test.map(function (lp, model) {
+var scoreAndLabels = test.map(function (lp, model, Tuple) {
   var score = model.predict(lp.getFeatures());
   return new Tuple(score, lp.getLabel());
-}, [model]);
+}, [model, spark.Tuple]);
 
 // Get evaluation metrics.
 var metrics = new spark.mllib.evaluation.BinaryClassificationMetrics(scoreAndLabels);
