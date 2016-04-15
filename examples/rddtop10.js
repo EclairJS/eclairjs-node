@@ -35,17 +35,17 @@ var rdd3 = rdd2.filter(function(word) {
   return word.trim().length > 0;
 });
 
-var rdd4 = rdd3.mapToPair(function(word) {
+var rdd4 = rdd3.mapToPair(function(word, Tuple) {
   return new Tuple(word.toLowerCase(), 1);
-});
+}, [spark.Tuple]);
 
 var rdd5 = rdd4.reduceByKey(function(value1, value2) {
   return value1 + value2;
 });
 
-var rdd6 = rdd5.mapToPair(function(tuple) {
+var rdd6 = rdd5.mapToPair(function(tuple, Tuple) {
   return new Tuple(tuple[1] + 0.0, tuple[0]);
-});
+}, [spark.Tuple]);
 
 var rdd7 = rdd6.sortByKey(false);
 
