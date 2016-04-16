@@ -27,49 +27,55 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Regression Metrics Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = sc.textFile(__dirname + "/data/sample_linear_regression_data.txt");
 
-var data = sc.textFile(__dirname + "/data/sample_linear_regression_data.txt");
+    var parsedData = data.map(function(line, LabeledPoint, Vectors) {
+      var arr = line.split(" ");
+      var features = arr.slice(1).map(function(item) {
+        return parseFloat(item.split(":")[1]);
+      });
 
-var parsedData = data.map(function(line, LabeledPoint, Vectors) {
-  var arr = line.split(" ");
-  var features = arr.slice(1).map(function(item) {
-    return parseFloat(item.split(":")[1]);
+      return new LabeledPoint(parseFloat(arr[0]), new Vectors.dense(features));
+    }, [spark.mllib.regression.LabeledPoint, spark.mllib.linalg.Vectors]).cache();
+
+    var numIterations = 100;
+    var model = spark.mllib.regression.LinearRegressionWithSGD.train(parsedData, numIterations);
+
+    var valuesAndPreds = parsedData.mapToPair(function(lp, model, Tuple) {
+      return new Tuple(
+        model.predict(lp.getFeatures()),
+        lp.getLabel()
+      );
+    }, [model, spark.Tuple]); // end MapToPair
+
+    //Instantiate metrics object
+    var metrics = new spark.mllib.evaluation.RegressionMetrics(valuesAndPreds);
+
+    var promises = [];
+
+    promises.push(metrics.meanSquaredError());
+    promises.push(metrics.rootMeanSquaredError());
+    promises.push(metrics.r2());
+    promises.push(metrics.meanAbsoluteError());
+    promises.push(metrics.explainedVariance());
+
+    Promise.all(promises).then(resolve).catch(reject);
   });
+}
 
-  return new LabeledPoint(parseFloat(arr[0]), new Vectors.dense(features));
-}, [spark.mllib.regression.LabeledPoint, spark.mllib.linalg.Vectors]).cache();
-
-var numIterations = 100;
-var model = spark.mllib.regression.LinearRegressionWithSGD.train(parsedData, numIterations);
-
-var valuesAndPreds = parsedData.mapToPair(function(lp, model, Tuple) {
-  return new Tuple(
-    model.predict(lp.getFeatures()),
-    lp.getLabel()
-  );
-}, [model, spark.Tuple]); // end MapToPair
-
-//Instantiate metrics object
-var metrics = new spark.mllib.evaluation.RegressionMetrics(valuesAndPreds);
-
-var promises = [];
-
-promises.push(metrics.meanSquaredError());
-promises.push(metrics.rootMeanSquaredError());
-promises.push(metrics.r2());
-promises.push(metrics.meanAbsoluteError());
-promises.push(metrics.explainedVariance());
-
-Promise.all(promises).then(function(results) {
-  console.log("MSE:", results[0]);
-  console.log("RMSE:", results[1]);
-  console.log("R-squared:", results[2]);
-  console.log("MAE:", results[3]);
-  console.log("Explained variance:", results[3]);
-
-  stop();
-}).catch(stop);
-
-
-
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Regression Metrics");
+  run(sc).then(function(results) {
+    console.log("MSE:", results[0]);
+    console.log("RMSE:", results[1]);
+    console.log("R-squared:", results[2]);
+    console.log("MAE:", results[3]);
+    console.log("Explained variance:", results[3]);
+    stop();
+  }).catch(stop);
+}

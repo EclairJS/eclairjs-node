@@ -27,35 +27,44 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var Vectors = spark.mllib.linalg.Vectors;
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var Vectors = spark.mllib.linalg.Vectors;
 
-var sc = new spark.SparkContext("local[*]", "Bisecting K Mean");
+    var localData = [
+      Vectors.dense(0.1, 0.1), Vectors.dense(0.3, 0.3),
+      Vectors.dense(10.1, 10.1), Vectors.dense(10.3, 10.3),
+      Vectors.dense(20.1, 20.1), Vectors.dense(20.3, 20.3),
+      Vectors.dense(30.1, 30.1), Vectors.dense(30.3, 30.3)
+    ];
 
-var localData = [
-  Vectors.dense(0.1, 0.1), Vectors.dense(0.3, 0.3),
-  Vectors.dense(10.1, 10.1), Vectors.dense(10.3, 10.3),
-  Vectors.dense(20.1, 20.1), Vectors.dense(20.3, 20.3),
-  Vectors.dense(30.1, 30.1), Vectors.dense(30.3, 30.3)
-];
+    var data = sc.parallelize(localData, 2);
 
-var data = sc.parallelize(localData, 2);
+    var bkm = new spark.mllib.clustering.BisectingKMeans().setK(4);
 
-var bkm = new spark.mllib.clustering.BisectingKMeans().setK(4);
+    var model = bkm.run(data);
 
-var model = bkm.run(data);
+    var promises = [];
 
-var promises = [];
+    promises.push(model.computeCost(data));
+    promises.push(model.clusterCenters());
 
-promises.push(model.computeCost(data));
-promises.push(model.clusterCenters());
-
-Promise.all(promises).then(function(results) {
-  console.log("Compute cost:", results[0]);
-
-  var promises2 = [];
-  results[1].forEach(function(v, i) {
-    console.log("Cluster_Center "+i, v);
+    Promise.all(promises).then(resolve).catch(reject);
   });
-  
-  stop();
-}).catch(stop);
+}
+
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Bisecting K Mean");
+  run(sc).then(function(results) {
+    console.log("Compute cost:", results[0]);
+
+    results[1].forEach(function(v, i) {
+      console.log("Cluster_Center "+i, v);
+    });
+
+    stop();
+  }).catch(stop);
+}

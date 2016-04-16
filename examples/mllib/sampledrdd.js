@@ -27,30 +27,40 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Sampled RDDs");
 
-var examples = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var examples = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
 
-examples.count().then(function(numExamples) {
-  if (numExamples > 0) {
-    var fraction = 0.1;  // fraction of data to sample
+    examples.count().then(function(numExamples) {
+      if (numExamples > 0) {
+        var fraction = 0.1;  // fraction of data to sample
 
-    var expectedSampleSize = parseInt(numExamples * fraction);
+        var expectedSampleSize = parseInt(numExamples * fraction);
 
-    var sampledRDD = examples.sample(true, fraction);
+        var sampledRDD = examples.sample(true, fraction);
 
-    var promises = [];
+        var promises = [];
 
-    promises.push(sampledRDD.count());
-    promises.push(examples.takeSample(true, expectedSampleSize));
+        promises.push(sampledRDD.count());
+        promises.push(examples.takeSample(true, expectedSampleSize));
 
-    Promise.all(promises).then(function(results) {
-      console.log('RDD.sample(): sample has ' + results[0] + ' examples, expected '+expectedSampleSize);
-      console.log('RDD.takeSample(): sample has ' + results[1].length + ' examples, expected '+expectedSampleSize);
-      stop();
-    }).catch(stop);
-  } else {
+        Promise.all(promises).then(resolve).catch(stop);
+      } else {
+        resolve();
+      }
+    }).catch(reject);
+  });
+}
+
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Sampled RDDs");
+  run(sc).then(function(results) {
+    console.log('RDD.sample(): sample has ' + results[0] + ' examples');
+    console.log('RDD.takeSample(): sample has ' + results[1].length + ' examples');
     stop();
-  }
-}).catch(stop);
-
+  }).catch(stop);
+}

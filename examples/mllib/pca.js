@@ -37,23 +37,32 @@ function createResulPromise(label, promise) {
 var spark = require('../../lib/index.js');
 var Vectors = spark.mllib.linalg.Vectors;
 
-var sc = new spark.SparkContext("local[*]", "PCA Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = sc.textFile(__dirname + "/data/random.data");
 
-var data = sc.textFile(__dirname + "/data/random.data");
+    var rowsList = [Vectors.dense([1.12, 2.05, 3.12]), Vectors.dense([5.56, 6.28, 8.94]), Vectors.dense([10.2, 8.0, 20.5])];
 
-var rowsList = [Vectors.dense([1.12, 2.05, 3.12]), Vectors.dense([5.56, 6.28, 8.94]), Vectors.dense([10.2, 8.0, 20.5])];
+    var rows = sc.parallelize(rowsList);
 
-var rows = sc.parallelize(rowsList);
+    // Create a RowMatrix from JavaRDD<Vector>.
+    var mat = new spark.mllib.linalg.distributed.RowMatrix(rows);
 
-// Create a RowMatrix from JavaRDD<Vector>.
-var mat = new spark.mllib.linalg.distributed.RowMatrix(rows);
+    // Compute the top 3 principal components.
+    var pc = mat.computePrincipalComponents(3);
+    var projected = mat.multiply(pc);
 
-// Compute the top 3 principal components.
-var pc = mat.computePrincipalComponents(3);
-var projected = mat.multiply(pc);
+    projected.rows().collect().then(resolve).catch(reject);
+  });
+}
 
-//Vector[] collectPartitions = (Vector[])projected.rows().collect();
-projected.rows().collect().then(function(results) {
-  console.log('Projected vector of principal component:', results);
-  stop();
-}).catch(stop);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "PCA");
+  run(sc).then(function(results) {
+    console.log('Projected vector of principal component:', results);
+    stop();
+  }).catch(stop);
+}

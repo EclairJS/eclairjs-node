@@ -27,27 +27,37 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "FP Growth");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var minSupport = 0.3;
+    var numPartition = -1;
 
-var minSupport = 0.3;
-var numPartition = -1;
+    var data = sc.textFile(__dirname + "/data/sample_fpgrowth.txt");
 
-var data = sc.textFile(__dirname + "/data/sample_fpgrowth.txt")
+    var transactions = data.map(function(s, List) {
+      return new List(s.split(" "));
+    }, [spark.List]);
 
-var transactions = data.map(function(s, List) {
-  return new List(s.split(" "));
-}, [spark.List]);
+    var model = new spark.mllib.fpm.FPGrowth()
+      .setMinSupport(minSupport)
+      .setNumPartitions(numPartition)
+      .run(transactions);
 
-var model = new spark.mllib.fpm.FPGrowth()
-  .setMinSupport(minSupport)
-  .setNumPartitions(numPartition)
-  .run(transactions);
-
-var freqItemsRDD = model.freqItemsets();
-freqItemsRDD.collect().then(function(results) {
-  results.forEach(function(itemSet) {
-    console.log(itemSet.items, itemSet.freq)
+    var freqItemsRDD = model.freqItemsets();
+    freqItemsRDD.collect().then(resolve).catch(reject);
   });
+}
 
-  stop();
-}).catch(stop);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "FP Growth");
+  run(sc).then(function(results) {
+    results.forEach(function(itemSet) {
+      console.log(itemSet.items, itemSet.freq)
+    });
+
+    stop();
+  }).catch(stop);
+}

@@ -27,59 +27,67 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var k = 3;
-var iterations = 10;
-var runs = 1;
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var k = 3;
+    var iterations = 10;
+    var runs = 1;
+    var data =  spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
 
-var sc = new spark.SparkContext("local[*]", "Random Forest Regression Example");
+    data.randomSplit([0.7, 0.3]).then(function(splits) {
+      var trainingData = splits[0];
+      var testData = splits[1];
 
-var data =  spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
+      // Set parameters.
+      // Empty categoricalFeaturesInfo indicates all features are continuous.
+      var categoricalFeaturesInfo = {};
+      var numTrees = 3; // Use more in practice.
+      var featureSubsetStrategy = "auto"; // Let the algorithm choose.
+      var impurity = "variance";
+      var maxDepth = 4;
+      var maxBins = 32;
+      var seed = 12345;
 
-data.randomSplit([0.7, 0.3]).then(function(splits) {
-  var trainingData = splits[0];
-  var testData = splits[1];
+      // Train a RandomForest model.
+      var model = spark.mllib.tree.RandomForest.trainRegressor(
+        trainingData,
+        categoricalFeaturesInfo,
+        numTrees,
+        featureSubsetStrategy,
+        impurity,
+        maxDepth,
+        maxBins,
+        seed
+      );
 
-  // Set parameters.
-  // Empty categoricalFeaturesInfo indicates all features are continuous.
-  var categoricalFeaturesInfo = {};
-  var numTrees = 3; // Use more in practice.
-  var featureSubsetStrategy = "auto"; // Let the algorithm choose.
-  var impurity = "variance";
-  var maxDepth = 4;
-  var maxBins = 32;
-  var seed = 12345;
+      // Evaluate model on test instances and compute test error
+      var predictionAndLabel = testData.mapToPair(function(p, model, Tuple) {
+        return new Tuple(model.predict(p.getFeatures()), p.getLabel());
+      }, [model, spark.Tuple]);
 
-  // Train a RandomForest model.
-  var model = spark.mllib.tree.RandomForest.trainRegressor(
-    trainingData,
-    categoricalFeaturesInfo,
-    numTrees,
-    featureSubsetStrategy,
-    impurity,
-    maxDepth,
-    maxBins,
-    seed
-  );
+      var reduce = predictionAndLabel.map(function(tup) {
+        var diff = tup[0] - tup[1];
+        return diff * diff;
+      }).reduce(function(a, b) {
+        return a + b;
+      });
 
-  // Evaluate model on test instances and compute test error
-  var predictionAndLabel = testData.mapToPair(function(p, model, Tuple) {
-    return new Tuple(model.predict(p.getFeatures()), p.getLabel());
-  }, [model, spark.Tuple]);
+      var promises = [];
+      promises.push(reduce);
+      promises.push(testData.count());
 
-  var reduce = predictionAndLabel.map(function(tup) {
-    var diff = tup[0] - tup[1];
-    return diff * diff;
-  }).reduce(function(a, b) {
-    return a + b;
+      Promise.all(promises).then(resolve).catch(reject);
+    }).catch(reject);
   });
+}
 
-  var promises = [];
-  promises.push(reduce);
-  promises.push(testData.count());
-
-  Promise.all(promises).then(function(results) {
-    console.log("Test Mean Squared Error: ", results[0]/results[1]);
-
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Random Forest Regression");
+  run(sc).then(function(results) {
+    console.log("Test Mean Squared Error:", results[0]/results[1]);
     stop();
   }).catch(stop);
-}).catch(stop);
+}

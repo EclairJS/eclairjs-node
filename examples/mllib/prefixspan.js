@@ -27,24 +27,34 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Prefix Span Example");
 
-var List = spark.List;
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var List = spark.List;
 
-var sequences = sc.parallelize([
-  new List([new List([1, 2]), new List([3])]),
-  new List([new List([1]), new List([3, 2]), new List([1, 2])]),
-  new List([new List([1, 2]), new List([5])]),
-  new List([new List([6])])
-], 2);
+    var sequences = sc.parallelize([
+      new List([new List([1, 2]), new List([3])]),
+      new List([new List([1]), new List([3, 2]), new List([1, 2])]),
+      new List([new List([1, 2]), new List([5])]),
+      new List([new List([6])])
+    ], 2);
 
-var prefixSpan = new spark.mllib.fpm.PrefixSpan()
-  .setMinSupport(0.5)
-  .setMaxPatternLength(5);
-var model = prefixSpan.run(sequences);
+    var prefixSpan = new spark.mllib.fpm.PrefixSpan()
+      .setMinSupport(0.5)
+      .setMaxPatternLength(5);
+    var model = prefixSpan.run(sequences);
 
-model.freqSequences().collect().then(function(result) {
-  console.log(JSON.stringify(result));
+    model.freqSequences().collect().then(resolve).catch(reject);
+  });
+}
 
-  stop();
-}).catch(stop);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Prefix Span");
+  run(sc).then(function(result) {
+    console.log(JSON.stringify(result));
+    stop();
+  }).catch(stop);
+}

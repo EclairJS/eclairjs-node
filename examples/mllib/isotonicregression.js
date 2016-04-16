@@ -27,37 +27,46 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Isotonic Regression Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = sc.textFile(__dirname + "/data/sample_isotonic_regression_data.txt");
 
-var data = sc.textFile(__dirname + "/data/sample_isotonic_regression_data.txt");
+    // Create label, feature, weight tuples from input data with weight set to default value 1.0.
+    var parsedData = data.map(function(line, Tuple) {
+      var parts = line.split(",");
+      return new Tuple(parseFloat(parts[0]), parseFloat(parts[1]), 1.0);
+    }, [spark.Tuple]);
 
-// Create label, feature, weight tuples from input data with weight set to default value 1.0.
-var parsedData = data.map(function(line, Tuple) {
-  var parts = line.split(",");
-  return new Tuple(parseFloat(parts[0]), parseFloat(parts[1]), 1.0);
-}, [spark.Tuple]);
+    // Split data into training (60%) and test (40%) sets.
+    parsedData.randomSplit([0.6, 0.4], 11).then(function(splits) {
+      var training = splits[0];
+      var test = splits[1];
 
-// Split data into training (60%) and test (40%) sets.
-parsedData.randomSplit([0.6, 0.4], 11).then(function(splits) {
-  var training = splits[0];
-  var test = splits[1];
+      // Create isotonic regression model from training data.
+      // Isotonic parameter defaults to true so it is only shown for demonstration
+      var model = new spark.mllib.regression.IsotonicRegression().setIsotonic(true).run(training);
 
-  // Create isotonic regression model from training data.
-  // Isotonic parameter defaults to true so it is only shown for demonstration
-  var model = new spark.mllib.regression.IsotonicRegression().setIsotonic(true).run(training);
+      // Create tuples of predicted and real labels.
+      var predictionAndLabel = test.mapToPair(function (point, model, Tuple) {
+        var predictedLabel = model.predict(point[1]);
+        return new Tuple(predictedLabel, point[0]);
+      }, [model, spark.Tuple]);
 
-  // Create tuples of predicted and real labels.
-  var predictionAndLabel = test.mapToPair(function (point, model, Tuple) {
-    var predictedLabel = model.predict(point[1]);
-    return new Tuple(predictedLabel, point[0]);
-  }, [model, spark.Tuple]);
+      // Calculate mean squared error between predicted and real labels.
+      new spark.rdd.FloatRDD(predictionAndLabel.map(function (pl) {
+        return Math.pow(pl[0] - pl[1], 2);
+      })).mean().then(resolve).catch(reject);
+    }).catch(reject);
+  });
+}
 
-  // Calculate mean squared error between predicted and real labels.
-  new spark.rdd.FloatRDD(predictionAndLabel.map(function (pl) {
-    return Math.pow(pl[0] - pl[1], 2);
-  })).mean().then(function(mean) {
-    console.log("Mean Squared Error:", mean);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Isotonic Regression");
+  run(sc).then(function(results) {
+    console.log("Mean Squared Error:", results);
     stop();
   }).catch(stop);
-
-}).catch(stop);
+}

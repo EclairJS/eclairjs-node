@@ -35,29 +35,39 @@ function createResultPromise(label, promise) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "SVD Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var rows = sc.parallelize([
+      spark.mllib.linalg.Vectors.dense([1.12, 2.05, 3.12]),
+      spark.mllib.linalg.Vectors.dense([5.56, 6.28, 8.94]),
+      spark.mllib.linalg.Vectors.dense([10.2, 8.0, 20.5])
+    ]);
 
-var rows = sc.parallelize([
-  spark.mllib.linalg.Vectors.dense([1.12, 2.05, 3.12]),
-  spark.mllib.linalg.Vectors.dense([5.56, 6.28, 8.94]),
-  spark.mllib.linalg.Vectors.dense([10.2, 8.0, 20.5])
-]);
+    // Create a RowMatrix from JavaRDD<Vector>.
+    var mat = new spark.mllib.linalg.distributed.RowMatrix(rows);
 
-// Create a RowMatrix from JavaRDD<Vector>.
-var mat = new spark.mllib.linalg.distributed.RowMatrix(rows);
+    // Compute the top 3 singular values and corresponding singular vectors.
+    var svd = mat.computeSVD(3, true, 0.000000001);
 
-// Compute the top 3 singular values and corresponding singular vectors.
-var svd = mat.computeSVD(3, true, 0.000000001);
+    var promises = [];
+    promises.push(createResultPromise('U Factor', svd.U()));
+    promises.push(createResultPromise('Singular values are:', svd.s().toArray()));
+    promises.push(createResultPromise('V factor is:', svd.V()));
 
-var promises = [];
-promises.push(createResultPromise('U Factor', svd.U()));
-promises.push(createResultPromise('Singular values are:', svd.s().toArray()));
-promises.push(createResultPromise('V factor is:', svd.V()));
-
-Promise.all(promises).then(function(results) {
-  results.forEach(function(result) {
-    console.log(result[0], '=', result[1])
+    Promise.all(promises).then(resolve).catch(reject);
   });
+}
 
-  stop();
-}).catch(stop);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "SVD");
+  run(sc).then(function(results) {
+    results.forEach(function(result) {
+      console.log(result[0], '=', result[1])
+    });
+
+    stop();
+  }).catch(stop);
+}

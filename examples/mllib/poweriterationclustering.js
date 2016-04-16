@@ -27,27 +27,33 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Power Iteration Clustering Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var similarities = sc.parallelize([
+      new spark.Tuple(0, 1, 0.9),
+      new spark.Tuple(1, 2, 0.9),
+      new spark.Tuple(2, 3, 0.9),
+      new spark.Tuple(3, 4, 0.1),
+      new spark.Tuple(4, 5, 0.9)
+    ]);
 
-try {
-  var similarities = sc.parallelize([
-    new spark.Tuple(0, 1, 0.9),
-    new spark.Tuple(1, 2, 0.9),
-    new spark.Tuple(2, 3, 0.9),
-    new spark.Tuple(3, 4, 0.1),
-    new spark.Tuple(4, 5, 0.9)
-  ]);
-} catch (e) {
-  console.log(e)
-  stop();
-  return;
+    var pic = new spark.mllib.clustering.PowerIterationClustering()
+      .setK(2)
+      .setMaxIterations(10);
+
+    var model = pic.run(similarities);
+
+    model.assignments().collect().then(resolve).catch(stop);
+  });
 }
-var pic = new spark.mllib.clustering.PowerIterationClustering()
-  .setK(2)
-  .setMaxIterations(10);
-var model = pic.run(similarities);
 
-model.assignments().collect().then(function(results) {
-  console.log(results);
-  stop();
-}).then().catch(stop);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Power Iteration Clustering");
+  run(sc).then(function(results) {
+    console.log(results);
+    stop();
+  }).catch(stop);
+}

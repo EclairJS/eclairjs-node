@@ -27,53 +27,64 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Gradient Boosting Regression");
 
-var data =  spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data =  spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
 
 // Split the data into training and test sets (30% held out for testing)
-data.randomSplit([0.7, 0.3]).then(function(splits) {
-  var trainingData = splits[0];
-  var testData = splits[1];
+    data.randomSplit([0.7, 0.3]).then(function(splits) {
+      var trainingData = splits[0];
+      var testData = splits[1];
 
-  // Train a GradientBoostedTrees model.
-  // The defaultParams for Regression use SquaredError by default.
-  var boostingStrategy = spark.mllib.tree.configuration.BoostingStrategy.defaultParams("Regression");
+      // Train a GradientBoostedTrees model.
+      // The defaultParams for Regression use SquaredError by default.
+      var boostingStrategy = spark.mllib.tree.configuration.BoostingStrategy.defaultParams("Regression");
 
-  // Note: Use more iterations in practice.
-  boostingStrategy.setNumIterations(3).then(function() {
-    var treeStrat = boostingStrategy.getTreeStrategy();
+      // Note: Use more iterations in practice.
+      boostingStrategy.setNumIterations(3).then(function() {
+        var treeStrat = boostingStrategy.getTreeStrategy();
 
-    var promises = [];
+        var promises = [];
 
-    promises.push(treeStrat.setMaxDepth(5));
+        promises.push(treeStrat.setMaxDepth(5));
 
-    // Empty categoricalFeaturesInfo indicates all features are continuous.
-    var categoricalFeaturesInfo = {};
-    promises.push(treeStrat.setCategoricalFeaturesInfo(categoricalFeaturesInfo));
+        // Empty categoricalFeaturesInfo indicates all features are continuous.
+        var categoricalFeaturesInfo = {};
+        promises.push(treeStrat.setCategoricalFeaturesInfo(categoricalFeaturesInfo));
 
-    Promise.all(promises).then(function() {
-      var model = spark.mllib.tree.GradientBoostedTrees.train(trainingData, boostingStrategy);
+        Promise.all(promises).then(function() {
+          var model = spark.mllib.tree.GradientBoostedTrees.train(trainingData, boostingStrategy);
 
-      var predictionAndLabel = testData.mapToPair(function (lp, model, Tuple) {
-        return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
-      }, [model, spark.Tuple]);
+          var predictionAndLabel = testData.mapToPair(function (lp, model, Tuple) {
+            return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
+          }, [model, spark.Tuple]);
 
-      var testMSE = predictionAndLabel.map(function (tuple2) {
-        var diff = parseFloat(tuple2[0] - tuple2[1]);
-        return diff * diff;
-      }).reduce(function (a, b) {
-        return a + b;
+          var testMSE = predictionAndLabel.map(function (tuple2) {
+            var diff = parseFloat(tuple2[0] - tuple2[1]);
+            return diff * diff;
+          }).reduce(function (a, b) {
+            return a + b;
+          });
+
+          var promises = [];
+          promises.push(testMSE);
+          promises.push(data.count());
+
+          Promise.all(promises).then(resolve).catch(reject);
+        }).catch(stop)
       });
-
-      var promises = [];
-      promises.push(testMSE);
-      promises.push(data.count());
-
-      Promise.all(promises).then(function(results) {
-        console.log("Test Mean Squared Error:", results[0]/results[1]);
-        stop();
-      }).catch(stop);
-    }).catch(stop)
+    }).catch(reject);
   });
-}).catch(stop);
+}
+
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Gradient Boosting Regression");
+  run(sc).then(function(results) {
+    console.log("Test Mean Squared Error:", results[0]/results[1]);
+    stop();
+  }).catch(stop);
+}

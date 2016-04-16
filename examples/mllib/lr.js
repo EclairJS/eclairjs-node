@@ -36,28 +36,38 @@ function createResulPromise(label, promise) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "LR Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = sc.textFile(__dirname + "/data/random.data");
 
-var data = sc.textFile(__dirname + "/data/random.data");
+    var points = data.map(function (line, LabeledPoint, Vectors) {
+      var parts = line.split(",");
+      var y = parseFloat(parts[0]);
+      var tok = parts[1].split(" ");
+      var x = [];
+      for (var i = 0; i < tok.length; ++i) {
+        x[i] = parseFloat(tok[i]);
+      }
 
-var points = data.map(function (line, LabeledPoint, Vectors) {
-  var parts = line.split(",");
-  var y = parseFloat(parts[0]);
-  var tok = parts[1].split(" ");
-  var x = [];
-  for (var i = 0; i < tok.length; ++i) {
-    x[i] = parseFloat(tok[i]);
-  }
+      return new LabeledPoint(y, Vectors.dense(x));
+    }, [spark.mllib.regression.LabeledPoint, spark.mllib.linalg.Vectors]).cache();
 
-  return new LabeledPoint(y, Vectors.dense(x));
-}, [spark.mllib.regression.LabeledPoint, spark.mllib.linalg.Vectors]).cache();
+    var stepSize = 3.0;
+    var iterations = 10;
 
-var stepSize = 3.0;
-var iterations = 10;
+    var model = spark.mllib.classification.LogisticRegressionWithSGD.train(points, iterations, stepSize);
 
-var model = spark.mllib.classification.LogisticRegressionWithSGD.train(points, iterations, stepSize);
+    model.weights().then(resolve).catch(reject);
+  });
+}
 
-model.weights().then(function(weights) {
-  console.log('Final weight:', weights);
-  stop();
-}).catch(stop);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "LR Test");
+  run(sc).then(function(result) {
+    console.log('Final weight:', result);
+    stop();
+  }).catch(stop);
+}

@@ -27,20 +27,32 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Association Rules");
 
-var freqItemsets = sc.parallelize(
-  [
-    new spark.mllib.fpm.FPGrowth.FreqItemset(["a"], 15),
-    new spark.mllib.fpm.FPGrowth.FreqItemset(["b"], 35),
-    new spark.mllib.fpm.FPGrowth.FreqItemset(["a","b"], 12)
-  ]
-);
 
-var arules = new spark.mllib.fpm.AssociationRules().setMinConfidence(0.8);
-var results = arules.run(freqItemsets);
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var freqItemsets = sc.parallelize(
+      [
+        new spark.mllib.fpm.FPGrowth.FreqItemset(["a"], 15),
+        new spark.mllib.fpm.FPGrowth.FreqItemset(["b"], 35),
+        new spark.mllib.fpm.FPGrowth.FreqItemset(["a","b"], 12)
+      ]
+    );
 
-results.collect().then(function(results) {
-  console.log(results);
-  stop();
-}).catch(stop);
+    var arules = new spark.mllib.fpm.AssociationRules().setMinConfidence(0.8);
+    var results = arules.run(freqItemsets);
+
+    results.collect().then(resolve).catch(reject);
+  });
+}
+
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Association Rules");
+  run(sc).then(function(result) {
+    console.log(result);
+    stop();
+  }).catch(stop);
+}

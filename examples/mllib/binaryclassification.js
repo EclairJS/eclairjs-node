@@ -27,41 +27,51 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Binary Classification Metrics Test");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
 
-var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
+    // Split data into training (60%) and test (40%)
+    data.randomSplit([0.6, 0.4], 11).then(function(split) {
+      //var training = split[0].cache();
+      var training = split[0];
+      var test = split[1];
 
-// Split data into training (60%) and test (40%)
-data.randomSplit([0.6, 0.4], 11).then(function(split) {
-  //var training = split[0].cache();
-  var training = split[0];
-  var test = split[1];
+      var model = new spark.mllib.classification.LogisticRegressionWithLBFGS()
+        .setNumClasses(2)
+        .run(training);
 
-  var model = new spark.mllib.classification.LogisticRegressionWithLBFGS()
-    .setNumClasses(2)
-    .run(training);
+      var predictionAndLabels = test.mapToPair(function(lp, model, Tuple) {
+        return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
+      }, [model, spark.Tuple]);
 
-  var predictionAndLabels = test.mapToPair(function(lp, model, Tuple) {
-    return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
-  }, [model, spark.Tuple]);
+      var metrics = new spark.mllib.evaluation.BinaryClassificationMetrics(predictionAndLabels);
 
-  var metrics = new spark.mllib.evaluation.BinaryClassificationMetrics(predictionAndLabels);
+      var promises = [];
 
-  var promises = [];
+      promises.push(metrics.precisionByThreshold().collect());
+      promises.push(metrics.recallByThreshold().collect());
+      promises.push(metrics.fMeasureByThreshold().collect());
+      promises.push(metrics.fMeasureByThreshold(2.0).collect());
+      promises.push(metrics.pr().collect());
 
-  promises.push(metrics.precisionByThreshold().collect());
-  promises.push(metrics.recallByThreshold().collect());
-  promises.push(metrics.fMeasureByThreshold().collect());
-  promises.push(metrics.fMeasureByThreshold(2.0).collect());
-  promises.push(metrics.pr().collect());
+      Promise.all(promises).then(resolve).catch(reject);
+    }).catch(reject);
+  });
+}
 
-  Promise.all(promises).then(function(results) {
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Binary Classification Metrics");
+  run(sc).then(function(results) {
     console.log("Precision By Threshold:", results[0]);
     console.log("Recall By Threshold:", results[1]);
     console.log("Measure By Threshold:", results[2]);
     console.log("Measure By Threshold (Beta of 2.0):", results[3]);
-    console.log("Precision-recall curve:", results[3]);
+    console.log("Precision-recall curve:", results[4]);
 
     stop();
   }).catch(stop);
-}).catch(stop);
+}

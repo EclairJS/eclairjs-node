@@ -27,41 +27,51 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var k = 3;
-var iterations = 10;
-var runs = 1;
-
-var sc = new spark.SparkContext("local[*]", "K Means Example");
-
-var data = sc.textFile(__dirname + "/data/kmeans_data.txt");
-
-var points = data.map(function(line, Vectors) {
-  var tok = line.split(" ");
-  var point = [];
-  tok.forEach(function (t) {
-    point.push(parseFloat(t));
-  });
-  return Vectors.dense(point);
-}, [spark.mllib.linalg.Vectors]);
-
-var model = spark.mllib.clustering.KMeans.train(points, k, iterations, runs, spark.mllib.clustering.KMeans.K_MEANS_PARALLEL);
-
-function createResulPromise(label, promise) {
+function run(sc) {
   return new Promise(function(resolve, reject) {
-    promise.then(function(result) {
-      resolve([label, result])
-    }).catch(reject);
+    var k = 3;
+    var iterations = 10;
+    var runs = 1;
+
+    var data = sc.textFile(__dirname + "/data/kmeans_data.txt");
+
+    var points = data.map(function(line, Vectors) {
+      var tok = line.split(" ");
+      var point = [];
+      tok.forEach(function (t) {
+        point.push(parseFloat(t));
+      });
+      return Vectors.dense(point);
+    }, [spark.mllib.linalg.Vectors]);
+
+    var model = spark.mllib.clustering.KMeans.train(points, k, iterations, runs, spark.mllib.clustering.KMeans.K_MEANS_PARALLEL);
+
+    function createResulPromise(label, promise) {
+      return new Promise(function(resolve, reject) {
+        promise.then(function(result) {
+          resolve([label, result])
+        }).catch(reject);
+      });
+    }
+
+    var promises = [];
+    promises.push(createResulPromise("Cluster Centers", model.clusterCenters()));
+    promises.push(createResulPromise("Cost", model.computeCost(points)));
+
+    Promise.all(promises).then(resolve).catch(reject);
   });
 }
 
-var promises = [];
-promises.push(createResulPromise("Cluster Centers", model.clusterCenters()));
-promises.push(createResulPromise("Cost", model.computeCost(points)));
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "K Means");
+  run(sc).then(function(results) {
+    results.forEach(function(result) {
+      console.log(result[0], '=', result[1])
+    });
 
-Promise.all(promises).then(function(results) {
-  results.forEach(function(result) {
-    console.log(result[0], '=', result[1])
-  });
-
-  stop();
-}).catch(stop);
+    stop();
+  }).catch(stop);
+}

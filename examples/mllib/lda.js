@@ -33,43 +33,51 @@ function createResulPromise(label, promise) {
   });
 }
 
-
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "LDA Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = sc.textFile(__dirname + "/data/sample_lda_data.txt");
 
-var data = sc.textFile(__dirname + "/data/sample_lda_data.txt");
+    var parsedData = data.map(function (s, Vectors) {
+      var sarray = s.trim().split(" ");
+      var values = [];
+      for (var i = 0; i < sarray.length; i++) {
+        values[i] = parseFloat(sarray[i]);
+      }
+      return Vectors.dense(values);
+    }, [spark.mllib.linalg.Vectors]);
 
-var parsedData = data.map(function (s, Vectors) {
-  var sarray = s.trim().split(" ");
-  var values = [];
-  for (var i = 0; i < sarray.length; i++) {
-    values[i] = parseFloat(sarray[i]);
-  }
-  return Vectors.dense(values);
-}, [spark.mllib.linalg.Vectors]);
+      // Index documents with unique IDs
+    var zipIndex = parsedData.zipWithIndex().map(function(doc_id, Tuple) {
+      return new Tuple(doc_id[1], doc_id[0]); // swap
+    }, [spark.Tuple]);
 
-// Index documents with unique IDs
-var zipIndex = parsedData.zipWithIndex().map(function(doc_id, Tuple) {
-  return new Tuple(doc_id[1], doc_id[0]); // swap
-}, [spark.Tuple]);
+    var corpus = spark.rdd.PairRDD.fromRDD(zipIndex).cache();
 
-var corpus = spark.rdd.PairRDD.fromRDD(zipIndex).cache();
+      // Cluster the documents into three topics using LDA
+    var ldaModel = new spark.mllib.clustering.LDA().setK(3).run(corpus);
 
-// Cluster the documents into three topics using LDA
-var ldaModel = new spark.mllib.clustering.LDA().setK(3).run(corpus);
+    var promises = [];
 
-var promises = [];
+    // Output topics. Each is a distribution over words (matching word count vectors)
+    promises.push(createResulPromise('Vocab Size', ldaModel.vocabSize()));
 
-// Output topics. Each is a distribution over words (matching word count vectors)
-promises.push(createResulPromise('Vocab Size', ldaModel.vocabSize()));
+    promises.push(createResulPromise('Topics Matrix', ldaModel.topicsMatrix().toArray()));
 
-promises.push(createResulPromise('Topics Matrix', ldaModel.topicsMatrix().toArray()));
-
-Promise.all(promises).then(function(results) {
-  results.forEach(function(result) {
-    console.log(result[0], '=', result[1])
+    Promise.all(promises).then(resolve).catch(reject);
   });
+}
 
-  stop();
-}).catch(stop);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "LDA");
+  run(sc).then(function(results) {
+    results.forEach(function(result) {
+      console.log(result[0], '=', result[1])
+    });
+    stop();
+  }).catch(stop);
+}

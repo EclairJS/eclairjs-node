@@ -33,33 +33,41 @@ function createResulPromise(label, promise) {
   });
 }
 
-
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Random RDD Generation Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var numExamples = 10000; // # number of examples to generate
 
-var numExamples = 10000; // # number of examples to generate
+    var promises = [];
 
-var promises = [];
+    // Example: RandomRDDs.normalRDD
+    var normalRDD = spark.mllib.random.RandomRDDs.normalRDD(sc, numExamples);
 
-// Example: RandomRDDs.normalRDD
-var normalRDD = spark.mllib.random.RandomRDDs.normalRDD(sc, numExamples);
+    promises.push(normalRDD.count());
+    promises.push(normalRDD.take(5));
 
-promises.push(normalRDD.count());
-promises.push(normalRDD.take(5));
+    // Example: RandomRDDs.normalVectorRDD
+    var normalVectorRDD = spark.mllib.random.RandomRDDs.normalVectorRDD(sc, numExamples, 2);
 
-// Example: RandomRDDs.normalVectorRDD
-var normalVectorRDD = spark.mllib.random.RandomRDDs.normalVectorRDD(sc, numExamples, 2);
+    promises.push(normalVectorRDD.count());
+    promises.push(normalVectorRDD.take(5));
 
-promises.push(normalVectorRDD.count());
-promises.push(normalVectorRDD.take(5));
+    Promise.all(promises).then(resolve).catch(reject);
+  });
+}
 
-Promise.all(promises).then(function(results) {
-  console.log('Generated RDD examples sampled from the standard normal distribution:',results[0]);
-  console.log('  First 5:',results[1]);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Random RDD Generation");
+  run(sc).then(function(results) {
+    console.log('Generated RDD examples sampled from the standard normal distribution:',results[0]);
+    console.log('  First 5:',results[1]);
 
-  console.log('Generated RDD examples of length-2 vectors:',results[2]);
-  console.log('  First 5:',results[3]);
-
-  stop();
-}).catch(stop);
+    console.log('Generated RDD examples of length-2 vectors:',results[2]);
+    console.log('  First 5:',results[3]);
+    stop();
+  }).catch(stop);
+}

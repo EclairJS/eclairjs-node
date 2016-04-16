@@ -36,41 +36,51 @@ function createResulPromise(label, promise) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Collaborative Filtering Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = sc.textFile(__dirname + "/data/alsdata.txt");
 
-var data = sc.textFile(__dirname + "/data/alsdata.txt");
+    var ratings = data.map(function(s, Rating) {
+      var sarray = s.split(",");
+      return new Rating(parseInt(sarray[0]), parseInt(sarray[1]), parseFloat(sarray[2]));
+    }, [spark.mllib.recommendation.Rating]);
 
-var ratings = data.map(function(s, Rating) {
-  var sarray = s.split(",");
-  return new Rating(parseInt(sarray[0]), parseInt(sarray[1]), parseFloat(sarray[2]));
-}, [spark.mllib.recommendation.Rating]);
+    // Build the recommendation model using ALS
+    var rank = 10;
+    var numIterations = 10;
+    var model = spark.mllib.recommendation.ALS.train(ratings, rank, numIterations, 0.01);
 
-// Build the recommendation model using ALS
-var rank = 10;
-var numIterations = 10;
-var model = spark.mllib.recommendation.ALS.train(ratings, rank, numIterations, 0.01);
+    // Evaluate the model on rating data
+    var userProducts = ratings.map(function (r, Tuple) {
+      return new Tuple(r.user(), r.product());
+    }, [spark.Tuple]);
 
-// Evaluate the model on rating data
-var userProducts = ratings.map(function (r, Tuple) {
-  return new Tuple(r.user(), r.product());
-}, [spark.Tuple]);
+    var predictions = spark.rdd.PairRDD.fromRDD(model.predict(userProducts).map(function(r, Tuple) {
+      return new Tuple(new Tuple(r.user(), r.product()), r.rating());
+    }, [spark.Tuple]));
 
-var predictions = spark.rdd.PairRDD.fromRDD(model.predict(userProducts).map(function(r, Tuple) {
-  return new Tuple(new Tuple(r.user(), r.product()), r.rating());
-}, [spark.Tuple]));
+    var ratesAndPreds = spark.rdd.PairRDD.fromRDD(ratings.map(function(r, Tuple) {
+      return new Tuple(new Tuple(r.user(), r.product()), r.rating());
+    }, [spark.Tuple])).join(predictions).values();
 
-var ratesAndPreds = spark.rdd.PairRDD.fromRDD(ratings.map(function(r, Tuple) {
-  return new Tuple(new Tuple(r.user(), r.product()), r.rating());
-}, [spark.Tuple])).join(predictions).values();
+    var MSE = spark.rdd.FloatRDD.fromRDD(ratesAndPreds.map(function(pair) {
+      var err = pair[0] - pair[1];
+      return err * err;
+    }));
 
-var MSE = spark.rdd.FloatRDD.fromRDD(ratesAndPreds.map(function(pair) {
-  var err = pair[0] - pair[1];
-  return err * err;
-}));
+    var x = MSE.mean();
 
-var x = MSE.mean();
+    x.then(resolve).catch(reject);
+  });
+}
 
-x.then(function(result) {
-  console.log('Mean Squared Error:', result);
-  stop();
-}).catch(stop);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Collaborative Filtering");
+  run(sc).then(function(result) {
+    console.log('Mean Squared Error:', result);
+    stop();
+  }).catch(stop);
+}

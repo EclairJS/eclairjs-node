@@ -27,32 +27,41 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Naive Bayes Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
 
-var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
+    data.randomSplit([0.6, 0.4], 12345).then(function(splits) {
+      var trainingData = splits[0];
+      var testData = splits[1];
 
-data.randomSplit([0.6, 0.4], 12345).then(function(splits) {
-  var trainingData = splits[0];
-  var testData = splits[1];
+      var model = spark.mllib.classification.NaiveBayes.train(trainingData, 1.0);
 
-  var model = spark.mllib.classification.NaiveBayes.train(trainingData, 1.0);
+      var predictionAndLabel = testData.mapToPair(function (lp, model, Tuple) {
+        return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
+      }, [model, spark.Tuple]);
 
-  var predictionAndLabel = testData.mapToPair(function (lp, model, Tuple) {
-    return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
-  }, [model, spark.Tuple]);
+      var filtered = predictionAndLabel.filter(function (tuple) {
+        return tuple[0] == tuple[1];
+      });
 
-  var filtered = predictionAndLabel.filter(function (tuple) {
-    return tuple[0] == tuple[1];
+      var promises = [];
+
+      promises.push(filtered.count());
+      promises.push(testData.count());
+
+      Promise.all(promises).then(resolve).catch(reject);
+    }).catch(reject);
   });
+}
 
-  var promises = [];
-
-  promises.push(filtered.count());
-  promises.push(testData.count());
-
-  Promise.all(promises).then(function(results) {
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Naive Bayes");
+  run(sc).then(function(results) {
     console.log('Accuracy:', results[0]/results[1]);
     stop();
   }).catch(stop);
-}).catch(stop);
-
+}

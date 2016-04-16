@@ -27,51 +27,61 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Gradient Boosting Classification");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
 
-var data =  spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
+    // Split the data into training and test sets (30% held out for testing)
+    data.randomSplit([0.7, 0.3]).then(function(splits) {
+      var trainingData = splits[0];
+      var testData = splits[1];
 
-// Split the data into training and test sets (30% held out for testing)
-data.randomSplit([0.7, 0.3]).then(function(splits) {
-  var trainingData = splits[0];
-  var testData = splits[1];
+      // Train a GradientBoostedTrees model.
+      // The defaultParams for Classification use LogLoss by default.
+      var boostingStrategy = spark.mllib.tree.configuration.BoostingStrategy.defaultParams("Classification");
 
-  // Train a GradientBoostedTrees model.
-  // The defaultParams for Classification use LogLoss by default.
-  var boostingStrategy = spark.mllib.tree.configuration.BoostingStrategy.defaultParams("Classification");
+      // Note: Use more iterations in practice.
+      boostingStrategy.setNumIterations(3).then(function() {
+        var treeStrat = boostingStrategy.getTreeStrategy();
 
-  // Note: Use more iterations in practice.
-  boostingStrategy.setNumIterations(3).then(function() {
-    var treeStrat = boostingStrategy.getTreeStrategy();
+        var promises = [];
 
-    var promises = [];
+        promises.push(treeStrat.setNumClasses(2));
+        promises.push(treeStrat.setMaxDepth(5));
 
-    promises.push(treeStrat.setNumClasses(2));
-    promises.push(treeStrat.setMaxDepth(5));
+        // Empty categoricalFeaturesInfo indicates all features are continuous.
+        var categoricalFeaturesInfo = {};
+        promises.push(treeStrat.setCategoricalFeaturesInfo(categoricalFeaturesInfo));
 
-    // Empty categoricalFeaturesInfo indicates all features are continuous.
-    var categoricalFeaturesInfo = {};
-    promises.push(treeStrat.setCategoricalFeaturesInfo(categoricalFeaturesInfo));
+        Promise.all(promises).then(function() {
+          var model = spark.mllib.tree.GradientBoostedTrees.train(trainingData, boostingStrategy);
 
-    Promise.all(promises).then(function() {
-      var model = spark.mllib.tree.GradientBoostedTrees.train(trainingData, boostingStrategy);
+          var predictionAndLabel = testData.mapToPair(function (lp, model, Tuple) {
+            return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
+          }, [model, spark.Tuple]);
 
-      var predictionAndLabel = testData.mapToPair(function (lp, model, Tuple) {
-        return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
-      }, [model, spark.Tuple]);
+          var filtered = predictionAndLabel.filter(function (tuple) {
+            return tuple[0] != tuple[1];
+          });
 
-      var filtered = predictionAndLabel.filter(function (tuple) {
-        return tuple[0] != tuple[1];
+          var promises = [];
+          promises.push(filtered.count());
+          promises.push(testData.count());
+
+          Promise.all(promises).then(resolve).catch(reject);
+        }).catch(stop)
       });
-
-      var promises = [];
-      promises.push(filtered.count());
-      promises.push(testData.count());
-
-      Promise.all(promises).then(function(results) {
-        console.log("Test Error:", results[0]/results[1]);
-        stop();
-      }).catch(stop);
-    }).catch(stop)
+    }).catch(reject);
   });
-}).catch(stop);
+}
+
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Gradient Boosting Classification");
+  run(sc).then(function(results) {
+    console.log("Test Error:", results[0]/results[1]);
+    stop();
+  }).catch(stop);
+}

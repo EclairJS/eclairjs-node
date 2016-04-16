@@ -27,32 +27,42 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "SVM With SGD Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
 
-var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
+    // Split initial RDD into two... [60% training data, 40% testing data].
+    var training = data.sample(false, 0.6, 11);
+    training.cache();
+    var test = data.subtract(training);
 
-// Split initial RDD into two... [60% training data, 40% testing data].
-var training = data.sample(false, 0.6, 11);
-training.cache();
-var test = data.subtract(training);
+    // Run training algorithm to build the model.
+    var numIterations = 100;
+    var model = spark.mllib.classification.SVMWithSGD.train(training, numIterations);
 
-// Run training algorithm to build the model.
-var numIterations = 100;
-var model = spark.mllib.classification.SVMWithSGD.train(training, numIterations);
+    // Clear the default threshold.
+    model.clearThreshold();
 
-// Clear the default threshold.
-model.clearThreshold();
+    // Compute raw scores on the test set.
+    var scoreAndLabels = test.map(function (lp, model, Tuple) {
+      var score = model.predict(lp.getFeatures());
+      return new Tuple(score, lp.getLabel());
+    }, [model, spark.Tuple]);
 
-// Compute raw scores on the test set.
-var scoreAndLabels = test.map(function (lp, model, Tuple) {
-  var score = model.predict(lp.getFeatures());
-  return new Tuple(score, lp.getLabel());
-}, [model, spark.Tuple]);
+    // Get evaluation metrics.
+    var metrics = new spark.mllib.evaluation.BinaryClassificationMetrics(scoreAndLabels);
 
-// Get evaluation metrics.
-var metrics = new spark.mllib.evaluation.BinaryClassificationMetrics(scoreAndLabels);
+    metrics.areaUnderROC().then(resolve).catch(reject);
+  });
+}
 
-metrics.areaUnderROC().then(function(result) {
-  console.log('Area under ROC:', result);
-  stop();
-}).catch(stop);
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "SVM With SGD");
+  run(sc).then(function(result) {
+    console.log('Area under ROC:', result);
+    stop();
+  }).catch(stop);
+}

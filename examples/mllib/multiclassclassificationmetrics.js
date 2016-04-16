@@ -33,49 +33,55 @@ function createResulPromise(label, promise) {
   });
 }
 
-
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Multiclass Classification Metrics Example");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
 
-var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_multiclass_classification_data.txt");
+    var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_multiclass_classification_data.txt");
 
-data.randomSplit([0.6, 0.4], 11).then(function(splits) {
-  var training = splits[0].cache();
-  var test = splits[1];
+    data.randomSplit([0.6, 0.4], 11).then(function(splits) {
+      var training = splits[0].cache();
+      var test = splits[1];
 
+      // Run training algorithm to build the model.
+      var model = new spark.mllib.classification.LogisticRegressionWithLBFGS().setNumClasses(3).run(training);
 
-  // Run training algorithm to build the model.
-  var model = new spark.mllib.classification.LogisticRegressionWithLBFGS().setNumClasses(3).run(training);
+      // Compute raw scores on the test set.
+      var predictionAndLabels = test.map(function (lp, model, Tuple) {
+        var prediction = model.predict(lp.getFeatures());
+        return new Tuple(prediction, lp.getLabel());
+      }, [model, spark.Tuple]);
 
-  // Compute raw scores on the test set.
-  var predictionAndLabels = test.map(function (lp, model, Tuple) {
-    var prediction = model.predict(lp.getFeatures());
-    return new Tuple(prediction, lp.getLabel());
-  }, [model, spark.Tuple]);
+      var metrics = new spark.mllib.evaluation.MulticlassMetrics(predictionAndLabels);
 
-  var metrics = new spark.mllib.evaluation.MulticlassMetrics(predictionAndLabels);
+      var promises = [];
+      promises.push(createResulPromise('Confusion matrix', metrics.confusionMatrix().toArray()));
+      promises.push(createResulPromise('Precision', metrics.precision()));
+      promises.push(createResulPromise('Recall', metrics.recall()));
+      promises.push(createResulPromise('F1 Score', metrics.fMeasure()));
+      promises.push(createResulPromise('Labels', metrics.labels()));
 
-  var promises = [];
-  promises.push(createResulPromise('Confusion matrix', metrics.confusionMatrix().toArray()));
-  promises.push(createResulPromise('Precision', metrics.precision()));
-  promises.push(createResulPromise('Recall', metrics.recall()));
-  promises.push(createResulPromise('F1 Score', metrics.fMeasure()));
-  promises.push(createResulPromise('Labels', metrics.labels()));
+      promises.push(createResulPromise('Weighted precision', metrics.weightedPrecision()));
+      promises.push(createResulPromise('Weighted recall', metrics.weightedRecall()));
+      promises.push(createResulPromise('Weighted F1 score', metrics.weightedFMeasure()));
+      promises.push(createResulPromise('Weighted false positive rate', metrics.weightedFalsePositiveRate()));
 
-  promises.push(createResulPromise('Weighted precision', metrics.weightedPrecision()));
-  promises.push(createResulPromise('Weighted recall', metrics.weightedRecall()));
-  promises.push(createResulPromise('Weighted F1 score', metrics.weightedFMeasure()));
-  promises.push(createResulPromise('Weighted false positive rate', metrics.weightedFalsePositiveRate()));
+      Promise.all(promises).then(resolve).catch(reject);
+    }).catch(stop);
+  });
+}
 
-
-  Promise.all(promises).then(function (results) {
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Multiclass Classification Metrics");
+  run(sc).then(function(results) {
     results.forEach(function (result) {
       console.log(result[0], ':', result[1])
     });
 
     stop();
   }).catch(stop);
-
-}).catch(stop);
-
+}

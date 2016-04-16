@@ -27,42 +27,51 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "Decision Tree Classificatio");
+function run(sc) {
+  return new Promise(function(resolve, reject) {
+    var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
 
-var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
+    data.randomSplit([0.7, 0.3]).then(function(splits) {
+      var trainingData = splits[0];
+      var testData = splits[1];
 
-data.randomSplit([0.7, 0.3]).then(function(splits) {
-  var trainingData = splits[0];
-  var testData = splits[1];
+      // Set parameters.
+      //  Empty categoricalFeaturesInfo indicates all features are continuous.
+      var numClasses = 2;
+      var categoricalFeaturesInfo = {};
+      var impurity = "gini";
+      var maxDepth = 5;
+      var maxBins = 32;
 
-  // Set parameters.
-  //  Empty categoricalFeaturesInfo indicates all features are continuous.
-  var numClasses = 2;
-  var categoricalFeaturesInfo = {};
-  var impurity = "gini";
-  var maxDepth = 5;
-  var maxBins = 32;
+      // Train a DecisionTree model for classification.
+      var model = spark.mllib.tree.DecisionTree.trainClassifier(trainingData, numClasses, categoricalFeaturesInfo, impurity, maxDepth, maxBins);
 
-  // Train a DecisionTree model for classification.
-  var model = spark.mllib.tree.DecisionTree.trainClassifier(trainingData, numClasses, categoricalFeaturesInfo, impurity, maxDepth, maxBins);
+      // Evaluate model on test instances and compute test error
+      var predictionAndLabel = testData.mapToPair(function (labeledPoint, model, Tuple) {
+        return new Tuple(model.predict(labeledPoint.getFeatures()), labeledPoint.getLabel());
+      }, [model, spark.Tuple]);
 
-  // Evaluate model on test instances and compute test error
-  var predictionAndLabel = testData.mapToPair(function (labeledPoint, model, Tuple) {
-    return new Tuple(model.predict(labeledPoint.getFeatures()), labeledPoint.getLabel());
-  }, [model, spark.Tuple]);
+      var result = predictionAndLabel.filter(function (tuple2) {
+        return (tuple2[0] != tuple2[1]);
+      });
 
-  var result = predictionAndLabel.filter(function (tuple2) {
-    return (tuple2[0] != tuple2[1]);
+      var promises = [];
+
+      promises.push(result.count());
+      promises.push(testData.count());
+
+      Promise.all(promises).then(resolve).catch(reject);
+    }).catch(reject);
   });
+}
 
-  var promises = [];
-
-  promises.push(result.count());
-  promises.push(testData.count());
-
-  Promise.all(promises).then(function(results) {
+if (global.SC) {
+  // we are being run as part of a test
+  module.exports = run;
+} else {
+  var sc = new spark.SparkContext("local[*]", "Decision Tree Classification");
+  run(sc).then(function(results) {
     console.log("Test Error:", results[0] / results[1]);
     stop();
   }).catch(stop);
-}).catch(stop);
-
+}
