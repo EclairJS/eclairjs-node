@@ -102,7 +102,7 @@ describe('Utils Test', function() {
 
           onceDone(Utils.generate(args)).then(callback).catch(error);
         }, function(result) {
-          expect(result).equals('var TestClass = require(EclairJS_Globals.NAMESPACE + \'test/TestClass\');\nvar testClass1 = tci.agg();');
+          expect(result).equals('var testClass1 = tci.agg();');
         },
         done
       );
@@ -268,7 +268,7 @@ describe('Utils Test', function() {
 
           onceDone(Utils.generate(args)).then(callback).catch(error);
         }, function(result) {
-          expect(result).equals('var testClass6 = TestClass.agg();');
+          expect(result).equals('var TestClass = require(EclairJS_Globals.NAMESPACE + \'test/TestClass\');\nvar testClass6 = TestClass.agg();');
         },
         done
       );

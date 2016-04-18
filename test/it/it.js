@@ -50,6 +50,10 @@ describe('SparkContext Integration Test', function() {
     require('./sql/Row');
   });
 
+  describe("MLLib tests", function() {
+    //require('./mllib/mllib.js');
+  });
+
   after(function(done) {
     if (sc) {
       sc.stop().then(done).catch(done);

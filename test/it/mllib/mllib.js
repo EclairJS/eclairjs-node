@@ -274,6 +274,8 @@ describe('mllib Test', function() {
 
   describe("Regression Metrics", function() {
     it("should return the expected result", function(done) {
+      this.timeout(100000);
+
       var test = require('../../../examples/mllib/regressionmetrics');
       test(sc).then(function(results) {
         expect(results.length).equals(5);

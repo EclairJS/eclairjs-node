@@ -88,7 +88,7 @@ describe('SQL Test', function() {
           fields = [];
           fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));
         }, function(msg) {
-          expect(msg.code).equals('var structField1 = DataTypes.createStructField("name", org.apache.spark.sql.types.DataTypes.StringType, true);');
+          expect(msg.code).equals('var structField1 = DataTypes.createStructField("name", DataTypes.StringType, true);');
         },
         done
       );
@@ -104,7 +104,7 @@ describe('SQL Test', function() {
 
           fields.push(DataTypes.createStructField("age", DataTypes.IntegerType, true));
         }, function(msg) {
-          expect(msg.code).equals('var structField2 = DataTypes.createStructField("age", org.apache.spark.sql.types.DataTypes.IntegerType, true);');
+          expect(msg.code).equals('var structField2 = DataTypes.createStructField("age", DataTypes.IntegerType, true);');
         },
         done
       );
