@@ -51,7 +51,7 @@ describe('SparkContext Integration Test', function() {
   });
 
   describe("MLLib tests", function() {
-    //require('./mllib/mllib.js');
+    require('./mllib/mllib.js');
   });
 
   after(function(done) {

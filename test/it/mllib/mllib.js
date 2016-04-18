@@ -22,9 +22,18 @@ var TestUtils = require('../../lib/utils.js');
 
 var spark = require('../../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "mllib Integration Tests");
-global.SC = sc;
+var sc;
 
+var doWeOwnTheSC = false;
+
+if (global.SC) {
+  // we are being run inside another test, probably the main integration-test file
+  sc = global.SC;
+} else {
+  doWeOwnTheSC = true;
+  sc = new spark.SparkContext("local[*]", "mllib Integration Tests");
+  global.SC = sc;
+}
 
 describe('mllib Test', function() {
   before(function(done) {
@@ -37,6 +46,8 @@ describe('mllib Test', function() {
 
   describe("Linear Regression", function() {
     it("should return the expected result", function(done) {
+      this.timeout(100000);
+
       var test = require('../../../examples/mllib/linearregressiontest');
       test(sc).then(function(results) {
         expect(results.length).equals(10);
@@ -315,8 +326,10 @@ describe('mllib Test', function() {
   });
 
   after(function(done) {
-    if (sc) {
+    if (sc && doWeOwnTheSC) {
       sc.stop().then(done).catch(done);
+    } else {
+      done();
     }
   });
 });
