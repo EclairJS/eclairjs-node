@@ -52,7 +52,6 @@ describe('DStream Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-
           // create a basic socket stream on port 4000
           var server = net.createServer(function(socket) {
             setInterval(function() {
@@ -60,40 +59,35 @@ describe('DStream Test', function() {
             }, 10000);
           }).listen(4000);
 
-          execute('var data = []').then(function() {
-            var streamingContext = new spark.StreamingContext(sc, new spark.streaming.Duration(500));
-            var dstream = streamingContext.socketTextStream("localhost", 4000);
-            var ds1 = dstream.flatMap(function(line) {
-              return line.split(",");
-            });
+          var streamingContext = new spark.StreamingContext(sc, new spark.streaming.Duration(500));
+          var dstream = streamingContext.socketTextStream("localhost", 4000);
+          var ds1 = dstream.flatMap(function (line) {
+            return line.split(",");
+          });
 
-            ds1.foreachRDD(function(rdd) {
-              var d = rdd.collect();
-              if (d && d.length > 0) {
-                d.forEach(function(letter) {
-                  data.push(letter)
-                })
+          var data = [];
+
+          ds1.foreachRDD(function (rdd) {
+            var d = rdd.collect().then(function(results) {
+              if (results && results.length > 0) {
+                data.push(results);
               }
-            }).then(function() {
-              streamingContext.start();
+            });
+          }).then(function () {
+            streamingContext.start();
 
-              setTimeout(function() {
-                streamingContext.stop(false).then(function() {
-                  streamingContext.awaitTermination().then(function() {
-                    execute('JSON.stringify(data)', String).then(callback).catch(error);
-                  });
+            setTimeout(function () {
+              streamingContext.stop(false).then(function() {
+                streamingContext.awaitTermination().then(function() {
+                  callback(data);
                 }).catch(error);
-              }, 30000);
+              }).catch(error);
+            }, 30000);
 
-            }).catch(error);
           }).catch(error);
-        }, function(result) {
-          var r = JSON.parse(result);
-          expect(r.length).above(4);
-          expect(r[0]).equals('1');
-          expect(r[1]).equals('2');
-          expect(r[2]).equals('3');
-          expect(r[3]).equals('4');
+        }, function(results) {
+          expect(results.length).above(1);
+          expect(results[0]).deep.equals(['1', '2', '3', '4']);
         },
         done
       );
