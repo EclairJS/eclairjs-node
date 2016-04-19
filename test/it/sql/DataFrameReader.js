@@ -44,8 +44,6 @@ if (global.SC) {
 
 var sqlContext = new spark.SQLContext(sc);
 
-var DataTypes = sqlContext.types.DataTypes;
-
 describe('sql.functions Test', function() {
   describe("DataFrameReader.jdbc(url, db, info)", function() {
     it("should connect to a running mysql db", function(done) {

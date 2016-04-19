@@ -51,8 +51,7 @@ function buildRockstarsTable(file, callback) {
     };
   });
 
-  var DataTypes = sqlContext.types.DataTypes;
-  //var SqlDate = sqlContext.SqlDate;
+  var DataTypes = spark.sql.types.DataTypes;
 
   var fields = [];
   fields.push(DataTypes.createStructField("surname", DataTypes.StringType, true));

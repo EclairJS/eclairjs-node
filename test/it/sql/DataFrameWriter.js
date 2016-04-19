@@ -45,7 +45,7 @@ function buildPeopleTable(file, callback) {
     };
   });
 
-  var DataTypes = sqlContext.types.DataTypes;
+  var DataTypes = spark.sql.types.DataTypes;
 
   var fields = [];
   fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));

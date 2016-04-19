@@ -32,7 +32,7 @@ var people = rdd.map(function(line) {
 });
 
 //Generate the schema
-var DataTypes = sqlContext.types.DataTypes;
+var DataTypes = spark.sql.types.DataTypes;
 
 var fields = [];
 fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));

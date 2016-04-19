@@ -33,7 +33,7 @@ if (global.SC) {
 
 var sqlContext = new spark.SQLContext(sc);
 
-var DataTypes = sqlContext.types.DataTypes;
+var DataTypes = spark.sql.types.DataTypes;
 
 function buildPeopleTable(file, callback) {
   var rdd = sc.textFile(file);

@@ -83,7 +83,7 @@ describe('SQL Test', function() {
       executeTest(
         function() {
           //Generate the schema
-          var DataTypes = sqlContext.types.DataTypes;
+          var DataTypes = spark.sql.types.DataTypes;
 
           fields = [];
           fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));
@@ -100,7 +100,7 @@ describe('SQL Test', function() {
       executeTest(
         function() {
           //Generate the schema
-          var DataTypes = sqlContext.types.DataTypes;
+          var DataTypes = spark.sql.types.DataTypes;
 
           fields.push(DataTypes.createStructField("age", DataTypes.IntegerType, true));
         }, function(msg) {
@@ -115,7 +115,7 @@ describe('SQL Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function() {
-          var DataTypes = sqlContext.types.DataTypes;
+          var DataTypes = spark.sql.types.DataTypes;
           schema = DataTypes.createStructType(fields);
         }, function(msg) {
           expect(msg.code).equals('var structType1 = DataTypes.createStructType([structField1, structField2]);');
