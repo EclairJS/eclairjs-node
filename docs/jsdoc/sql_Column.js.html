@@ -45,13 +45,27 @@
 var Utils = require('../utils.js');
 
 /**
- *
  * @constructor
+ * @memberof module:eclairjs/sql
  * @classdesc A column in a DataFrame.
+ * @param {string} column name of the column
  */
-function Column(kernelP, refIdP) {
-  this.kernelP = kernelP;
-  this.refIdP = refIdP;
+function Column() {
+  if (arguments.length == 2) {
+    // Someone created an instance of this class for us
+    this.kernelP = arguments[0];
+    this.refIdP = arguments[1];
+  } else {
+    this.kernelP = gKernelP;
+
+    var args = {
+      target: Column,
+      args: Utils.wrapArguments(arguments),
+      kernelP: gKernelP
+    };
+
+    this.refIdP = Utils.generateConstructor(args);
+  }
 }
 
 /**
@@ -63,9 +77,14 @@ function Column(kernelP, refIdP) {
  * df.select(df.col("colA").alias("colB"))
  */
 Column.prototype.alias = function(alias) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.alias("{{alias}}");';
+  var args = {
+    target: this,
+    method: 'alias',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {alias: alias});
+  return Utils.generate(args);
 };
 
 /**
@@ -76,9 +95,14 @@ Column.prototype.alias = function(alias) {
  * people.select( people.col("inSchool").and(people.col("isEmployed")));
  */
 Column.prototype.and = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.and({{other}});';
+  var args = {
+    target: this,
+    method: 'and',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: other.refIdP});
+  return Utils.generate(args);;
 };
 
 /**
@@ -94,33 +118,31 @@ Column.prototype.and = function(other) {
  * @private
  */
 Column.prototype.apply = function(extraction) {
-  throw "not implemented by ElairJS";
+  var args = {
+    target: this,
+    method: 'apply',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
+
+  return Utils.generate(args);
 };
 
 /**
  * Gives the column an alias.
  * @param {string | string[]} aliases, if array of strings assigns the given aliases to the results of a table generating function.
- * @param {Metadata} metadata Optional, not valid with string array
+ * @param {Metadata} [metadata] not valid with string array
  * @returns {Column}
  */
 Column.prototype.as = function(aliases, metadata) {
-  var templateStr = !metadata || Array.isArray(aliases) ? 'var {{refId}} = {{inRefId}}.as({{aliases}});' : 'var {{refId}} = {{inRefId}}.as({{aliases}}, {{metadata}});';
+  var args = {
+    target: this,
+    method: 'as',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  var asAliases;
-
-  if (Array.isArray(aliases)) {
-    asAliases = [];
-
-    aliases.forEach(function(alias) {
-      asAliases.push('"' + alias + '"');
-    });
-
-    asAliases = '['+asAliases.join(',')+']';
-  } else {
-    asAliases = '"' + asAliases + '"';
-  }
-
-  return Utils.generateAssignment(this, Column, templateStr, {aliases: asAliases, metadata: metadata ? metadata.toJSON() : ''});
+  return Utils.generate(args);
 };
 
 /**
@@ -130,9 +152,13 @@ Column.prototype.as = function(aliases, metadata) {
  * df.sort(df.col("age").asc());
  */
 Column.prototype.asc = function() {
-  var templateStr = 'var {{refId}} = {{inRefId}}.asc();';
+  var args = {
+    target: this,
+    method: 'asc',
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr);
+  return Utils.generate(args);
 };
 
 /**
@@ -146,10 +172,14 @@ Column.prototype.asc = function() {
  * var results = peopleDataFrame.select(testCol);
  */
 Column.prototype.between = function(lowerBound, upperBound) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.between({{lowerBound}}, {{upperBound}});';
+  var args = {
+    target: this,
+    method: 'between',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {lowerBound: Utils.prepForReplacement(lowerBound),
-    upperBound: Utils.prepForReplacement(upperBound)});
+  return Utils.generate(args);
 };
 
 /**
@@ -161,9 +191,14 @@ Column.prototype.between = function(lowerBound, upperBound) {
  * @returns {Column}
  */
 Column.prototype.bitwiseAND = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.bitwiseAND({{other}});';
+  var args = {
+    target: this,
+    method: 'bitwiseAND',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -175,9 +210,14 @@ Column.prototype.bitwiseAND = function(other) {
  * @returns {Column}
  */
 Column.prototype.bitwiseOR = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.bitwiseOR({{other}});';
+  var args = {
+    target: this,
+    method: 'bitwiseOR',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -189,9 +229,14 @@ Column.prototype.bitwiseOR = function(other) {
  * @returns {Column}
  */
 Column.prototype.bitwiseXOR = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.bitwiseXOR({{other}});';
+  var args = {
+    target: this,
+    method: 'bitwiseXOR',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -208,12 +253,14 @@ Column.prototype.bitwiseXOR = function(other) {
  * @returns {Column}
  */
 Column.prototype.cast = function(to) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.cast({{to}});';
+  var args = {
+    target: this,
+    method: 'cast',
+    args: [{value: to, type: to.indexOf('DataTypes.') == 0 ? null : 'string'}],
+    returnType: Column
+  };
 
-  // If its a Datatypes.*, we don't want " around the value
-  var toStr = to.indexOf('org.apache.spark.sql.types.DataTypes') == 0 ? to : '"' + to + '"';
-
-  return Utils.generateAssignment(this, Column, templateStr, {to: toStr});
+  return Utils.generate(args);
 };
 
 /**
@@ -223,9 +270,14 @@ Column.prototype.cast = function(to) {
  * @returns {Column}
  */
 Column.prototype.contains = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.contains({{other}});';
+  var args = {
+    target: this,
+    method: 'contains',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -235,9 +287,13 @@ Column.prototype.contains = function(other) {
  * df.sort(df.col("age").desc());
  */
 Column.prototype.desc = function() {
-  var templateStr = 'var {{refId}} = {{inRefId}}.desc();';
+  var args = {
+    target: this,
+    method: 'desc',
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr);
+  return Utils.generate(args);
 };
 
 /**
@@ -249,9 +305,14 @@ Column.prototype.desc = function() {
  * @returns {Column}
  */
 Column.prototype.divide = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.divide({{other}});';
+  var args = {
+    target: this,
+    method: 'divide',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -261,9 +322,14 @@ Column.prototype.divide = function(other) {
  * @returns {Column}
  */
 Column.prototype.endsWith = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.endsWith({{other}});';
+  var args = {
+    target: this,
+    method: 'endsWith',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -273,9 +339,14 @@ Column.prototype.endsWith = function(other) {
  * @returns {Column}
  */
 Column.prototype.eqNullSafe = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.eqNullSafe({{other}});';
+  var args = {
+    target: this,
+    method: 'eqNullSafe',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -284,13 +355,14 @@ Column.prototype.eqNullSafe = function(other) {
  * @returns {boolean}
  */
 Column.prototype.equals = function(that) {
-  function _resolve(result, resolve, reject) {
-    resolve(result === 'true');
-  }
+  var args = {
+    target: this,
+    method: 'equals',
+    args: Utils.wrapArguments(arguments),
+    returnType: Boolean
+  };
 
-  var templateStr = '{{inRefId}}.equals({{that}});';
-
-  return Utils.generateResultPromise(this, templateStr, {that: Utils.prepForReplacement(that)}, _resolve);
+  return Utils.generate(args)
 };
 
 /**
@@ -299,9 +371,14 @@ Column.prototype.equals = function(that) {
  * @returns {Column}
  */
 Column.prototype.equalTo = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.equalTo({{other}});';
+  var args = {
+    target: this,
+    method: 'equalTo',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -309,9 +386,13 @@ Column.prototype.equalTo = function(other) {
  * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
  */
 Column.prototype.explain = function(extended) {
-  var templateStr = '{{inRefId}}.explain({{extended}});';
+  var args = {
+    target: this,
+    method: 'explain',
+    args: Utils.wrapArguments(arguments)
+  };
 
-  return Utils.generateVoidPromise(this, templateStr, {extended: extended ? extended : ""});
+  return Utils.generate(args);
 };
 
 /**
@@ -322,9 +403,14 @@ Column.prototype.explain = function(extended) {
  * @returns {Column}
  */
 Column.prototype.geq = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.geq({{other}});';
+  var args = {
+    target: this,
+    method: 'geq',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -334,9 +420,14 @@ Column.prototype.geq = function(other) {
  * @returns {Column}
  */
 Column.prototype.getField = function(fieldName) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.getField({{fieldName}});';
+  var args = {
+    target: this,
+    method: 'getField',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {fieldName: Utils.prepForReplacement(fieldName)});
+  return Utils.generate(args);
 };
 
 /**
@@ -347,9 +438,14 @@ Column.prototype.getField = function(fieldName) {
  * @returns {Column}
  */
 Column.prototype.getItem = function(key) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.getItem({{key}});';
+  var args = {
+    target: this,
+    method: 'getItem',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {key: Utils.prepForReplacement(key)});
+  return Utils.generate(args);
 };
 
 /**
@@ -360,22 +456,27 @@ Column.prototype.getItem = function(key) {
  * @returns {Column}
  */
 Column.prototype.gt = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.gt({{other}});';
+  var args = {
+    target: this,
+    method: 'gt',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
  * @returns {Promise.&lt;Integer>} A Promise that resolves to the hashcode.
  */
 Column.prototype.hashCode = function() {
-  function _resolve(result, resolve, reject) {
-    resolve(parseInt(result));
-  }
+  var args = {
+    target: this,
+    method: 'hashCode',
+    returnType: Number
+  };
 
-  var templateStr = '{{inRefId}}.hashCode();';
-
-  return Utils.generateResultPromise(this, templateStr, {}, _resolve);
+  return Utils.generate(args);
 };
 
 /**
@@ -390,17 +491,14 @@ Column.prototype.hashCode = function() {
  * @returns {Column}
  */
 Column.prototype.in = function(list) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.in([{{list}}]);';
+  var args = {
+    target: this,
+    method: 'in',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  var inList = [];
-
-  if (list) {
-    list.forEach(function(item) {
-      inList.push(Utils.prepForReplacement(item))
-    });
-  }
-
-  return Utils.generateAssignment(this, Column, templateStr, {list: inList});
+  return Utils.generate(args);
 };
 
 /**
@@ -411,17 +509,14 @@ Column.prototype.in = function(list) {
  * @returns {Column}
  */
 Column.prototype.isin = function(list) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.isin([{{list}}]);';
+  var args = {
+    target: this,
+    method: 'isin',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  var inList = [];
-
-  if (list) {
-    list.forEach(function(item) {
-      inList.push(Utils.prepForReplacement(item))
-    });
-  }
-
-  return Utils.generateAssignment(this, Column, templateStr, {list: inList});
+  return Utils.generate(args);
 };
 
 /**
@@ -430,9 +525,14 @@ Column.prototype.isin = function(list) {
  * @returns {Column}
  */
 Column.prototype.isNaN = function() {
-  var templateStr = 'var {{refId}} = {{inRefId}}.isNaN();';
+  var args = {
+    target: this,
+    method: 'isNaN',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr);
+  return Utils.generate(args);
 };
 
 /**
@@ -441,9 +541,14 @@ Column.prototype.isNaN = function() {
  * @returns {Column}
  */
 Column.prototype.isNull = function() {
-  var templateStr = 'var {{refId}} = {{inRefId}}.isNull();';
+  var args = {
+    target: this,
+    method: 'isNull',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr);
+  return Utils.generate(args);
 };
 
 /**
@@ -452,9 +557,14 @@ Column.prototype.isNull = function() {
  * @returns {Column}
  */
 Column.prototype.isNotNull = function() {
-  var templateStr = 'var {{refId}} = {{inRefId}}.isNotNull();';
+  var args = {
+    target: this,
+    method: 'isNotNull',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr);
+  return Utils.generate(args);
 };
 
 /**
@@ -466,9 +576,14 @@ Column.prototype.isNotNull = function() {
  * @returns {Column}
  */
 Column.prototype.leq = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.leq({{other}});';
+  var args = {
+    target: this,
+    method: 'leq',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -478,11 +593,15 @@ Column.prototype.leq = function(other) {
  * @returns {Column}
  */
 Column.prototype.like = function(literal) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.like({{literal}});';
+  var args = {
+    target: this,
+    method: 'like',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {literal: Utils.prepForReplacement(literal)});
+  return Utils.generate(args);
 };
-
 
 /**
  * Less than.
@@ -493,9 +612,14 @@ Column.prototype.like = function(literal) {
  * @returns {Column}
  */
 Column.prototype.lt = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.lt({{other}});';
+  var args = {
+    target: this,
+    method: 'lt',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -507,9 +631,14 @@ Column.prototype.lt = function(other) {
  * @returns {Column}
  */
 Column.prototype.minus = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.minus({{other}});';
+  var args = {
+    target: this,
+    method: 'minus',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -519,9 +648,14 @@ Column.prototype.minus = function(other) {
  * @returns {Column}
  */
 Column.prototype.mod = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.mod({{other}});';
+  var args = {
+    target: this,
+    method: 'mod',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -533,9 +667,14 @@ Column.prototype.mod = function(other) {
  * @returns {Column}
  */
 Column.prototype.multiply = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.multiply({{other}});';
+  var args = {
+    target: this,
+    method: 'multiply',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -547,9 +686,14 @@ Column.prototype.multiply = function(other) {
  * @returns {Column}
  */
 Column.prototype.notEqual = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.notEqual({{other}});';
+  var args = {
+    target: this,
+    method: 'notEqual',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -561,9 +705,14 @@ Column.prototype.notEqual = function(other) {
  * @returns {Column}
  */
 Column.prototype.or = function(other) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.or({{other}});';
+  var args = {
+    target: this,
+    method: 'or',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {other: Utils.prepForReplacement(other)});
+  return Utils.generate(args);
 };
 
 /**
@@ -579,15 +728,24 @@ Column.prototype.or = function(other) {
  * @returns {Column}
  */
 Column.prototype.otherwise = function(value) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.otherwise({{value}});';
+  var args = {
+    target: this,
+    method: 'otherwise',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {value: Utils.prepForReplacement(value)});
+  return Utils.generate(args);
 };
 
 Column.prototype.toString = function() {
-  var templateStr = '{{inRefId}}.toString();';
+  var args = {
+    target: this,
+    method: 'toString',
+    returnType: String
+  };
 
-  return Utils.generateResultPromise(this, templateStr);
+  return Utils.generate(args);
 };
 
 /**
@@ -602,13 +760,19 @@ Column.prototype.toString = function() {
  * @returns {Column}
  */
 Column.prototype.when = function(condition,value) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.when({{condition}}, {{value}});';
+  var args = {
+    target: this,
+    method: 'when',
+    args: Utils.wrapArguments(arguments),
+    returnType: Column
+  };
 
-  return Utils.generateAssignment(this, Column, templateStr, {condition: Utils.prepForReplacement(condition), value: Utils.prepForReplacement(value)});
+  return Utils.generate(args);
 };
 
-module.exports = Column;
-</code></pre>
+Column.moduleLocation = '/sql/Column';
+
+module.exports = Column;</code></pre>
         </article>
     </section>
 
@@ -618,13 +782,13 @@ module.exports = Column;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Accumulable.html">Accumulable</a></li><li><a href="AccumulableParam.html">AccumulableParam</a></li><li><a href="ALS.html">ALS</a></li><li><a href="AssociationRules.html">AssociationRules</a></li><li><a href="BisectingKMeans.html">BisectingKMeans</a></li><li><a href="BoostingStrategy.html">BoostingStrategy</a></li><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DecisionTreeModel.html">DecisionTreeModel</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="FloatRDD.html">FloatRDD</a></li><li><a href="FPGrowth.html">FPGrowth</a></li><li><a href="FPGrowthModel.html">FPGrowthModel</a></li><li><a href="FreqItemset.html">FreqItemset</a></li><li><a href="GradientBoostedTrees.html">GradientBoostedTrees</a></li><li><a href="GradientBoostedTreesModel.html">GradientBoostedTreesModel</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="IsotonicRegression.html">IsotonicRegression</a></li><li><a href="IsotonicRegressionModel.html">IsotonicRegressionModel</a></li><li><a href="KMeans.html">KMeans</a></li><li><a href="KMeansModel.html">KMeansModel</a></li><li><a href="LBFGS.html">LBFGS</a></li><li><a href="LDA.html">LDA</a></li><li><a href="LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="List.html">List</a></li><li><a href="LogisticGradient.html">LogisticGradient</a></li><li><a href="LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="LogisticRegressionWithSGD.html">LogisticRegressionWithSGD</a></li><li><a href="Loss.html">Loss</a></li><li><a href="MatrixFactorizationModel.html">MatrixFactorizationModel</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="MulticlassMetrics.html">MulticlassMetrics</a></li><li><a href="NaiveBayes.html">NaiveBayes</a></li><li><a href="PairRDD.html">PairRDD</a></li><li><a href="PowerIterationClustering.html">PowerIterationClustering</a></li><li><a href="PowerIterationClusteringModel.html">PowerIterationClusteringModel</a></li><li><a href="PrefixSpan.html">PrefixSpan</a></li><li><a href="PrefixSpanModel.html">PrefixSpanModel</a></li><li><a href="RandomForestModel.html">RandomForestModel</a></li><li><a href="RankingMetrics.html">RankingMetrics</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="RowMatrix.html">RowMatrix</a></li><li><a href="SingularValueDecomposition.html">SingularValueDecomposition</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="SquaredL2Updater.html">SquaredL2Updater</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="Strategy.html">Strategy</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li><li><a href="SVMModel.html">SVMModel</a></li><li><a href="SVMWithSGD.html">SVMWithSGD</a></li><li><a href="Tuple.html">Tuple</a></li><li><a href="Vector.html">Vector</a></li><li><a href="Vectors.html">Vectors</a></li><li><a href="Word2Vec.html">Word2Vec</a></li><li><a href="Word2VecModel.html">Word2VecModel</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Accumulator">Accumulator</a></li><li><a href="global.html#BisectingKMeansModel">BisectingKMeansModel</a></li><li><a href="global.html#DataFrameStatFunctions">DataFrameStatFunctions</a></li><li><a href="global.html#DecisionTree">DecisionTree</a></li><li><a href="global.html#gKernelP">gKernelP</a></li><li><a href="global.html#LDAModel">LDAModel</a></li><li><a href="global.html#LogisticRegressionWithLBFGS">LogisticRegressionWithLBFGS</a></li><li><a href="global.html#Matrix">Matrix</a></li><li><a href="global.html#NaiveBayesModel">NaiveBayesModel</a></li><li><a href="global.html#Utils">Utils</a></li><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-eclairjs.html">eclairjs</a></li><li><a href="module-eclairjs_mllib.html">eclairjs/mllib</a></li><li><a href="module-eclairjs_mllib_classification.html">eclairjs/mllib/classification</a></li><li><a href="module-eclairjs_mllib_clustering.html">eclairjs/mllib/clustering</a></li><li><a href="module-eclairjs_mllib_evaluation.html">eclairjs/mllib/evaluation</a></li><li><a href="module-eclairjs_mllib_feature.html">eclairjs/mllib/feature</a></li><li><a href="module-eclairjs_mllib_fpm.html">eclairjs/mllib/fpm</a></li><li><a href="module-eclairjs_mllib_linalg.html">eclairjs/mllib/linalg</a></li><li><a href="module-eclairjs_mllib_linalg_distributed.html">eclairjs/mllib/linalg/distributed</a></li><li><a href="module-eclairjs_mllib_optimization.html">eclairjs/mllib/optimization</a></li><li><a href="module-eclairjs_mllib_random.html">eclairjs/mllib/random</a></li><li><a href="module-eclairjs_mllib_recommendation.html">eclairjs/mllib/recommendation</a></li><li><a href="module-eclairjs_mllib_regression.html">eclairjs/mllib/regression</a></li><li><a href="module-eclairjs_mllib_tree.html">eclairjs/mllib/tree</a></li><li><a href="module-eclairjs_mllib_tree_configuration.html">eclairjs/mllib/tree/configuration</a></li><li><a href="module-eclairjs_mllib_tree_loss.html">eclairjs/mllib/tree/loss</a></li><li><a href="module-eclairjs_mllib_tree_model.html">eclairjs/mllib/tree/model</a></li><li><a href="module-eclairjs_mllib_util.html">eclairjs/mllib/util</a></li><li><a href="module-eclairjs_rdd.html">eclairjs/rdd</a></li><li><a href="module-eclairjs_sql.html">eclairjs/sql</a></li><li><a href="module-eclairjs_sql_types.html">eclairjs/sql/types</a></li><li><a href="module-eclairjs_storage.html">eclairjs/storage</a></li><li><a href="module-eclairjs_streaming.html">eclairjs/streaming</a></li><li><a href="module-eclairjs_streaming_dstream.html">eclairjs/streaming/dstream</a></li><li><a href="module-eclairjs_streaming_kafka.html">eclairjs/streaming/kafka</a></li></ul><h3>Classes</h3><ul><li><a href="FreqItemset.html">FreqItemset</a></li><li><a href="IsotonicRegression.html">IsotonicRegression</a></li><li><a href="IsotonicRegressionModel.html">IsotonicRegressionModel</a></li><li><a href="module-eclairjs.Accumulable.html">Accumulable</a></li><li><a href="module-eclairjs.AccumulableParam.html">AccumulableParam</a></li><li><a href="module-eclairjs.Accumulator.html">Accumulator</a></li><li><a href="module-eclairjs.FloatAccumulatorParam.html">FloatAccumulatorParam</a></li><li><a href="module-eclairjs.IntAccumulatorParam.html">IntAccumulatorParam</a></li><li><a href="module-eclairjs.List.html">List</a></li><li><a href="module-eclairjs.SparkConf.html">SparkConf</a></li><li><a href="module-eclairjs.SparkContext.html">SparkContext</a></li><li><a href="module-eclairjs.Tuple.html">Tuple</a></li><li><a href="module-eclairjs_mllib.MLUtils.html">MLUtils</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionWithLBFGS.html">LogisticRegressionWithLBFGS</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionWithSGD.html">LogisticRegressionWithSGD</a></li><li><a href="module-eclairjs_mllib_classification.NaiveBayes.html">NaiveBayes</a></li><li><a href="module-eclairjs_mllib_classification.NaiveBayesModel.html">NaiveBayesModel</a></li><li><a href="module-eclairjs_mllib_classification.SVMModel.html">SVMModel</a></li><li><a href="module-eclairjs_mllib_classification.SVMWithSGD.html">SVMWithSGD</a></li><li><a href="module-eclairjs_mllib_clustering.BisectingKMeans.html">BisectingKMeans</a></li><li><a href="module-eclairjs_mllib_clustering.BisectingKMeansModel.html">BisectingKMeansModel</a></li><li><a href="module-eclairjs_mllib_clustering.KMeans.html">KMeans</a></li><li><a href="module-eclairjs_mllib_clustering.KMeansModel.html">KMeansModel</a></li><li><a href="module-eclairjs_mllib_clustering.LDA.html">LDA</a></li><li><a href="module-eclairjs_mllib_clustering.LDAModel.html">LDAModel</a></li><li><a href="module-eclairjs_mllib_clustering.PowerIterationClustering.html">PowerIterationClustering</a></li><li><a href="module-eclairjs_mllib_clustering.PowerIterationClusteringModel.html">PowerIterationClusteringModel</a></li><li><a href="module-eclairjs_mllib_evaluation.BinaryClassificationMetrics.html">BinaryClassificationMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.MulticlassMetrics.html">MulticlassMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.RankingMetrics.html">RankingMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.RegressionMetrics.html">RegressionMetrics</a></li><li><a href="module-eclairjs_mllib_feature.Word2Vec.html">Word2Vec</a></li><li><a href="module-eclairjs_mllib_feature.Word2VecModel.html">Word2VecModel</a></li><li><a href="module-eclairjs_mllib_fpm.AssociationRules.html">AssociationRules</a></li><li><a href="module-eclairjs_mllib_fpm.FPGrowth.html">FPGrowth</a></li><li><a href="module-eclairjs_mllib_fpm.FPGrowthModel.html">FPGrowthModel</a></li><li><a href="module-eclairjs_mllib_fpm.PrefixSpan.html">PrefixSpan</a></li><li><a href="module-eclairjs_mllib_fpm.PrefixSpanModel.html">PrefixSpanModel</a></li><li><a href="module-eclairjs_mllib_linalg.DenseVector.html">DenseVector</a></li><li><a href="module-eclairjs_mllib_linalg.Matrix.html">Matrix</a></li><li><a href="module-eclairjs_mllib_linalg.SingularValueDecomposition.html">SingularValueDecomposition</a></li><li><a href="module-eclairjs_mllib_linalg.Vector.html">Vector</a></li><li><a href="module-eclairjs_mllib_linalg.Vectors.html">Vectors</a></li><li><a href="module-eclairjs_mllib_linalg_distributed.RowMatrix.html">RowMatrix</a></li><li><a href="module-eclairjs_mllib_optimization.LBFGS.html">LBFGS</a></li><li><a href="module-eclairjs_mllib_optimization.LogisticGradient.html">LogisticGradient</a></li><li><a href="module-eclairjs_mllib_optimization.SquaredL2Updater.html">SquaredL2Updater</a></li><li><a href="module-eclairjs_mllib_random.RandomRDDs.html">RandomRDDs</a></li><li><a href="module-eclairjs_mllib_recommendation.ALS.html">ALS</a></li><li><a href="module-eclairjs_mllib_recommendation.MatrixFactorizationModel.html">MatrixFactorizationModel</a></li><li><a href="module-eclairjs_mllib_recommendation.Rating.html">Rating</a></li><li><a href="module-eclairjs_mllib_regression.LabeledPoint.html">LabeledPoint</a></li><li><a href="module-eclairjs_mllib_regression.LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="module-eclairjs_mllib_regression.LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="module-eclairjs_mllib_tree.DecisionTree.html">DecisionTree</a></li><li><a href="module-eclairjs_mllib_tree.GradientBoostedTrees.html">GradientBoostedTrees</a></li><li><a href="module-eclairjs_mllib_tree.RandomForest.html">RandomForest</a></li><li><a href="module-eclairjs_mllib_tree_configuration.BoostingStrategy.html">BoostingStrategy</a></li><li><a href="module-eclairjs_mllib_tree_configuration.Strategy.html">Strategy</a></li><li><a href="module-eclairjs_mllib_tree_loss.Loss.html">Loss</a></li><li><a href="module-eclairjs_mllib_tree_model.DecisionTreeModel.html">DecisionTreeModel</a></li><li><a href="module-eclairjs_mllib_tree_model.GradientBoostedTreesModel.html">GradientBoostedTreesModel</a></li><li><a href="module-eclairjs_mllib_tree_model.RandomForestModel.html">RandomForestModel</a></li><li><a href="module-eclairjs_rdd.FloatRDD.html">FloatRDD</a></li><li><a href="module-eclairjs_rdd.PairRDD.html">PairRDD</a></li><li><a href="module-eclairjs_rdd.RDD.html">RDD</a></li><li><a href="module-eclairjs_sql.Column.html">Column</a></li><li><a href="module-eclairjs_sql.DataFrame.html">DataFrame</a></li><li><a href="module-eclairjs_sql.DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="module-eclairjs_sql.DataFrameReader.html">DataFrameReader</a></li><li><a href="module-eclairjs_sql.DataFrameStatFunctions.html">DataFrameStatFunctions</a></li><li><a href="module-eclairjs_sql.DataFrameWriter.html">DataFrameWriter</a></li><li><a href="module-eclairjs_sql.functions.html">functions</a></li><li><a href="module-eclairjs_sql.GroupedData.html">GroupedData</a></li><li><a href="module-eclairjs_sql.Row.html">Row</a></li><li><a href="module-eclairjs_sql.RowFactory.html">RowFactory</a></li><li><a href="module-eclairjs_sql.SQLContext.html">SQLContext</a></li><li><a href="module-eclairjs_sql.SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="module-eclairjs_sql.SqlDate.html">SqlDate</a></li><li><a href="module-eclairjs_sql.SqlTimestamp.html">SqlTimestamp</a></li><li><a href="module-eclairjs_sql_types.DataTypes.html">DataTypes</a></li><li><a href="module-eclairjs_sql_types.Metadata.html">Metadata</a></li><li><a href="module-eclairjs_sql_types.StructField.html">StructField</a></li><li><a href="module-eclairjs_sql_types.StructType.html">StructType</a></li><li><a href="module-eclairjs_storage.StorageLevel.html">StorageLevel</a></li><li><a href="module-eclairjs_streaming.Duration.html">Duration</a></li><li><a href="module-eclairjs_streaming.StreamingContext.html">StreamingContext</a></li><li><a href="module-eclairjs_streaming_dstream.DStream.html">DStream</a></li><li><a href="module-eclairjs_streaming_dstream.PairDStream.html">PairDStream</a></li><li><a href="module-eclairjs_streaming_kafka.KafkaUtils.html">KafkaUtils</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Fri Mar 25 2016 09:39:10 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Wed Apr 20 2016 14:28:18 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

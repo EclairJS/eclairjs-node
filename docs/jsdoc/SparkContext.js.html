@@ -42,9 +42,11 @@
  * limitations under the License.
  */
 
-var RDD = require('./rdd/RDD.js');
 var Utils = require('./utils.js');
 var kernel = require('./kernel.js');
+
+var RDD = require('./rdd/RDD.js');
+var SparkConf = require('./SparkConf.js');
 
 // our shared kernel promise
 // TODO: is there a better way to create a Promise and resolve it from the outside?
@@ -67,6 +69,7 @@ var kernelP = new Promise(function(resolve, reject) {
 /**
  *
  * @constructor
+ * @memberof module:eclairjs
  * @classdesc A JavaScript-friendly version of SparkContext that returns RDDs
  * Only one SparkContext may be active per JVM. You must stop() the active SparkContext before creating a new one.
  * This limitation may eventually be removed; see SPARK-2243 for more details.
@@ -78,13 +81,24 @@ function SparkContext(master, name) {
 
   this.kernelP = new Promise(function(resolve, reject) {
     kernelP.then(function(kernel) {
-      var templateStr = 'var jsc = new SparkContext("{{master}}", "{{name}}");';
+      var args = {
+        target: SparkContext,
+        args: [
+          {value: master, type: 'string'},
+          {value: name, type: 'string'}
+        ],
+        refId: 'jsc',
+        kernelP: kernelP
+      };
 
-      Utils.execute(kernelP, templateStr, {master: master, name: name}).then(function() {
-        // Check version
-        templateStr = 'jsc.version();';
-        // This is somewhat ugly, since SparkContext's kernelP hasn't been resolved yet.
-        Utils.generateResultPromise({kernelP: kernelP}, templateStr).then(function(version) {
+      Utils.generateConstructor(args).then(function(refId) {
+        var args = {
+          target: {kernelP: kernelP, refIdP: Promise.resolve(refId)},
+          method: 'version',
+          returnType: String
+        };
+
+        Utils.generate(args).then(function(version) {
           if (version === 'EclairJS-nashorn 0.1 Spark 1.6.0') {
             // correct version
             resolve(kernel);
@@ -101,7 +115,7 @@ function SparkContext(master, name) {
       resolve('jsc');
     }).catch(reject);
   }.bind(this));
-}
+};
 
 /**
  * Create an {@link Accumulable} shared variable of the given type, to which tasks can "add" values with add.
@@ -113,17 +127,16 @@ function SparkContext(master, name) {
  * @returns {Accumulable}
  */
 SparkContext.prototype.accumulable = function() {
-  var Accumulable = require('./Accumulable.js');
+  var Accumulable = require('./Accumulable.js')(kernelP);
 
-  if (arguments.length == 3) {
-    var templateStr = 'var {{refId}} = {{inRefId}}.accumulable({{initialValue}}, {{name}}, {{param}});';
+  var args = {
+    target: this,
+    method: 'accumulable',
+    args: Utils.wrapArguments(arguments),
+    returnType: Accumulable
+  };
 
-    return Utils.generateAssignment(this, Accumulable, templateStr, {initialValue: arguments[0], name: Utils.prepForReplacement(arguments[1]), param: Utils.prepForReplacement(arguments[2])});
-  } else {
-    var templateStr = 'var {{refId}} = {{inRefId}}.accumulable({{initialValue}}, {{param}});';
-
-    return Utils.generateAssignment(this, Accumulable, templateStr, {initialValue: arguments[0], param: Utils.prepForReplacement(arguments[1])});
-  }
+  return Utils.generate(args);
 };
 
 /**
@@ -131,66 +144,488 @@ SparkContext.prototype.accumulable = function() {
  * Only the master can access the accumulator's value.
  *
  * @param {int | float} initialValue
- * @param {string} name of  the accumulator for display in Spark's web UI. Optional
- * @param {AccumulableParam} param Optional defaults to FloatAccumulatorParam
+ * @param {string | AccumulableParam} [name] of  the accumulator for display in Spark's web UI. or param.  defaults to FloatAccumulatorParam
+ * @param {AccumulableParam} [param]  defaults to FloatAccumulatorParam, use only if also specifying name
  * @returns {Accumulator}
  */
 SparkContext.prototype.accumulator = function() {
-  var Accumulator = require('./Accumulator.js');
+  var Accumulator = require('./Accumulator.js')(kernelP);
 
-  if (arguments.length == 3) {
-    var templateStr = 'var {{refId}} = {{inRefId}}.accumulator({{initialValue}}, {{name}}, {{param}});';
+  var args = {
+    target: this,
+    method: 'accumulator',
+    args: Utils.wrapArguments(arguments),
+    returnType: Accumulator
+  };
 
-    return Utils.generateAssignment(this, Accumulator, templateStr, {initialValue: arguments[0], name: Utils.prepForReplacement(arguments[1]), param: Utils.prepForReplacement(arguments[2])});
-  } else {
-    var templateStr = 'var {{refId}} = {{inRefId}}.accumulator({{initialValue}}, {{param}});';
+  return Utils.generate(args);
+};
 
-    return Utils.generateAssignment(this, Accumulator, templateStr, {initialValue: arguments[0], param: Utils.prepForReplacement(arguments[1])});
-  }
+/**
+ * Add a file to be downloaded with this Spark job on every node.
+ * The `path` passed can be either a local file, a file in HDFS (or other Hadoop-supported
+ * filesystems), or an HTTP, HTTPS or FTP URI.  To access the file in Spark jobs,
+ * use `SparkFiles.get(fileName)` to find its download location.
+ *
+ * A directory can be given if the recursive option is set to true. Currently directories are only
+ * supported for Hadoop-supported filesystems.
+ * @param {string} path
+ * @param {boolean} [recursive]
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+SparkContext.prototype.addFile = function(path,recursive) {
+  var args = {
+    target: this,
+    method: 'addFile',
+    args: Utils.wrapArguments(arguments),
+    returnType: null
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * Adds a JAR dependency for all tasks to be executed on this SparkContext in the future.
+ * The `path` passed can be either a local file, a file in HDFS (or other Hadoop-supported
+ * filesystems), an HTTP, HTTPS or FTP URI, or local:/path for a file on every worker node.
+ * @param {string} path
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+SparkContext.prototype.addJar = function(path) {
+  var args = {
+    target: this,
+    method: 'addJar',
+    args: Utils.wrapArguments(arguments),
+    returnType: null
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * A unique identifier for the Spark application.
+ * Its format depends on the scheduler implementation.
+ * (i.e.
+ *  in case of local spark app something like 'local-1433865536131'
+ *  in case of YARN something like 'application_1433865536131_34483'
+ * )
+ * @returns {Promise.&lt;string>}
+ */
+SparkContext.prototype.applicationId = function() {
+  var args = {
+    target: this,
+    method: 'applicationId',
+    returnType: String
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @returns {Promise.&lt;string>}
+ */
+SparkContext.prototype.applicationAttemptId = function() {
+  var args = {
+    target: this,
+    method: 'applicationAttemptId',
+    returnType: String
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @returns {Promise.&lt;string>}
+ */
+SparkContext.prototype.appName = function() {
+  var args = {
+    target: this,
+    method: 'appName',
+    returnType: String
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * Broadcast a read-only variable to the cluster, returning a
+ * {@link Broadcast} object for reading it in distributed functions.
+ * The variable will be sent to each cluster only once.
+ * @param {object} value
+ * @returns {Broadcast}
+ */
+SparkContext.prototype.broadcast = function(value) {
+  throw "not implemented by ElairJS";
+//   var args ={
+//     target: this,
+//     method: 'broadcast',
+//     args: [
+//       { value: value, type: 'object' }
+//     ],
+//     returnType: Broadcast
+//
+//   };
+//
+//   return Utils.generate(args);
+};
+
+/**
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+SparkContext.prototype.clearJobGroup = function() {
+  var args = {
+    target: this,
+    method: 'clearJobGroup',
+    returnType: null
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @returns {Promise.&lt;string[]>}
+ */
+SparkContext.prototype.files = function() {
+  var args = {
+    target: this,
+    method: 'files',
+    returnType: [String]
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * Return a copy of this SparkContext's configuration. The configuration ''cannot'' be
+ * changed at runtime.
+ * @returns {SparkConf}
+ */
+SparkContext.prototype.getConf = function() {
+  var args = {
+    target: this,
+    method: 'getConf',
+    returnType: SparkConf
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * Get a local property set in this thread, or null if it is missing. See
+ * {@link setLocalProperty}.
+ * @param {string} key
+ * @returns {Promise.&lt;string>}
+ */
+SparkContext.prototype.getLocalProperty = function(key) {
+  var args = {
+    target: this,
+    method: 'getLocalProperty',
+    args: Utils.wrapArguments(arguments),
+    returnType: String
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+SparkContext.prototype.initLocalProperties = function() {
+  var args = {
+    target: this,
+    method: 'initLocalProperties',
+    returnType: null
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @returns {Promise.&lt;boolean>}
+ */
+SparkContext.prototype.isLocal = function() {
+  var args = {
+    target: this,
+    method: 'isLocal',
+    returnType: Boolean
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @returns {Promise.&lt;boolean>}  true if context is stopped or in the midst of stopping.
+ */
+SparkContext.prototype.isStopped = function() {
+  var args = {
+    target: this,
+    method: 'isStopped',
+    returnType: Boolean
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @returns {Promise.&lt;string[]>}
+ */
+SparkContext.prototype.jars = function() {
+  var args = {
+    target: this,
+    method: 'jars',
+    returnType: [String]
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @returns {Promise.&lt;string>}
+ */
+SparkContext.prototype.master = function() {
+  var args = {
+    target: this,
+    method: 'master',
+    returnType: String
+  };
+
+  return Utils.generate(args);
 };
 
 /**
  * Distribute a local Scala collection to form an RDD.
- * @param {array} arr
+ * @param {array} list
+ * @param {integer} [numSlices]
  * @returns {RDD}
  */
 SparkContext.prototype.parallelize = function(arr) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.parallelize([{{arr}}]);';
+  var args = {
+    target: this,
+    method: 'parallelize',
+    args: Utils.wrapArguments(arguments),
+    returnType: RDD
+  };
 
-  return Utils.generateAssignment(this, RDD, templateStr, {arr: Utils.prepForReplacement(arr, true)});
+  return Utils.generate(args);
+};
+
+/**
+ * Creates a new RDD[Long] containing elements from `start` to `end`(exclusive), increased by
+ * `step` every element.
+ *
+ * @note if we need to cache this RDD, we should make sure each partition does not exceed limit.
+ *
+ * @param {number} start  the start value.
+ * @param {number} end  the end value.
+ * @param {number} step  the incremental step
+ * @param {number} numSlices  the partition number of the new RDD.
+ * @returns {RDD}
+ */
+SparkContext.prototype.range = function(start,end,step,numSlices) {
+  var args = {
+    target: this,
+    method: 'range',
+    args: Utils.wrapArguments(arguments),
+    returnType: RDD
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @returns {SparkStatusTracker}
+ */
+SparkContext.prototype.statusTracker = function() {
+  throw "not implemented by ElairJS";
+//   var args ={
+//     target: this, 
+//     method: 'statusTracker', 
+//     returnType: SparkStatusTracker
+// 
+//   };
+// 
+//   return Utils.generate(args);
+};
+
+/**
+ * Set the directory under which RDDs are going to be checkpointed. The directory must
+ * be a HDFS path if running on a cluster.
+ * @param {string} directory
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+SparkContext.prototype.setCheckpointDir = function(directory) {
+  var args = {
+    target: this,
+    method: 'setCheckpointDir',
+    args: Utils.wrapArguments(arguments),
+    returnType: null
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @param {string} value
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+SparkContext.prototype.setJobDescription = function(value) {
+  var args = {
+    target: this,
+    method: 'setJobDescription',
+    args: Utils.wrapArguments(arguments),
+    returnType: null
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * Assigns a group ID to all the jobs started by this thread until the group ID is set to a
+ * different value or cleared.
+ *
+ * Often, a unit of execution in an application consists of multiple Spark actions or jobs.
+ * Application programmers can use this method to group all those jobs together and give a
+ * group description. Once set, the Spark web UI will associate such jobs with this group.
+ *
+ * The application can also use {@link cancelJobGroup} to cancel all
+ * running jobs in this group. For example,
+ * @example
+ * // In the main thread:
+ * sc.setJobGroup("some_job_to_cancel", "some job description")
+ * sc.parallelize(1 to 10000, 2).map { i => Thread.sleep(10); i }.count()
+ *
+ * // In a separate thread:
+ * sc.cancelJobGroup("some_job_to_cancel")
+ *
+ *
+ * If interruptOnCancel is set to true for the job group, then job cancellation will result
+ * in Thread.interrupt() being called on the job's executor threads. This is useful to help ensure
+ * that the tasks are actually stopped in a timely manner, but is off by default due to HDFS-1208,
+ * where HDFS may respond to Thread.interrupt() by marking nodes as dead.
+ * @param {string} groupId
+ * @param {string} description
+ * @param {boolean} interruptOnCancel
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+SparkContext.prototype.setJobGroup = function(groupId,description,interruptOnCancel) {
+  var args = {
+    target: this,
+    method: 'setJobGroup',
+    args: Utils.wrapArguments(arguments),
+    returnType: null
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * Set a local property that affects jobs submitted from this thread, such as the
+ * Spark fair scheduler pool.
+ * @param {string} key
+ * @param {string} value
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+SparkContext.prototype.setLocalProperty = function(key,value) {
+  var args = {
+    target: this,
+    method: 'setLocalProperty',
+    args: Utils.wrapArguments(arguments),
+    returnType: null
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * @param {string} logLevel  The desired log level as a string.
+ * Valid log levels include: ALL, DEBUG, ERROR, FATAL, INFO, OFF, TRACE, WARN
+ * @returns {Promise.&lt;Void>} A Promise that resolves to nothing.
+ */
+SparkContext.prototype.setLogLevel = function(logLevel) {
+  var args = {
+    target: this,
+    method: 'setLogLevel',
+    args: Utils.wrapArguments(arguments),
+    returnType: null
+  };
+
+  return Utils.generate(args);
 };
 
 /**
  * Read a text file from HDFS, a local file system (available on all nodes), or any Hadoop-supported file system URI,
  * and return it as an RDD of Strings.
  * @param {string} path - path to file
+ * @param {int} [minPartitions]
  * @returns {RDD}
  */
 SparkContext.prototype.textFile = function(path) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.textFile({{path}});';
+  var args = {
+    target: this,
+    method: 'textFile',
+    args: Utils.wrapArguments(arguments),
+    returnType: RDD
+  };
 
-  return Utils.generateAssignment(this, RDD, templateStr, {path: Utils.prepForReplacement(path)});
+  return Utils.generate(args);
 };
 
 SparkContext.prototype.stop = function() {
-  /*
-  var templateStr = 'var {{refId}} = jsc.stop();';
-
-  return Utils.generateVoidPromise(this.kernelP, templateStr);
-  */
-
   return new Promise(function(resolve, reject) {
     kernelP.then(function(kernel) {
       session.shutdown().then(resolve).catch(reject);
     });
-
   });
 };
 
+/**
+ * Read a directory of text files from HDFS, a local file system (available on all nodes), or any
+ * Hadoop-supported file system URI. Each file is read as a single record and returned in a
+ * key-value pair, where the key is the path of each file, the value is the content of each file.
+ *
+ * &lt;p> For example, if you have the following files:
+ * @example
+ *   hdfs://a-hdfs-path/part-00000
+ *   hdfs://a-hdfs-path/part-00001
+ *   ...
+ *   hdfs://a-hdfs-path/part-nnnnn
+ *
+ *
+ * Do `val rdd = sparkContext.wholeTextFile("hdfs://a-hdfs-path")`,
+ *
+ * &lt;p> then `rdd` contains
+ * @example
+ *   (a-hdfs-path/part-00000, its content)
+ *   (a-hdfs-path/part-00001, its content)
+ *   ...
+ *   (a-hdfs-path/part-nnnnn, its content)
+ *
+ *
+ * @note Small files are preferred, large file is also allowable, but may cause bad performance.
+ * @note On some filesystems, `.../path/&amp;#42;` can be a more efficient way to read all files
+ *       in a directory rather than `.../path/` or `.../path`
+ *
+ * @param {string} path  Directory to the input data files, the path can be comma separated paths as the
+ *             list of inputs.
+ * @param {number} minPartitions  A suggestion value of the minimal splitting number for input data.
+ * @returns {RDD}
+ */
+SparkContext.prototype.wholeTextFiles = function(path,minPartitions) {
+  var args = {
+    target: this,
+    method: "wholeTextFiles",
+    args: Utils.wrapArguments(arguments),
+    returnType: RDD
+  };
+
+  return Utils.generate(args);
+};
+
+SparkContext.moduleLocation = '/SparkContext';
+
 module.exports = function() {
   return [kernelP, SparkContext];
-};
-</code></pre>
+};</code></pre>
         </article>
     </section>
 
@@ -200,13 +635,13 @@ module.exports = function() {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Accumulable.html">Accumulable</a></li><li><a href="AccumulableParam.html">AccumulableParam</a></li><li><a href="ALS.html">ALS</a></li><li><a href="AssociationRules.html">AssociationRules</a></li><li><a href="BisectingKMeans.html">BisectingKMeans</a></li><li><a href="BoostingStrategy.html">BoostingStrategy</a></li><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataFrameWriter.html">DataFrameWriter</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DecisionTreeModel.html">DecisionTreeModel</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="FloatRDD.html">FloatRDD</a></li><li><a href="FPGrowth.html">FPGrowth</a></li><li><a href="FPGrowthModel.html">FPGrowthModel</a></li><li><a href="FreqItemset.html">FreqItemset</a></li><li><a href="GradientBoostedTrees.html">GradientBoostedTrees</a></li><li><a href="GradientBoostedTreesModel.html">GradientBoostedTreesModel</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="IsotonicRegression.html">IsotonicRegression</a></li><li><a href="IsotonicRegressionModel.html">IsotonicRegressionModel</a></li><li><a href="KMeans.html">KMeans</a></li><li><a href="KMeansModel.html">KMeansModel</a></li><li><a href="LBFGS.html">LBFGS</a></li><li><a href="LDA.html">LDA</a></li><li><a href="LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="List.html">List</a></li><li><a href="LogisticGradient.html">LogisticGradient</a></li><li><a href="LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="LogisticRegressionWithSGD.html">LogisticRegressionWithSGD</a></li><li><a href="Loss.html">Loss</a></li><li><a href="MatrixFactorizationModel.html">MatrixFactorizationModel</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="MulticlassMetrics.html">MulticlassMetrics</a></li><li><a href="NaiveBayes.html">NaiveBayes</a></li><li><a href="PairRDD.html">PairRDD</a></li><li><a href="PowerIterationClustering.html">PowerIterationClustering</a></li><li><a href="PowerIterationClusteringModel.html">PowerIterationClusteringModel</a></li><li><a href="PrefixSpan.html">PrefixSpan</a></li><li><a href="PrefixSpanModel.html">PrefixSpanModel</a></li><li><a href="RandomForestModel.html">RandomForestModel</a></li><li><a href="RankingMetrics.html">RankingMetrics</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="RowMatrix.html">RowMatrix</a></li><li><a href="SingularValueDecomposition.html">SingularValueDecomposition</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SQLFunctions.html">SQLFunctions</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="SquaredL2Updater.html">SquaredL2Updater</a></li><li><a href="StorageLevel.html">StorageLevel</a></li><li><a href="Strategy.html">Strategy</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li><li><a href="SVMModel.html">SVMModel</a></li><li><a href="SVMWithSGD.html">SVMWithSGD</a></li><li><a href="Tuple.html">Tuple</a></li><li><a href="Vector.html">Vector</a></li><li><a href="Vectors.html">Vectors</a></li><li><a href="Word2Vec.html">Word2Vec</a></li><li><a href="Word2VecModel.html">Word2VecModel</a></li></ul><h3>Global</h3><ul><li><a href="global.html#Accumulator">Accumulator</a></li><li><a href="global.html#BisectingKMeansModel">BisectingKMeansModel</a></li><li><a href="global.html#DataFrameStatFunctions">DataFrameStatFunctions</a></li><li><a href="global.html#DecisionTree">DecisionTree</a></li><li><a href="global.html#gKernelP">gKernelP</a></li><li><a href="global.html#LDAModel">LDAModel</a></li><li><a href="global.html#LogisticRegressionWithLBFGS">LogisticRegressionWithLBFGS</a></li><li><a href="global.html#Matrix">Matrix</a></li><li><a href="global.html#NaiveBayesModel">NaiveBayesModel</a></li><li><a href="global.html#Utils">Utils</a></li><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-eclairjs.html">eclairjs</a></li><li><a href="module-eclairjs_mllib.html">eclairjs/mllib</a></li><li><a href="module-eclairjs_mllib_classification.html">eclairjs/mllib/classification</a></li><li><a href="module-eclairjs_mllib_clustering.html">eclairjs/mllib/clustering</a></li><li><a href="module-eclairjs_mllib_evaluation.html">eclairjs/mllib/evaluation</a></li><li><a href="module-eclairjs_mllib_feature.html">eclairjs/mllib/feature</a></li><li><a href="module-eclairjs_mllib_fpm.html">eclairjs/mllib/fpm</a></li><li><a href="module-eclairjs_mllib_linalg.html">eclairjs/mllib/linalg</a></li><li><a href="module-eclairjs_mllib_linalg_distributed.html">eclairjs/mllib/linalg/distributed</a></li><li><a href="module-eclairjs_mllib_optimization.html">eclairjs/mllib/optimization</a></li><li><a href="module-eclairjs_mllib_random.html">eclairjs/mllib/random</a></li><li><a href="module-eclairjs_mllib_recommendation.html">eclairjs/mllib/recommendation</a></li><li><a href="module-eclairjs_mllib_regression.html">eclairjs/mllib/regression</a></li><li><a href="module-eclairjs_mllib_tree.html">eclairjs/mllib/tree</a></li><li><a href="module-eclairjs_mllib_tree_configuration.html">eclairjs/mllib/tree/configuration</a></li><li><a href="module-eclairjs_mllib_tree_loss.html">eclairjs/mllib/tree/loss</a></li><li><a href="module-eclairjs_mllib_tree_model.html">eclairjs/mllib/tree/model</a></li><li><a href="module-eclairjs_mllib_util.html">eclairjs/mllib/util</a></li><li><a href="module-eclairjs_rdd.html">eclairjs/rdd</a></li><li><a href="module-eclairjs_sql.html">eclairjs/sql</a></li><li><a href="module-eclairjs_sql_types.html">eclairjs/sql/types</a></li><li><a href="module-eclairjs_storage.html">eclairjs/storage</a></li><li><a href="module-eclairjs_streaming.html">eclairjs/streaming</a></li><li><a href="module-eclairjs_streaming_dstream.html">eclairjs/streaming/dstream</a></li><li><a href="module-eclairjs_streaming_kafka.html">eclairjs/streaming/kafka</a></li></ul><h3>Classes</h3><ul><li><a href="FreqItemset.html">FreqItemset</a></li><li><a href="IsotonicRegression.html">IsotonicRegression</a></li><li><a href="IsotonicRegressionModel.html">IsotonicRegressionModel</a></li><li><a href="module-eclairjs.Accumulable.html">Accumulable</a></li><li><a href="module-eclairjs.AccumulableParam.html">AccumulableParam</a></li><li><a href="module-eclairjs.Accumulator.html">Accumulator</a></li><li><a href="module-eclairjs.FloatAccumulatorParam.html">FloatAccumulatorParam</a></li><li><a href="module-eclairjs.IntAccumulatorParam.html">IntAccumulatorParam</a></li><li><a href="module-eclairjs.List.html">List</a></li><li><a href="module-eclairjs.SparkConf.html">SparkConf</a></li><li><a href="module-eclairjs.SparkContext.html">SparkContext</a></li><li><a href="module-eclairjs.Tuple.html">Tuple</a></li><li><a href="module-eclairjs_mllib.MLUtils.html">MLUtils</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionWithLBFGS.html">LogisticRegressionWithLBFGS</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionWithSGD.html">LogisticRegressionWithSGD</a></li><li><a href="module-eclairjs_mllib_classification.NaiveBayes.html">NaiveBayes</a></li><li><a href="module-eclairjs_mllib_classification.NaiveBayesModel.html">NaiveBayesModel</a></li><li><a href="module-eclairjs_mllib_classification.SVMModel.html">SVMModel</a></li><li><a href="module-eclairjs_mllib_classification.SVMWithSGD.html">SVMWithSGD</a></li><li><a href="module-eclairjs_mllib_clustering.BisectingKMeans.html">BisectingKMeans</a></li><li><a href="module-eclairjs_mllib_clustering.BisectingKMeansModel.html">BisectingKMeansModel</a></li><li><a href="module-eclairjs_mllib_clustering.KMeans.html">KMeans</a></li><li><a href="module-eclairjs_mllib_clustering.KMeansModel.html">KMeansModel</a></li><li><a href="module-eclairjs_mllib_clustering.LDA.html">LDA</a></li><li><a href="module-eclairjs_mllib_clustering.LDAModel.html">LDAModel</a></li><li><a href="module-eclairjs_mllib_clustering.PowerIterationClustering.html">PowerIterationClustering</a></li><li><a href="module-eclairjs_mllib_clustering.PowerIterationClusteringModel.html">PowerIterationClusteringModel</a></li><li><a href="module-eclairjs_mllib_evaluation.BinaryClassificationMetrics.html">BinaryClassificationMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.MulticlassMetrics.html">MulticlassMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.RankingMetrics.html">RankingMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.RegressionMetrics.html">RegressionMetrics</a></li><li><a href="module-eclairjs_mllib_feature.Word2Vec.html">Word2Vec</a></li><li><a href="module-eclairjs_mllib_feature.Word2VecModel.html">Word2VecModel</a></li><li><a href="module-eclairjs_mllib_fpm.AssociationRules.html">AssociationRules</a></li><li><a href="module-eclairjs_mllib_fpm.FPGrowth.html">FPGrowth</a></li><li><a href="module-eclairjs_mllib_fpm.FPGrowthModel.html">FPGrowthModel</a></li><li><a href="module-eclairjs_mllib_fpm.PrefixSpan.html">PrefixSpan</a></li><li><a href="module-eclairjs_mllib_fpm.PrefixSpanModel.html">PrefixSpanModel</a></li><li><a href="module-eclairjs_mllib_linalg.DenseVector.html">DenseVector</a></li><li><a href="module-eclairjs_mllib_linalg.Matrix.html">Matrix</a></li><li><a href="module-eclairjs_mllib_linalg.SingularValueDecomposition.html">SingularValueDecomposition</a></li><li><a href="module-eclairjs_mllib_linalg.Vector.html">Vector</a></li><li><a href="module-eclairjs_mllib_linalg.Vectors.html">Vectors</a></li><li><a href="module-eclairjs_mllib_linalg_distributed.RowMatrix.html">RowMatrix</a></li><li><a href="module-eclairjs_mllib_optimization.LBFGS.html">LBFGS</a></li><li><a href="module-eclairjs_mllib_optimization.LogisticGradient.html">LogisticGradient</a></li><li><a href="module-eclairjs_mllib_optimization.SquaredL2Updater.html">SquaredL2Updater</a></li><li><a href="module-eclairjs_mllib_random.RandomRDDs.html">RandomRDDs</a></li><li><a href="module-eclairjs_mllib_recommendation.ALS.html">ALS</a></li><li><a href="module-eclairjs_mllib_recommendation.MatrixFactorizationModel.html">MatrixFactorizationModel</a></li><li><a href="module-eclairjs_mllib_recommendation.Rating.html">Rating</a></li><li><a href="module-eclairjs_mllib_regression.LabeledPoint.html">LabeledPoint</a></li><li><a href="module-eclairjs_mllib_regression.LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="module-eclairjs_mllib_regression.LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="module-eclairjs_mllib_tree.DecisionTree.html">DecisionTree</a></li><li><a href="module-eclairjs_mllib_tree.GradientBoostedTrees.html">GradientBoostedTrees</a></li><li><a href="module-eclairjs_mllib_tree.RandomForest.html">RandomForest</a></li><li><a href="module-eclairjs_mllib_tree_configuration.BoostingStrategy.html">BoostingStrategy</a></li><li><a href="module-eclairjs_mllib_tree_configuration.Strategy.html">Strategy</a></li><li><a href="module-eclairjs_mllib_tree_loss.Loss.html">Loss</a></li><li><a href="module-eclairjs_mllib_tree_model.DecisionTreeModel.html">DecisionTreeModel</a></li><li><a href="module-eclairjs_mllib_tree_model.GradientBoostedTreesModel.html">GradientBoostedTreesModel</a></li><li><a href="module-eclairjs_mllib_tree_model.RandomForestModel.html">RandomForestModel</a></li><li><a href="module-eclairjs_rdd.FloatRDD.html">FloatRDD</a></li><li><a href="module-eclairjs_rdd.PairRDD.html">PairRDD</a></li><li><a href="module-eclairjs_rdd.RDD.html">RDD</a></li><li><a href="module-eclairjs_sql.Column.html">Column</a></li><li><a href="module-eclairjs_sql.DataFrame.html">DataFrame</a></li><li><a href="module-eclairjs_sql.DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="module-eclairjs_sql.DataFrameReader.html">DataFrameReader</a></li><li><a href="module-eclairjs_sql.DataFrameStatFunctions.html">DataFrameStatFunctions</a></li><li><a href="module-eclairjs_sql.DataFrameWriter.html">DataFrameWriter</a></li><li><a href="module-eclairjs_sql.functions.html">functions</a></li><li><a href="module-eclairjs_sql.GroupedData.html">GroupedData</a></li><li><a href="module-eclairjs_sql.Row.html">Row</a></li><li><a href="module-eclairjs_sql.RowFactory.html">RowFactory</a></li><li><a href="module-eclairjs_sql.SQLContext.html">SQLContext</a></li><li><a href="module-eclairjs_sql.SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="module-eclairjs_sql.SqlDate.html">SqlDate</a></li><li><a href="module-eclairjs_sql.SqlTimestamp.html">SqlTimestamp</a></li><li><a href="module-eclairjs_sql_types.DataTypes.html">DataTypes</a></li><li><a href="module-eclairjs_sql_types.Metadata.html">Metadata</a></li><li><a href="module-eclairjs_sql_types.StructField.html">StructField</a></li><li><a href="module-eclairjs_sql_types.StructType.html">StructType</a></li><li><a href="module-eclairjs_storage.StorageLevel.html">StorageLevel</a></li><li><a href="module-eclairjs_streaming.Duration.html">Duration</a></li><li><a href="module-eclairjs_streaming.StreamingContext.html">StreamingContext</a></li><li><a href="module-eclairjs_streaming_dstream.DStream.html">DStream</a></li><li><a href="module-eclairjs_streaming_dstream.PairDStream.html">PairDStream</a></li><li><a href="module-eclairjs_streaming_kafka.KafkaUtils.html">KafkaUtils</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Fri Mar 25 2016 09:39:10 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Wed Apr 20 2016 14:28:18 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
