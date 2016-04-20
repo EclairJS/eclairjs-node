@@ -31,7 +31,7 @@ function EclairJS() {
 
     StreamingContext: require('../../lib/streaming/StreamingContext.js'),
     streaming: {
-      KafkaUtils: require('../../lib/streaming/KafkaUtils.js'),
+      KafkaUtils: require('../../lib/streaming/kafka/KafkaUtils.js'),
       Duration: require('../../lib/streaming/Duration.js')
     }
   }

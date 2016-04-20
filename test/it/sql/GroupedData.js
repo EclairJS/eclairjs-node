@@ -31,7 +31,7 @@ if (global.SC) {
   sc = new spark.SparkContext("local[*]", "sql.GroupedData Integration Tests");
 }
 
-var sqlContext = new spark.SQLContext(sc);
+var sqlContext = new spark.sql.SQLContext(sc);
 
 function buildPeopleTable(file, callback) {
   var rdd = sc.textFile(file);

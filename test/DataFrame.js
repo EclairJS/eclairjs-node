@@ -19,7 +19,7 @@ var expect = require('chai').expect;
 
 var spark = require('./lib/spark.js');
 var sc = new spark.SparkContext("local[*]", "foo");
-var sqlContext = new spark.SQLContext(sc);
+var sqlContext = new spark.sql.SQLContext(sc);
 
 var testOutput = [];
 var listenerAdded = false;

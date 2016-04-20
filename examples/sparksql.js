@@ -18,7 +18,7 @@
 var spark = require('../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "Spark SQL Example");
-var sqlContext = new spark.SQLContext(sc);
+var sqlContext = new spark.sql.SQLContext(sc);
 
 // Load a text file and convert each line to a JavaScript Object.
 var rdd = sc.textFile(__dirname + '/people.txt');

@@ -31,7 +31,7 @@ if (global.SC) {
   sc = new spark.SparkContext("local[*]", "sql.Row Integration Tests");
 }
 
-var sqlContext = new spark.SQLContext(sc);
+var sqlContext = new spark.sql.SQLContext(sc);
 
 function buildRockstarsTable(file, callback) {
   var rdd = sc.textFile(file);

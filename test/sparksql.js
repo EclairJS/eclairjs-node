@@ -56,7 +56,7 @@ describe('SQL Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function() {
-          sqlContext = new spark.SQLContext(ctx);
+          sqlContext = new spark.sql.SQLContext(ctx);
         }, function(msg) {
           expect(msg.code).equals('var sqlcontext1 = new SQLContext(jsc);');
         },

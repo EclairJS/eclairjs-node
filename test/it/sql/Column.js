@@ -31,7 +31,7 @@ if (global.SC) {
   sc = new spark.SparkContext("local[*]", "sql.Column Integration Tests");
 }
 
-var sqlContext = new spark.SQLContext(sc);
+var sqlContext = new spark.sql.SQLContext(sc);
 
 var DataTypes = spark.sql.types.DataTypes;
 

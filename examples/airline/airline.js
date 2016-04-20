@@ -3,12 +3,12 @@ var spark = require('eclairjs');
 var sparkMaster = process.env.SPARK_MASTER || "local[*]";
 console.log("spark master = " + sparkMaster);
 var sc = new spark.SparkContext(sparkMaster, "Airline Demo");
-var sqlContext = new spark.SQLContext(sc);
+var sqlContext = new spark.sql.SQLContext(sc);
 var ssc;
 
 // rdu,aa,234,sfo,3
 function startStream() {
-  ssc = new spark.StreamingContext(sc, new spark.streaming.Duration(2000));
+  ssc = new spark.streaming.StreamingContext(sc, new spark.streaming.Duration(2000));
   var kafkaHost = process.env.KAFKA_HOST || "169.54.140.107:2181"
   var dstream = spark.streaming.KafkaUtils
     .createStream(ssc, kafkaHost, "floyd", "airline")

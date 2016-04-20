@@ -31,7 +31,7 @@ var TestUtils = require('../../lib/utils.js');
 var spark = require('../../../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "sql.DataFrameWriter Integration Tests");
-var sqlContext = new spark.SQLContext(sc);
+var sqlContext = new spark.sql.SQLContext(sc);
 
 function buildPeopleTable(file, callback) {
   var rdd = sc.textFile(file);

@@ -42,7 +42,7 @@ if (global.SC) {
   sc = new spark.SparkContext("local[*]", "sql.DataFrameReader Integration Tests");
 }
 
-var sqlContext = new spark.SQLContext(sc);
+var sqlContext = new spark.sql.SQLContext(sc);
 
 describe('sql.functions Test', function() {
   describe("DataFrameReader.jdbc(url, db, info)", function() {
