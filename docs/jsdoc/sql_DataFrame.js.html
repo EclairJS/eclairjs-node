@@ -75,7 +75,7 @@ function DataFrame(kernelP, refIdP) {
  * df.agg(map)
  * df.groupBy().agg(map)
  * @param {hashMap} - hashMap&lt;String,String> exprs
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.agg = function(hashMap) {
   var args = {
@@ -93,7 +93,7 @@ DataFrame.prototype.agg = function(hashMap) {
 /**
  * Returns a new DataFrame with an alias set.
  * @param {string} alias
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.as = function(alias) {
   var args = {
@@ -112,7 +112,7 @@ DataFrame.prototype.as = function(alias) {
  * Selects column based on the column name and return it as a Column.
  * Note that the column name can also reference to a nested column like a.b.
  * @param {string} colName
- * @returns {Column}
+ * @returns {module:eclairjs/sql.Column}
  */
 DataFrame.prototype.apply = function(colName) {
   var args = {
@@ -129,7 +129,7 @@ DataFrame.prototype.apply = function(colName) {
 
 /**
  * Persist this DataFrame with the default storage level (`MEMORY_ONLY`).
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.cache = function() {
   var args = {
@@ -147,7 +147,7 @@ DataFrame.prototype.cache = function() {
  * e.g. if you go from 1000 partitions to 100 partitions, there will not be a shuffle,
  * instead each of the 100 new partitions will claim 10 of the current partitions.
  * @param {integer} numPartitions
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.coalesce = function(numPartitions) {
   var args = {
@@ -165,7 +165,7 @@ DataFrame.prototype.coalesce = function(numPartitions) {
 /**
  * Selects column based on the column name and return it as a Column.
  * @param {string} name
- * @returns {Column}
+ * @returns {module:eclairjs/sql.Column}
  */
 DataFrame.prototype.col = function(name) {
   var args = {
@@ -254,7 +254,7 @@ DataFrame.prototype.count = function() {
  * @param {string | Column} cols...
  * @example
  * var df = dataFrame.cube("age", "expense");
- * @returns {GroupedData}
+ * @returns {module:eclairjs/sql.GroupedData}
  */
 DataFrame.prototype.cube = function() {
   var GroupedData = require('./GroupedData.js');
@@ -280,7 +280,7 @@ DataFrame.prototype.cube = function() {
  * @param {string} cols....
  * @example
  * var df = peopleDataFrame.describe("age", "expense");
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.describe = function() {
   var params = Array.prototype.slice.call(arguments);
@@ -297,7 +297,7 @@ DataFrame.prototype.describe = function() {
 
 /**
  * Returns a new DataFrame that contains only the unique rows from this DataFrame. This is an alias for dropDuplicates.
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.distinct = function() {
   var args = {
@@ -312,7 +312,7 @@ DataFrame.prototype.distinct = function() {
 /**
  * Returns a new DataFrame with a column dropped.
  * @param {string | Column} column
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.drop = function(column) {
   var args = {
@@ -330,7 +330,7 @@ DataFrame.prototype.drop = function(column) {
 /**
  * Returns a new DataFrame that contains only the unique rows from this DataFrame, if colNames then considering only the subset of columns.
  * @param {string[]} colNames
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.dropDuplicates = function(colNames) {
   var args = {
@@ -371,8 +371,8 @@ DataFrame.prototype.dtypes = function() {
 
 /**
  * Returns a new DataFrame containing rows in this frame but not in another frame. This is equivalent to EXCEPT in SQL.
- * @param {DataFrame} otherDataFrame to compare to this DataFrame
- * @returns {DataFrame}
+ * @param {module:eclairjs/sql.DataFrame} otherDataFrame to compare to this DataFrame
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.except = function(otherDataFrame) {
   var args = {
@@ -404,7 +404,7 @@ DataFrame.prototype.explain = function(extended) {
 /**
  * Filters rows using the given SQL expression string or Filters rows using the given Column..
  * @param {string | Column}
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.filter = function(column) {
   var args = {
@@ -419,7 +419,7 @@ DataFrame.prototype.filter = function(column) {
 
 /**
  * Returns the first row.
- * @returns {Row}
+ * @returns {module:eclairjs/sql.Row}
  */
 DataFrame.prototype.first = function() {
   var args = {
@@ -435,7 +435,7 @@ DataFrame.prototype.first = function() {
  * Returns a new RDD by first applying a function to all rows of this DataFrame, and then flattening the results.
  * @param {function} func
  * @param {Object[]} [bindArgs] array whose values will be added to func's argument list.
- * @returns {RDD}
+ * @returns {module:eclairjs/rdd.RDD}
  */
 DataFrame.prototype.flatMap = function(func, bindArgs) {
   var args = {
@@ -494,7 +494,7 @@ DataFrame.prototype.foreachPartition = function(func, bindArgs) {
 /**
  * Groups the DataFrame using the specified columns, so we can run aggregation on them
  * @param {string[] | Column[]} - Array of Column objects of column name strings
- * @returns {GroupedData}
+ * @returns {module:eclairjs/sql.GroupedData}
  */
 DataFrame.prototype.groupBy = function() {
   var GroupedData = require('./GroupedData.js');
@@ -513,7 +513,7 @@ DataFrame.prototype.groupBy = function() {
 
 /**
  * Returns the first row.
- * @returns {Row}
+ * @returns {module:eclairjs/sql.Row}
  */
 DataFrame.prototype.head = function() {
   var args = {
@@ -554,8 +554,8 @@ DataFrame.prototype.inputFiles = function() {
 
 /**
  * Returns a new DataFrame containing rows only in both this frame and another frame. This is equivalent to INTERSECT in SQL
- * @param {DataFrame} other
- * @returns {DataFrame}
+ * @param {module:eclairjs/sql.DataFrame} other
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.intersect = function(other) {
   var args = {
@@ -584,12 +584,12 @@ DataFrame.prototype.isLocal = function() {
 
 /**
  * Cartesian join with another DataFrame. Note that cartesian joins are very expensive without an extra filter that can be pushed down.
- * @param {DataFrame} Right side of the join operation.
+ * @param {module:eclairjs/sql.DataFrame} Right side of the join operation.
  * @param {string | string[] | Column} [columnNamesOrJoinExpr] If string or array of strings column names, inner equi-join with another DataFrame using the given columns.
  * Different from other join functions, the join columns will only appear once in the output, i.e. similar to SQL's JOIN USING syntax.
  * If Column object, joinExprs inner join with another DataFrame, using the given join expression.
  * @param {string} [joinType] only valid if using Column joinExprs.
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  * @example
  * var joinedDf = df1.join(df2);
  * // or
@@ -636,7 +636,7 @@ DataFrame.prototype.join = function(right, usingColumns, joinType) {
  * Returns a new DataFrame by taking the first n rows. The difference between this function and head is that head
  * returns an array while limit returns a new DataFrame.
  * @param {integer} number
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.limit = function(number) {
   var args = {
@@ -653,7 +653,7 @@ DataFrame.prototype.limit = function(number) {
  * Returns a new RDD by applying a function to all rows of this DataFrame.
  * @param {function} func
  * @param {Object[]} [bindArgs] array whose values will be added to func's argument list.
- * @returns {RDD}
+ * @returns {module:eclairjs/rdd.RDD}
  */
 DataFrame.prototype.map = function(func, bindArgs) {
   var args = {
@@ -675,7 +675,7 @@ DataFrame.prototype.map = function(func, bindArgs) {
  * func should return a array rather than a single item.
  * @param {function} func
  * @param {Object[]} [bindArgs] array whose values will be added to func's argument list.
- * @returns {RDD}
+ * @returns {module:eclairjs/rdd.RDD}
  */
 DataFrame.prototype.mapPartitions = function(func, bindArgs) {
   var args = {
@@ -693,7 +693,7 @@ DataFrame.prototype.mapPartitions = function(func, bindArgs) {
 
 /**
  * Returns a DataFrameNaFunctions for working with missing data.
- * @returns {DataFrameNaFunctions}
+ * @returns {module:eclairjs/sql.DataFrameNaFunctions}
  */
 DataFrame.prototype.na = function() {
   var DataFrameNaFunctions = require('./DataFrameNaFunctions.js');
@@ -711,7 +711,7 @@ DataFrame.prototype.na = function() {
  * Returns a new DataFrame sorted by the specified columns, if columnName is used sorted in ascending order.
  * This is an alias of the sort function.
  * @param {string | Column} columnName,...columnName or sortExprs,... sortExprs
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.orderBy = function() {
   var params = Array.prototype.slice.call(arguments);
@@ -727,8 +727,8 @@ DataFrame.prototype.orderBy = function() {
 };
 
 /**
- * @param {StorageLevel} newLevel
- * @returns {DataFrame}
+ * @param {module:eclairjs/storage.StorageLevel} newLevel
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.persist = function(newLevel) {
   var args = {
@@ -758,7 +758,7 @@ DataFrame.prototype.printSchema = function() {
 };
 
 /**
- * @returns {SQLContextQueryExecution}
+ * @returns {module:eclairjs/sql.SQLContextQueryExecution}
  */
 DataFrame.prototype.queryExecution = function() {
   var SQLContextQueryExecution = require('./SQLContextQueryExecution.js');
@@ -794,7 +794,7 @@ DataFrame.prototype.randomSplit = function(weights, seed) {
 
 /**
  * Represents the content of the DataFrame as an RDD of Rows.
- * @returns {RDD}
+ * @returns {module:eclairjs/rdd.RDD}
  */
 DataFrame.prototype.rdd = function() {
   var args = {
@@ -827,7 +827,7 @@ DataFrame.prototype.registerTempTable = function(tableName) {
 /**
  * Returns a new DataFrame that has exactly numPartitions partitions.
  * @param {integer} numPartitions
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.repartition = function(numPartitions) {
   var args = {
@@ -846,7 +846,7 @@ DataFrame.prototype.repartition = function(numPartitions) {
  * Create a multi-dimensional rollup for the current DataFrame using the specified columns,
  * so we can run aggregation on them. See GroupedData for all the available aggregate functions.
  * @param {string | Column} columnName, .....columnName or sortExprs,... sortExprs
- * @returns {GroupedData}
+ * @returns {module:eclairjs/sql.GroupedData}
  * @example
  *  var result = peopleDataFrame.rollup("age", "networth").count();
  *  // or
@@ -873,7 +873,7 @@ DataFrame.prototype.rollup = function() {
  * @param {boolean} withReplacement
  * @param {float} fraction
  * @param {integer} [seed]
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.sample = function(withReplacement, fraction, seed) {
   var args = {
@@ -892,7 +892,7 @@ DataFrame.prototype.sample = function(withReplacement, fraction, seed) {
 
 /**
  * Returns the schema of this DataFrame.
- * @returns {StructType}
+ * @returns {module:eclairjs/sql/types.StructType}
  */
 DataFrame.prototype.schema = function() {
   var StructType = require('./types/StructType.js')(this.kernelP);
@@ -908,8 +908,8 @@ DataFrame.prototype.schema = function() {
 
 /**
  * Selects a set of column based expressions.
- * @param {Column[] | string[]}
- * @returns  {DataFrame}
+ * @param {module:eclairjs/sql.Column[] | string[]}
+ * @returns  {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.select = function() {
   var params = Array.prototype.slice.call(arguments);
@@ -927,7 +927,7 @@ DataFrame.prototype.select = function() {
 /**
  * Selects a set of SQL expressions. This is a variant of select that accepts SQL expressions.
  * @param {string} exprs,...exprs
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  * @example
  * var result = peopleDataFrame.selectExpr("name", "age > 19");
  */
@@ -962,7 +962,7 @@ DataFrame.prototype.show = function() {
 /**
  * Returns a new DataFrame sorted by the specified columns, if columnName is used sorted in ascending order.
  * @param {string | Column} columnName,...columnName or sortExprs,... sortExprs
- * @returns {DataFrame}
+ * @returns {module:eclairjs/sql.DataFrame}
  * @example
  *  var result = peopleDataFrame.sort("age", "name");
  *  // or
@@ -985,7 +985,7 @@ DataFrame.prototype.sort = function() {
 
 /**
  * Returns SQLContext
- * @returns {SQLContext}
+ * @returns {module:eclairjs/sql.SQLContext}
  */
 DataFrame.prototype.sqlContext = function() {
   var SQLContext = require('./SQLContext.js');
@@ -999,7 +999,7 @@ DataFrame.prototype.sqlContext = function() {
  * @example
  * var stat = peopleDataFrame.stat().cov("income", "networth");
  *
- * @returns {DataFrameStatFunctions}
+ * @returns {module:eclairjs/sql.DataFrameStatFunctions}
  */
 DataFrame.prototype.stat = function() {
   var DataFrameStatFunctions = require('./DataFrameStatFunctions.js');
@@ -1045,7 +1045,7 @@ DataFrame.prototype.take = function(num) {
  * Returns a new DataFrame with columns renamed. This can be quite convenient in conversion from a
  * RDD of tuples into a DataFrame with meaningful names. For example:
  * @param {string} colNames,...colNames
- * @return {DataFrame}
+ * @return {module:eclairjs/sql.DataFrame}
  * @example
  * var result = nameAgeDF.toDF("newName", "newAge");
  */
@@ -1064,7 +1064,7 @@ DataFrame.prototype.toDF = function() {
 
 /**
  * Returns the content of the DataFrame as a RDD of JSON strings.
- * @returns {RDD}
+ * @returns {module:eclairjs/rdd.RDD}
  */
 DataFrame.prototype.toJSON = function() {
   var args = {
@@ -1078,7 +1078,7 @@ DataFrame.prototype.toJSON = function() {
 
 /**
  * Returns a RDD object.
- * @returns {RDD}
+ * @returns {module:eclairjs/rdd.RDD}
  */
 DataFrame.prototype.toRDD = function() {
   var args = {
@@ -1102,8 +1102,8 @@ DataFrame.prototype.toString = function() {
 
 /**
  * Returns a new DataFrame containing union of rows in this frame and another frame. This is equivalent to UNION ALL in SQL.
- * @param {DataFrame} other
- * @returns {DataFrame}
+ * @param {module:eclairjs/sql.DataFrame} other
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.unionAll = function(other) {
   var args = {
@@ -1133,8 +1133,8 @@ DataFrame.prototype.unpersist = function(blocking) {
 
 /**
  * Filters rows using the given Column or SQL expression.
- * @param {Column | string} condition - .
- * @returns {DataFrame}
+ * @param {module:eclairjs/sql.Column | string} condition - .
+ * @returns {module:eclairjs/sql.DataFrame}
  */
 DataFrame.prototype.where = function(condition) {
   var args = {
@@ -1149,7 +1149,7 @@ DataFrame.prototype.where = function(condition) {
 
 /**
  * Interface for saving the content of the DataFrame out into external storage.
- * @returns {DataFrameWriter}
+ * @returns {module:eclairjs/sql.DataFrameWriter}
  */
 DataFrame.prototype.write = function() {
   var DataFrameWriter = require('./DataFrameWriter.js');
@@ -1181,7 +1181,7 @@ module.exports = DataFrame;</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Wed Apr 20 2016 14:28:18 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Fri Apr 22 2016 12:38:55 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
