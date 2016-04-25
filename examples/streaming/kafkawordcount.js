@@ -33,10 +33,13 @@ var spark = require('../../lib/index.js');
 var kafkaHost = '192.168.99.100:2181';
 var topic = 'tlog';
 
-var sparkContext = new spark.SparkContext("local[*]", "Kafak Word Count");
+var topicMap = {};
+topicMap[topic] = 2;
+
+var sparkContext = new spark.SparkContext("local[*]", "Kafka Word Count");
 var ssc = new spark.streaming.StreamingContext(sparkContext, new spark.streaming.Duration(2000));
 
-var messages = spark.streaming.kafka.KafkaUtils.createStream(ssc, kafkaHost, topic, {topic: 2});
+var messages = spark.streaming.kafka.KafkaUtils.createStream(ssc, kafkaHost, topic, topicMap);
 
 var lines = messages.map(function(tuple2) {
   return tuple2[1];

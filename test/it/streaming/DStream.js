@@ -59,7 +59,7 @@ describe('DStream Test', function() {
             }, 10000);
           }).listen(4000);
 
-          var streamingContext = new spark.StreamingContext(sc, new spark.streaming.Duration(500));
+          var streamingContext = new spark.streaming.StreamingContext(sc, new spark.streaming.Duration(500));
           var dstream = streamingContext.socketTextStream("localhost", 4000);
           var ds1 = dstream.flatMap(function (line) {
             return line.split(",");
