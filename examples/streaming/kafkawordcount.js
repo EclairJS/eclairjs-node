@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+/* 
+  This exmaple requires a running Kafka instance.  You can use the Docker setup in EclairJS-nashorn/examples 
+  (docker-compose up -d) with this example as it will generate the appropriate data.
+*/
+
 function exit() {
   process.exit(0);
 }
