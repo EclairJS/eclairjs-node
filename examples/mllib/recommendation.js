@@ -25,15 +25,6 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-function createResulPromise(label, promise) {
-  return new Promise(function(resolve, reject) {
-    promise.then(function(result) {
-      resolve([label, result])
-    }).catch(reject);
-  });
-}
-
-
 var spark = require('../../lib/index.js');
 
 function run(sc) {
