@@ -4,6 +4,8 @@ FROM jupyter/minimal-kernel
 
 USER root
 
+
+
 # Java 8
 RUN echo "deb http://http.debian.net/debian jessie-backports main" >> /etc/apt/sources.list
 RUN apt-get update
@@ -27,17 +29,20 @@ RUN cd /usr/local && ln -s spark-${APACHE_SPARK_VERSION}-bin-hadoop2.6 spark
 
 
 # apache toree
-RUN pip install toree
+ENV TOREE_VERSION 0.1.0.dev6
+RUN pip install toree===${TOREE_VERSION}
 RUN jupyter toree install
 
 
 
 
 
-#Nashorn jar
-RUN wget -q http://repo2.maven.org/maven2/org/eclairjs/eclairjs-nashorn/0.3/eclairjs-nashorn-0.3-jar-with-dependencies.jar && \
+#Eclair JS
+ENV ECLAIRJS_VERSION 0.4
+
+RUN wget -q http://repo2.maven.org/maven2/org/eclairjs/eclairjs-nashorn/${ECLAIRJS_VERSION}/eclairjs-nashorn-${ECLAIRJS_VERSION}-jar-with-dependencies.jar && \
     mkdir -p /opt/nashorn/lib && \
-    mv eclairjs-nashorn-0.3-jar-with-dependencies.jar /opt/nashorn/lib
+    mv eclairjs-nashorn-${ECLAIRJS_VERSION}-jar-with-dependencies.jar /opt/nashorn/lib/eclairjs.jar
 
 
 #kernel.json
