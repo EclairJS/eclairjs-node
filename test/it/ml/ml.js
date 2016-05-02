@@ -68,6 +68,20 @@ describe('ml Test', function() {
     });
   });
 
+  describe("Binarizer", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/Binarizer');
+      test(sc).then(function(results) {
+        expect(results.length).equals(3);
+        expect(results[0].values).deep.equals([0]);
+        expect(results[1].values).deep.equals([1]);
+        expect(results[2].values).deep.equals([0]);
+        done();
+      }).catch(done);
+    });
+  });
 
   after(function(done) {
     if (sc && doWeOwnTheSC) {
