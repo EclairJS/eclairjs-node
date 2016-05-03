@@ -95,13 +95,25 @@ describe('ml Test', function() {
     });
   });
 
-  describe("Chi Sq Selector ", function() {
+  describe("Chi Sq Selector", function() {
     it("should return the expected result", function(done) {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/chisqselector');
       test(sc).then(function(results) {
         expect(results.length).equals(3);
+        done();
+      }).catch(done);
+    });
+  });
+
+  describe("Count Vectorizer", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/countvectorizer');
+      test(sc).then(function(results) {
+        expect(results.length).equals(2);
         done();
       }).catch(done);
     });
