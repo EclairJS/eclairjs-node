@@ -72,12 +72,36 @@ describe('ml Test', function() {
     it("should return the expected result", function(done) {
       this.timeout(100000);
 
-      var test = require('../../../examples/ml/Binarizer');
+      var test = require('../../../examples/ml/binarizer');
       test(sc).then(function(results) {
         expect(results.length).equals(3);
         expect(results[0].values).deep.equals([0]);
         expect(results[1].values).deep.equals([1]);
         expect(results[2].values).deep.equals([0]);
+        done();
+      }).catch(done);
+    });
+  });
+
+  describe("Bucketizer", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/bucketizer');
+      test(sc).then(function(results) {
+        expect(results.length).equals(4);
+        done();
+      }).catch(done);
+    });
+  });
+
+  describe("Chi Sq Selector ", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/chisqselector');
+      test(sc).then(function(results) {
+        expect(results.length).equals(3);
         done();
       }).catch(done);
     });
