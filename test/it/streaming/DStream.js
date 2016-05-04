@@ -68,11 +68,11 @@ describe('DStream Test', function() {
           var data = [];
 
           ds1.foreachRDD(function (rdd) {
-            var d = rdd.collect().then(function(results) {
-              if (results && results.length > 0) {
-                data.push(results);
-              }
-            });
+            return rdd.collect()
+          }, null, function(results) {
+            if (results && results.length > 0) {
+              data.push(results);
+            }
           }).then(function () {
             streamingContext.start();
 

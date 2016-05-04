@@ -61,11 +61,11 @@ var topCounts60 = hashTags.mapToPair(function (s, Tuple) {
   });
 
 // Print popular hashtags
-topCounts60.foreachRDD(function(rdd)  {
-  rdd.take(10).then(function(result) {
-    console.log("top 10:", result)
-  });
-}).then(function() {
+topCounts60.foreachRDD(function(rdd) {
+  return rdd.take(10);
+}, null, function(res) {
+  console.log('top 10:', res)
+}).then(function () {
   ssc.start();
 }).catch(stop);
 

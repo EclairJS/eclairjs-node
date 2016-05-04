@@ -51,12 +51,12 @@ var wordCounts = words.mapToPair( function(s, Tuple) {
 });
 
 wordCounts.foreachRDD(function(rdd) {
-  var d = rdd.collect().then(function(results) {
-    console.log(results);
-  });
+  return rdd.collect()
+}, null, function(res) {
+  console.log('Results: ', res)
 }).then(function () {
   ssc.start();
-});
+}).catch(stop);
 
 // stop spark streaming when we stop the node program
 process.on('SIGTERM', stop);
