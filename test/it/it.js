@@ -50,6 +50,10 @@ describe('SparkContext Integration Test', function() {
     require('./sql/Row');
   });
 
+  describe("Streaming tests", function() {
+    require('./streaming/DStream');
+  });
+
   describe("ML tests", function() {
     require('./ml/ml.js');
   });

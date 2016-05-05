@@ -52,9 +52,11 @@ describe('DStream Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
+          var interval;
+
           // create a basic socket stream on port 4000
           var server = net.createServer(function(socket) {
-            setInterval(function() {
+            interval = setInterval(function() {
               socket.write("1,2,3,4\n");
             }, 10000);
           }).listen(4000);
@@ -77,6 +79,8 @@ describe('DStream Test', function() {
             streamingContext.start();
 
             setTimeout(function () {
+              clearInterval(interval);
+
               streamingContext.stop(false).then(function() {
                 streamingContext.awaitTermination().then(function() {
                   callback(data);
