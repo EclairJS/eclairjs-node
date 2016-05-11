@@ -144,6 +144,19 @@ describe('ml Test', function() {
     });
   });
 
+  describe("Decision Tree Regression", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/decisiontreeregression');
+      test(sc).then(function(results) {
+        expect(results.length).equals(2);
+        expect(results[1]).to.be.an('Number');
+        done();
+      }).catch(done);
+    });
+  });
+
   after(function(done) {
     if (sc && doWeOwnTheSC) {
       sc.stop().then(done).catch(done);
