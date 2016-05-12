@@ -210,6 +210,17 @@ describe('ml Test', function() {
     });
   });
 
+  describe("Index To String", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/indextostring');
+      test(sc).then(function(results) {
+        expect(results).to.be.an('Number');
+        done();
+      }).catch(done);
+    });
+  });
 
   after(function(done) {
     if (sc && doWeOwnTheSC) {
