@@ -226,7 +226,7 @@ describe('ml Test', function() {
     it("should return the expected result", function(done) {
       this.timeout(100000);
 
-      var test = require('../../../examples/ml/Kmeans');
+      var test = require('../../../examples/ml/kmeans');
       test(sc).then(function(results) {
         expect(results.length).equals(3);
         done();
@@ -234,6 +234,31 @@ describe('ml Test', function() {
     });
   });
 
+  describe("LDA", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/lda');
+      test(sc).then(function(results) {
+        expect(results.length).equals(2);
+        expect(results[0]).to.be.an('Number');
+        expect(results[1]).to.be.an('Number');
+        done();
+      }).catch(done);
+    });
+  });
+
+  describe("Linear Regression With Elastic Net", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/linearregressionwithelasticnet');
+      test(sc).then(function(results) {
+        expect(results.length).equals(5);
+        done();
+      }).catch(done);
+    });
+  });
 
   after(function(done) {
     if (sc && doWeOwnTheSC) {
