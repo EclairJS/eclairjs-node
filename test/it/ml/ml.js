@@ -260,6 +260,18 @@ describe('ml Test', function() {
     });
   });
 
+  describe("Logistic Regression Summary", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/logisticregressionsummary');
+      test(sc).then(function(results) {
+        expect(results.length).equals(1);
+        done();
+      }).catch(done);
+    });
+  });
+
   after(function(done) {
     if (sc && doWeOwnTheSC) {
       sc.stop().then(done).catch(done);
