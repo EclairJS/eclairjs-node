@@ -284,6 +284,18 @@ describe('ml Test', function() {
     });
   });
 
+  describe("Min Max Scaler", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/minmaxscaler');
+      test(sc).then(function(results) {
+        expect(results.length).equals(10);
+        done();
+      }).catch(done);
+    });
+  });
+
   after(function(done) {
     if (sc && doWeOwnTheSC) {
       sc.stop().then(done).catch(done);
