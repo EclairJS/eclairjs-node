@@ -272,6 +272,18 @@ describe('ml Test', function() {
     });
   });
 
+  describe("Logistic Regression With Elastic Net", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/logisticregressionwithelasticnet');
+      test(sc).then(function(results) {
+        expect(results.length).equals(2);
+        done();
+      }).catch(done);
+    });
+  });
+
   after(function(done) {
     if (sc && doWeOwnTheSC) {
       sc.stop().then(done).catch(done);
