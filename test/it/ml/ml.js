@@ -307,6 +307,19 @@ describe('ml Test', function() {
       }).catch(done);
     });
   });
+
+  describe("Multi Layer Perceptron Classifier", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/multilayerperceptronclassifier');
+      test(sc).then(function(results) {
+        expect(results).to.be.an('Number');
+        done();
+      }).catch(done);
+    });
+  });
+
   after(function(done) {
     if (sc && doWeOwnTheSC) {
       sc.stop().then(done).catch(done);
