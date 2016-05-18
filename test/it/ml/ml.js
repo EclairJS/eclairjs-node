@@ -320,6 +320,30 @@ describe('ml Test', function() {
     });
   });
 
+  describe("Naive Bayes", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/naivebayes');
+      test(sc).then(function(results) {
+        expect(results).to.be.an('Number');
+        done();
+      }).catch(done);
+    });
+  });
+
+  describe("NGram", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/ngram');
+      test(sc).then(function(results) {
+        expect(results.length).equals(3);
+        done();
+      }).catch(done);
+    });
+  });
+
   after(function(done) {
     if (sc && doWeOwnTheSC) {
       sc.stop().then(done).catch(done);
