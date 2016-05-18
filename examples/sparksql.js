@@ -40,12 +40,16 @@ fields.push(DataTypes.createStructField("age", DataTypes.IntegerType, true));
 var schema = DataTypes.createStructType(fields);
 
 // Convert records of the RDD (people) to Rows.
-var rowRDD = people.map(function(person){
+var rowRDD = people.map(function(person, RowFactory){
   return RowFactory.create([person.name, person.age]);
-});
+}, [spark.sql.RowFactory]);
 
 //Apply the schema to the RDD.
 var peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema);
+
+peopleDataFrame.toJSON().then(function(res){
+    console.log("peopleDataFrame.toJSON(): ",res);
+});
 
 // Register the DataFrame as a table.
 peopleDataFrame.registerTempTable("people").then(function() {
