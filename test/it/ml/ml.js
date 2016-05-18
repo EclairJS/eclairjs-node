@@ -296,6 +296,17 @@ describe('ml Test', function() {
     });
   });
 
+  describe("Model Selection Via Train Validation Split", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/modelselectionviatrainvalidationsplit');
+      test(sc).then(function(results) {
+        expect(results.length).equals(10);
+        done();
+      }).catch(done);
+    });
+  });
   after(function(done) {
     if (sc && doWeOwnTheSC) {
       sc.stop().then(done).catch(done);
