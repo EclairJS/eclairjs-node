@@ -344,6 +344,18 @@ describe('ml Test', function() {
     });
   });
 
+  describe("Normalizer", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/normalizer');
+      test(sc).then(function(results) {
+        expect(results).to.be.an('String');
+        done();
+      }).catch(done);
+    });
+  });
+
   after(function(done) {
     if (sc && doWeOwnTheSC) {
       sc.stop().then(done).catch(done);
