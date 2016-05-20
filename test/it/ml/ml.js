@@ -416,11 +416,23 @@ describe('ml Test', function() {
     });
   });
 
-  describe("Random Forest Regressor Example", function() {
+  describe("Random Forest Regressor", function() {
     it("should return the expected result", function(done) {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/randomforestregressor');
+      test(sc).then(function(results) {
+        expect(results).to.be.an('Number');
+        done();
+      }).catch(done);
+    });
+  });
+
+  describe("Random Forest Classifier", function() {
+    it("should return the expected result", function(done) {
+      this.timeout(100000);
+
+      var test = require('../../../examples/ml/randomforestclassifier');
       test(sc).then(function(results) {
         expect(results).to.be.an('Number');
         done();
