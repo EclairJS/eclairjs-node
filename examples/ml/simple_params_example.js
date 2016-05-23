@@ -67,8 +67,8 @@ function run(sc) {
 
     // One can also combine ParamMaps.
     var paramMap2 = new spark.ml.param.ParamMap();
-    paramMap2.put(lr.probabilityCol().w("myProbability")); // Change output column name
-    var paramMapCombined = paramMap.$plus$plus(paramMap2);
+    var paramMap3 = paramMap2.put(lr.probabilityCol().w("myProbability")); // Change output column name
+    var paramMapCombined = paramMap.$plus$plus(paramMap3);
 
     // Now learn a new model using the paramMapCombined parameters.
     // paramMapCombined overrides all parameters set earlier via lr.set* methods.
