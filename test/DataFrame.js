@@ -638,7 +638,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var rdd8 = dataFrame1.toJSON();');
+          expect(result).equals('JSON.stringify(dataFrame1.toJSON());');
         },
         done
       );
@@ -653,7 +653,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var rdd9 = dataFrame1.toRDD();');
+          expect(result).equals('var rdd8 = dataFrame1.toRDD();');
         },
         done
       );
@@ -805,7 +805,7 @@ describe('DataFrame', function() {
             return [rows.length];
           })).then(callback);
         }, function(result) {
-          expect(result).equals('var rdd10 = dataFrame1.mapPartitions(function (rows) {\n            return [rows.length];\n          });');
+          expect(result).equals('var rdd9 = dataFrame1.mapPartitions(function (rows) {\n            return [rows.length];\n          });');
         },
         done
       );
@@ -897,7 +897,7 @@ describe('DataFrame', function() {
         function(callback) {
           onceDone(df.rdd()).then(callback);
         }, function(result) {
-          expect(result).equals('var rdd11 = dataFrame1.rdd();');
+          expect(result).equals('var rdd10 = dataFrame1.rdd();');
         },
         done
       );
