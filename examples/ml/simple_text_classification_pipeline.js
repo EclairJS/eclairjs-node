@@ -48,41 +48,36 @@ function run(sc) {
     var tokenizer = new spark.ml.feature.Tokenizer()
       .setInputCol("text")
      .setOutputCol("words");
+    
+    var hashingTF = new spark.ml.feature.HashingTF()
+      .setNumFeatures(1000)
+      .setInputCol(tokenizer.getOutputCol())
+      .setOutputCol("features");
+    var lr = new spark.ml.classification.LogisticRegression()
+      .setMaxIter(10)
+      .setRegParam(0.001);
+    var pipeline = new spark.ml.Pipeline()
+      .setStages([tokenizer, hashingTF, lr]);
 
+    // Fit the pipeline to training documents.
+    var model = pipeline.fit(training);
 
+    // Prepare test documents, which are unlabeled.
+    localTest = [
+      {"id": 4, "text": "spark i j k"},
+      {"id": 5, "text": "l m n"},
+      {"id": 6, "text": "spark hadoop spark"},
+      {"id": 7, "text": "apache hadoop"}];
+    var test = sqlContext.createDataFrameFromJson(sc.parallelize(localTest), {
+      "id": "Integer",
+      "text": "String"
+    });
 
-    tokenizer.getOutputCol().then(function(outputCol) {
-      var hashingTF = new spark.ml.feature.HashingTF()
-        .setNumFeatures(1000)
-        .setInputCol(outputCol)
-        .setOutputCol("features");
-      var lr = new spark.ml.classification.LogisticRegression()
-        .setMaxIter(10)
-        .setRegParam(0.001);
-      var pipeline = new spark.ml.Pipeline()
-        .setStages([ tokenizer, hashingTF, lr]);
+    // Make predictions on test documents.
+    var predictions = model.transform(test);
+    var rows = predictions.select("id", "text", "probability", "prediction");
 
-      // Fit the pipeline to training documents.
-      var model = pipeline.fit(training);
-
-      // Prepare test documents, which are unlabeled.
-      localTest = [
-        { "id": 4, "text":"spark i j k"},
-        { "id" :5, "text" : "l m n"},
-        { "id" :6, "text" : "spark hadoop spark"},
-        { "id" :7, "text" : "apache hadoop"}];
-      var test = sqlContext.createDataFrameFromJson(sc.parallelize(localTest), {
-          "id" :"Integer",
-          "text" :"String"
-      });
-
-      // Make predictions on test documents.
-      var predictions = model.transform(test);
-      var rows = predictions.select("id", "text", "probability", "prediction");
-
-      rows.take(5).then(resolve).catch(reject);
-    }).catch(reject);
-
+    rows.take(5).then(resolve).catch(reject);
   });
 }
 

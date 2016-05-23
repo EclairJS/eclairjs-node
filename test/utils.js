@@ -331,7 +331,7 @@ describe('Utils Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function(callback, error) {
-          var arr = [1,'123',[1], false, {}];
+          var arr = [1,'123',[1], false, {}, new Promise(function(resolve, reject){resolve(1)})];
 
           var x = Utils.wrapArray(arr);
 
@@ -342,6 +342,7 @@ describe('Utils Test', function() {
           expect(result[2].type).equals('array');
           expect(result[3].type).equals('boolean');
           expect(result[4].type).equals('map');
+          expect(result[5].type).equals('promise');
         },
         done
       );

@@ -50,39 +50,37 @@ function run(sc) {
       .setInputCol("text")
       .setOutputCol("words");
 
-    tokenizer.getOutputCol().then(function(outputCol) {
-      var hashingTF = new spark.ml.feature.HashingTF()
-        .setNumFeatures(1000)
-        .setInputCol(outputCol)
-        .setOutputCol("features");
+    var hashingTF = new spark.ml.feature.HashingTF()
+      .setNumFeatures(1000)
+      .setInputCol(tokenizer.getOutputCol())
+      .setOutputCol("features");
 
-      var lr = new spark.ml.classification.LogisticRegression()
-        .setMaxIter(10)
-        .setRegParam(0.01);
+    var lr = new spark.ml.classification.LogisticRegression()
+      .setMaxIter(10)
+      .setRegParam(0.01);
 
-      var pipeline = new spark.ml.Pipeline()
-        .setStages([tokenizer, hashingTF, lr]);
+    var pipeline = new spark.ml.Pipeline()
+      .setStages([tokenizer, hashingTF, lr]);
 
-      // Fit the pipeline to training documents.
-      var model = pipeline.fit(training);
+    // Fit the pipeline to training documents.
+    var model = pipeline.fit(training);
 
-      var schema2 = new spark.sql.types.StructType([
-        new spark.sql.types.StructField("id", spark.sql.types.DataTypes.IntegerType, false, spark.sql.types.Metadata.empty()),
-        new spark.sql.types.StructField("text", spark.sql.types.DataTypes.StringType, false, spark.sql.types.Metadata.empty())
-      ]);
+    var schema2 = new spark.sql.types.StructType([
+      new spark.sql.types.StructField("id", spark.sql.types.DataTypes.IntegerType, false, spark.sql.types.Metadata.empty()),
+      new spark.sql.types.StructField("text", spark.sql.types.DataTypes.StringType, false, spark.sql.types.Metadata.empty())
+    ]);
 
-      // Prepare test documents, which are unlabeled.
-      var test = sqlContext.createDataFrame([
-        spark.sql.RowFactory.create(4, "spark i j k"),
-        spark.sql.RowFactory.create(5, "l m n"),
-        spark.sql.RowFactory.create(6, "mapreduce spark"),
-        spark.sql.RowFactory.create(7, "apache hadoop")
-      ], schema2);
+    // Prepare test documents, which are unlabeled.
+    var test = sqlContext.createDataFrame([
+      spark.sql.RowFactory.create(4, "spark i j k"),
+      spark.sql.RowFactory.create(5, "l m n"),
+      spark.sql.RowFactory.create(6, "mapreduce spark"),
+      spark.sql.RowFactory.create(7, "apache hadoop")
+    ], schema2);
 
-      // Make predictions on test documents.
-      var predictions = model.transform(test);
-      var rows = predictions.select("id", "text", "probability", "prediction").take(10).then(resolve).catch(reject);
-    }).catch(reject);
+    // Make predictions on test documents.
+    var predictions = model.transform(test);
+    var rows = predictions.select("id", "text", "probability", "prediction").take(10).then(resolve).catch(reject);
   });
 }
 
