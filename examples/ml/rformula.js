@@ -63,7 +63,7 @@ if (global.SC) {
 } else {
   var sc = new spark.SparkContext("local[*]", "rformula");
   run(sc).then(function(results) {
-        console.log(JSON.stringify(results));
+        spark.sql.DataFrame.show(results);
     stop();
   }).catch(stop);
 }

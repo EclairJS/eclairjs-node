@@ -54,9 +54,9 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "vectorslicer");
+  var sc = new spark.SparkContext("local[*]", "StandardScaler");
   run(sc).then(function(results) {
-        console.log(JSON.stringify(results));
+        spark.sql.DataFrame.show(results,true);
     stop();
   }).catch(stop);
 }

@@ -64,9 +64,7 @@ if (global.SC) {
 } else {
   var sc = new spark.SparkContext("local[*]", "word2vec");
   run(sc).then(function(results) {
-    results.forEach(function (r) {
-        console.log(r);
-    });
+    spark.sql.DataFrame.show(results);
     stop();
   }).catch(stop);
 }

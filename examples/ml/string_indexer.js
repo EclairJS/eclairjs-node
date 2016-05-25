@@ -63,7 +63,7 @@ if (global.SC) {
 } else {
   var sc = new spark.SparkContext("local[*]", "string indexer");
   run(sc).then(function(results) {
-        console.log("String indexer results:",JSON.stringify(results));
+        spark.sql.DataFrame.show(results);
     stop();
   }).catch(stop);
 }
