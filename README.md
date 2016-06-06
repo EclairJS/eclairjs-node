@@ -3,7 +3,7 @@ EclairJS
 **EclairJS** is a JavaScript client for Apache Spark which is made up of two components, each with it's own project, [EclairJS Node](https://github.com/EclairJS/eclairjs-node) and [EclairJS Nashorn](https://github.com/EclairJS/eclairjs-nashorn/).
 
 ## EclairJS Node
-The purpose of **EclairJS Node** is to enable JavaScript/NodeJS developers to program against [Apache Spark](http://spark.apache.org/).  **EclairJS Node** provides an API in NodeJS for the [Apache Spark API](http://spark.apache.org/docs/latest/api/java/index.html) and a remote client for a node application.  **EclairJS Node** is dependent on the **EclairJS Nashorn** component.
+The purpose of **EclairJS Node** is to enable JavaScript/NodeJS developers to program against [Apache Spark](http://spark.apache.org/).  **EclairJS Node** provides an API in NodeJS for the [Apache Spark API](http://spark.apache.org/docs/latest/api/java/index.html) and a remote client for a node application.  **EclairJS Node** is dependent on the **EclairJS Nashorn** component. More detailed information is available in the Eclair Node [Wiki](https://github.com/EclairJS/eclairjs-node/wikis/home).
 
 ## EclairJS Nashorn
 The purpose of **EclairJS Nashorn** is to expose the [Apache Spark](http://spark.apache.org/) programming model to JavaScript.  **EclairJS Nashorn** provides support for JavaScript in [Spark](http://spark.apache.org/) and a framework that supports various applications including **Eclairjs Node**, a REPL and Jupyter Notebooks. 
@@ -32,7 +32,3 @@ Our goal is to keep the **EclairJS** master branch up to date with the latest ve
 | 0.4  (master)  | 1.6.0 |
 
 Please note as new APIs are implemented for **EclairJS** they will be added to the master branch.  Refer to the [API Documentation](https://github.com/EclairJS/eclairjs-node/wikis/API-Documentation) for a list of what is currently implemented.  **EclairJS** has been tested on OSX and Linux.
-
-Resources
-===================
-More detailed information is available in the Eclair Node [Wiki](https://github.com/EclairJS/eclairjs-node/wikis/home). Presentations and information about getting involved are under [Project and Community](https://github.com/EclairJS/eclairjs-node/wikis/Project-and-Community).
