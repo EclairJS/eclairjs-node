@@ -29,16 +29,16 @@ RUN cd /usr/local && ln -s spark-${APACHE_SPARK_VERSION}-bin-hadoop2.6 spark
 
 
 # apache toree
-ENV TOREE_VERSION 0.1.0.dev6
+ENV TOREE_VERSION 0.1.0.dev8
 RUN pip install toree===${TOREE_VERSION}
-RUN jupyter toree install
+RUN jupyter toree install 			
 
 
 
 
 
 #Eclair JS
-ENV ECLAIRJS_VERSION 0.4
+ENV ECLAIRJS_VERSION 0.5
 
 RUN wget -q http://repo2.maven.org/maven2/org/eclairjs/eclairjs-nashorn/${ECLAIRJS_VERSION}/eclairjs-nashorn-${ECLAIRJS_VERSION}-jar-with-dependencies.jar && \
     mkdir -p /opt/nashorn/lib && \
