@@ -49,9 +49,9 @@ for (var i = 0; i < 30; i++) {
 // Create the QueueInputDStream and use it do some processing
 var inputStream = ssc.queueStream(rddQueue);
 var mappedStream = inputStream.mapToPair(
-  function (i, Tuple) {
-    return new Tuple(i % 10, 1);
-  }, [spark.Tuple]);
+  function (i, Tuple2) {
+    return new Tuple2(i % 10, 1);
+  }, [spark.Tuple2]);
 
 var reducedStream = mappedStream.reduceByKey(
   function (i1, i2) {

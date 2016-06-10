@@ -42,17 +42,17 @@ function run(sc) {
     var model = spark.mllib.recommendation.ALS.train(ratings, rank, numIterations, 0.01);
 
     // Evaluate the model on rating data
-    var userProducts = ratings.map(function (r, Tuple) {
-      return new Tuple(r.user(), r.product());
-    }, [spark.Tuple]);
+    var userProducts = ratings.map(function (r, Tuple2) {
+      return new Tuple2(r.user(), r.product());
+    }, [spark.Tuple2]);
 
-    var predictions = spark.rdd.PairRDD.fromRDD(model.predict(userProducts).map(function(r, Tuple) {
-      return new Tuple(new Tuple(r.user(), r.product()), r.rating());
-    }, [spark.Tuple]));
+    var predictions = spark.rdd.PairRDD.fromRDD(model.predict(userProducts).map(function(r, Tuple2) {
+      return new Tuple2(new Tuple2(r.user(), r.product()), r.rating());
+    }, [spark.Tuple2]));
 
-    var ratesAndPreds = spark.rdd.PairRDD.fromRDD(ratings.map(function(r, Tuple) {
-      return new Tuple(new Tuple(r.user(), r.product()), r.rating());
-    }, [spark.Tuple])).join(predictions).values();
+    var ratesAndPreds = spark.rdd.PairRDD.fromRDD(ratings.map(function(r, Tuple2) {
+      return new Tuple2(new Tuple2(r.user(), r.product()), r.rating());
+    }, [spark.Tuple2])).join(predictions).values();
 
     var MSE = spark.rdd.FloatRDD.fromRDD(ratesAndPreds.map(function(pair) {
       var err = pair[0] - pair[1];

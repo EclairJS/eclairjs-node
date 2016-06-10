@@ -30,11 +30,11 @@ var spark = require('../../lib/index.js');
 function run(sc) {
   return new Promise(function(resolve, reject) {
     var similarities = sc.parallelize([
-      new spark.Tuple(0, 1, 0.9),
-      new spark.Tuple(1, 2, 0.9),
-      new spark.Tuple(2, 3, 0.9),
-      new spark.Tuple(3, 4, 0.1),
-      new spark.Tuple(4, 5, 0.9)
+      new spark.Tuple3(spark.forceFloat(0.0), spark.forceFloat(1.0), 0.9),
+      new spark.Tuple3(spark.forceFloat(1.0), spark.forceFloat(2.0), 0.9),
+      new spark.Tuple3(spark.forceFloat(2.0), spark.forceFloat(3.0), 0.9),
+      new spark.Tuple3(spark.forceFloat(3.0), spark.forceFloat(4.0), 0.1),
+      new spark.Tuple3(spark.forceFloat(4.0), spark.forceFloat(5.0), 0.9)
     ]);
 
     var pic = new spark.mllib.clustering.PowerIterationClustering()

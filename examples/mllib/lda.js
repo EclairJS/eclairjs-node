@@ -49,9 +49,9 @@ function run(sc) {
     }, [spark.mllib.linalg.Vectors]);
 
       // Index documents with unique IDs
-    var zipIndex = parsedData.zipWithIndex().map(function(doc_id, Tuple) {
-      return new Tuple(doc_id[1], doc_id[0]); // swap
-    }, [spark.Tuple]);
+    var zipIndex = parsedData.zipWithIndex().map(function(doc_id, Tuple2) {
+      return new Tuple2(doc_id._2(), doc_id._1()); // swap
+    }, [spark.Tuple2]);
 
     var corpus = spark.rdd.PairRDD.fromRDD(zipIndex).cache();
 

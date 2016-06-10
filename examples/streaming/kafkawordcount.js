@@ -54,9 +54,9 @@ var words = lines.flatMap(function( x) {
   return x.split(/\s+/);
 });
 
-var wordCounts = words.mapToPair(function(s, Tuple) {
-  return new Tuple(s, 1);
-}, [spark.Tuple]).reduceByKey(function( i1,  i2) {
+var wordCounts = words.mapToPair(function(s, Tuple2) {
+  return new Tuple2(s, 1);
+}, [spark.Tuple2]).reduceByKey(function( i1,  i2) {
   return i1 + i2;
 });
 

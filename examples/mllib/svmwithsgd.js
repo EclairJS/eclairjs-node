@@ -44,10 +44,10 @@ function run(sc) {
     model.clearThreshold();
 
     // Compute raw scores on the test set.
-    var scoreAndLabels = test.map(function (lp, model, Tuple) {
+    var scoreAndLabels = test.map(function (lp, model, Tuple2) {
       var score = model.predict(lp.getFeatures());
-      return new Tuple(score, lp.getLabel());
-    }, [model, spark.Tuple]);
+      return new Tuple2(score, lp.getLabel());
+    }, [model, spark.Tuple2]);
 
     // Get evaluation metrics.
     var metrics = new spark.mllib.evaluation.BinaryClassificationMetrics(scoreAndLabels);

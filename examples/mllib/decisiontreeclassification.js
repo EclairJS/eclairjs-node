@@ -47,9 +47,9 @@ function run(sc) {
       var model = spark.mllib.tree.DecisionTree.trainClassifier(trainingData, numClasses, categoricalFeaturesInfo, impurity, maxDepth, maxBins);
 
       // Evaluate model on test instances and compute test error
-      var predictionAndLabel = testData.mapToPair(function (labeledPoint, model, Tuple) {
-        return new Tuple(model.predict(labeledPoint.getFeatures()), labeledPoint.getLabel());
-      }, [model, spark.Tuple]);
+      var predictionAndLabel = testData.mapToPair(function (labeledPoint, model, Tuple2) {
+        return new Tuple2(model.predict(labeledPoint.getFeatures()), labeledPoint.getLabel());
+      }, [model, spark.Tuple2]);
 
       var result = predictionAndLabel.filter(function (tuple2) {
         return (tuple2[0] != tuple2[1]);

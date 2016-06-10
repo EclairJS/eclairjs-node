@@ -32,10 +32,10 @@ function run(sc) {
     var data = sc.textFile(__dirname + "/data/sample_isotonic_regression_data.txt");
 
     // Create label, feature, weight tuples from input data with weight set to default value 1.0.
-    var parsedData = data.map(function(line, Tuple) {
+    var parsedData = data.map(function(line, Tuple3) {
       var parts = line.split(",");
-      return new Tuple(parseFloat(parts[0]), parseFloat(parts[1]), 1.0);
-    }, [spark.Tuple]);
+      return new Tuple3(parseFloat(parts[0]), parseFloat(parts[1]), 1.0);
+    }, [spark.Tuple3]);
 
     // Split data into training (60%) and test (40%) sets.
     parsedData.randomSplit([0.6, 0.4], 11).then(function(splits) {
@@ -47,10 +47,10 @@ function run(sc) {
       var model = new spark.mllib.regression.IsotonicRegression().setIsotonic(true).run(training);
 
       // Create tuples of predicted and real labels.
-      var predictionAndLabel = test.mapToPair(function (point, model, Tuple) {
+      var predictionAndLabel = test.mapToPair(function (point, model, Tuple2) {
         var predictedLabel = model.predict(point[1]);
-        return new Tuple(predictedLabel, point[0]);
-      }, [model, spark.Tuple]);
+        return new Tuple2(predictedLabel, point[0]);
+      }, [model, spark.Tuple2]);
 
       // Calculate mean squared error between predicted and real labels.
       new spark.rdd.FloatRDD(predictionAndLabel.map(function (pl) {

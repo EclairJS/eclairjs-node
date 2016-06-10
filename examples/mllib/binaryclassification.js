@@ -41,9 +41,9 @@ function run(sc) {
         .setNumClasses(2)
         .run(training);
 
-      var predictionAndLabels = test.mapToPair(function(lp, model, Tuple) {
-        return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
-      }, [model, spark.Tuple]);
+      var predictionAndLabels = test.mapToPair(function(lp, model, Tuple2) {
+        return new Tuple2(model.predict(lp.getFeatures()), lp.getLabel());
+      }, [model, spark.Tuple2]);
 
       var metrics = new spark.mllib.evaluation.BinaryClassificationMetrics(predictionAndLabels);
 

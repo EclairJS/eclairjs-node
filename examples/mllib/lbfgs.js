@@ -41,9 +41,9 @@ function run(sc) {
       var test = data.subtract(trainingInit);
 
       // Append 1 into the training data as intercept.
-      var training = data.map(function (lp, Tuple) {
-        return new Tuple(lp.getLabel(), MLUtils.appendBias(lp.getFeatures()));
-      }, [spark.Tuple]);
+      var training = data.map(function (lp, Tuple2) {
+        return new Tuple2(lp.getLabel(), MLUtils.appendBias(lp.getFeatures()));
+      }, [spark.Tuple2]);
 
       training.cache();
 
@@ -79,9 +79,9 @@ function run(sc) {
 
         var model = new spark.mllib.classification.LogisticRegressionModel(spark.mllib.linalg.Vectors.dense(copyOfWeightsWithIntercept), copyOfWeightsWithIntercept.length);
 
-        var scoreAndLabels = test.map(function (lp, model, Tuple) {
-          return new Tuple(model.predict(lp.getFeatures()), lp.getLabel());
-        }, [model, spark.Tuple]);
+        var scoreAndLabels = test.map(function (lp, model, Tuple2) {
+          return new Tuple2(model.predict(lp.getFeatures()), lp.getLabel());
+        }, [model, spark.Tuple2]);
 
         // Get evaluation metrics.
         var metrics = new spark.mllib.evaluation.BinaryClassificationMetrics(scoreAndLabels);

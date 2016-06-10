@@ -48,10 +48,10 @@ function run(sc) {
       var model = new spark.mllib.classification.LogisticRegressionWithLBFGS().setNumClasses(3).run(training);
 
       // Compute raw scores on the test set.
-      var predictionAndLabels = test.map(function (lp, model, Tuple) {
+      var predictionAndLabels = test.map(function (lp, model, Tuple2) {
         var prediction = model.predict(lp.getFeatures());
-        return new Tuple(prediction, lp.getLabel());
-      }, [model, spark.Tuple]);
+        return new Tuple2(prediction, lp.getLabel());
+      }, [model, spark.Tuple2]);
 
       var metrics = new spark.mllib.evaluation.MulticlassMetrics(predictionAndLabels);
 

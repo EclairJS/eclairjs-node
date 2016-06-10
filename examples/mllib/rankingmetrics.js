@@ -43,14 +43,14 @@ function run(sc) {
 
     var userRecs = model.recommendProductsForUsers(10);
 
-    var userRecommendedScaled = userRecs.map(function(val, Tuple) {
-      var newRatings = val[1].map(function(r) {
+    var userRecommendedScaled = userRecs.map(function(val, Tuple2, Rating) {
+      var newRatings = val._2().map(function (r) {
         var newRating = Math.max(Math.min(r.rating(), 1.0), 0.0);
         return new Rating(r.user(), r.product(), newRating);
       });
 
-      return new Tuple(val[0], newRatings);
-    }, [spark.Tuple]);
+      return new Tuple2(val._1(), newRatings);
+    }, [spark.Tuple2, spark.mllib.recommendation.Rating]);
 
     var userRecommended = spark.rdd.PairRDD.fromRDD(userRecommendedScaled);
 
@@ -89,17 +89,17 @@ function run(sc) {
 
     var metrics = spark.mllib.evaluation.RankingMetrics.of(relevantDocs);
 
-    var userProducts = ratings.map(function(r, Tuple) {
-      return new Tuple(r.user(), r.product());
-    }, [spark.Tuple]);
+    var userProducts = ratings.map(function(r, Tuple2) {
+      return new Tuple2(r.user(), r.product());
+    }, [spark.Tuple2]);
 
-    var predictions = spark.rdd.PairRDD.fromRDD(model.predict(userProducts).map(function(r, Tuple) {
-      return new Tuple(new Tuple(r.user(), r.product()), r.rating());
-    }, [spark.Tuple]));
+    var predictions = spark.rdd.PairRDD.fromRDD(model.predict(userProducts).map(function(r, Tuple2) {
+      return new Tuple2(new Tuple2(r.user(), r.product()), r.rating());
+    }, [spark.Tuple2]));
 
-    var ratesAndPreds = spark.rdd.PairRDD.fromRDD(ratings.map(function(r, Tuple) {
-      return new Tuple(new Tuple(r.user(), r.product()), r.rating());
-    }, [spark.Tuple])).join(predictions).values();
+    var ratesAndPreds = spark.rdd.PairRDD.fromRDD(ratings.map(function(r, Tuple2) {
+      return new Tuple2(new Tuple2(r.user(), r.product()), r.rating());
+    }, [spark.Tuple2])).join(predictions).values();
 
     // Create regression metrics object
     var regressionMetrics = new spark.mllib.evaluation.RegressionMetrics(ratesAndPreds);

@@ -22,7 +22,7 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sc.stop().then(exit).catch(exit)
 }
 
 var spark = require('../../lib/index.js');
@@ -46,7 +46,7 @@ function run(sc) {
       var f = lp.getFeatures();
       var prediction = linearRegressionModel.predict(f) + 17;
       return new Tuple(prediction, label);
-    }, [linearRegressionModel, spark.Tuple]); // end MapToPair
+    }, [linearRegressionModel, spark.Tuple2]); // end MapToPair
 
     valuesAndPreds.take(10).then(resolve).catch(reject);
   });

@@ -61,9 +61,9 @@ function run(sc) {
       );
 
       // Evaluate model on test instances and compute test error
-      var predictionAndLabel = testData.mapToPair(function(p, model, Tuple) {
-        return new Tuple(model.predict(p.getFeatures()), p.getLabel());
-      }, [model, spark.Tuple]);
+      var predictionAndLabel = testData.mapToPair(function(p, model, Tuple2) {
+        return new Tuple2(model.predict(p.getFeatures()), p.getLabel());
+      }, [model, spark.Tuple2]);
 
       var reduce = predictionAndLabel.map(function(tup) {
         var diff = tup[0] - tup[1];
