@@ -25,17 +25,13 @@ function FakeKernelExecuteHandle(mode) {
   var self = this;
 
   setTimeout(function() {
-    if (self.handleMsg) {
-      var msg;
-      if (mode == MODE_ASSIGN) {
-        msg = {msg_type: 'status', content: {execution_state: 'idle'}};
-      } else if (mode == MODE_RESULT) {
-        msg =  {msg_type: 'execute_result', content: {data: {"text/plain": "{}"}}};
-      } else if (mode == MODE_VOID_ASSIGN) {
-        msg =  {msg_type: 'execute_reply', content: {status: 'ok'}};
+    if (self.onDone) {
+      if (mode == MODE_RESULT) {
+        var msg = {msg_type: 'execute_result', content: {data: {"text/plain": "{}"}}};
+        self.onIOPub(msg)
       }
 
-      self.handleMsg(msg);
+      self.onDone()
     }
   }, 10);
 }
