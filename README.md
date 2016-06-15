@@ -69,6 +69,7 @@ You can also try out EclairJS in Jupyter notebooks running under the [IBM Bluemi
 * [Examples](https://github.com/EclairJS/eclairjs-node/tree/master/examples)
 
 ## Community
+* [EclairJS Project](http://eclairjs.org/)
 * [Google Group](https://groups.google.com/forum/#!forum/eclairjs)
 * [Slack](https://eclairjs.slack.com)
 
@@ -80,7 +81,7 @@ If you would like to take the manual route in lieu of using the Dockerfile you c
 |Spark Feature    |EclairJS Node Status|
 |-----------------|--------------------|
 |RDD              | Partial Support    |
-|SQL/Dataframes   | Partial Support    |
+|SQL/DataFrames   | Partial Support    |
 |Streaming        | Partial Support    |
 |ml               | Partial Support    |
 |mllib             | Partial Support    |
