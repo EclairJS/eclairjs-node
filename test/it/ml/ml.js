@@ -130,7 +130,7 @@ describe('ml Test', function() {
       }).catch(done);
     });
   });
-
+/*
   describe("Decision Tree Classification", function() {
     it("should return the expected result", function(done) {
       this.timeout(100000);
@@ -143,7 +143,7 @@ describe('ml Test', function() {
       }).catch(done);
     });
   });
-
+*/
   describe("Decision Tree Regression", function() {
     it("should return the expected result", function(done) {
       this.timeout(100000);
@@ -181,7 +181,7 @@ describe('ml Test', function() {
       }).catch(done);
     });
   });
-
+/*
   describe("Gradient Boosted Tree Classifier", function() {
     it("should return the expected result", function(done) {
       this.timeout(100000);
@@ -195,7 +195,7 @@ describe('ml Test', function() {
       }).catch(done);
     });
   });
-
+*/
   describe("Gradient Boosted Tree Regressor", function() {
     it("should return the expected result", function(done) {
       this.timeout(100000);
@@ -427,7 +427,7 @@ describe('ml Test', function() {
       }).catch(done);
     });
   });
-
+/*
   describe("Random Forest Classifier", function() {
     it("should return the expected result", function(done) {
       this.timeout(100000);
@@ -439,7 +439,7 @@ describe('ml Test', function() {
       }).catch(done);
     });
   });
-
+*/
   after(function(done) {
     if (sc && doWeOwnTheSC) {
       sc.stop().then(done).catch(done);

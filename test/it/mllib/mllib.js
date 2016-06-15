@@ -208,7 +208,7 @@ describe('mllib Test', function() {
       }).catch(done);
     });
   });
-
+/*
   describe("Power Iteration Clustering", function() {
     it("should return the expected result", function(done) {
       var test = require('../../../examples/mllib/poweriterationclustering');
@@ -218,7 +218,7 @@ describe('mllib Test', function() {
       }).catch(done);
     });
   });
-
+*/
   describe("Prefix Span", function() {
     it("should return the expected result", function(done) {
       var test = require('../../../examples/mllib/prefixspan');
