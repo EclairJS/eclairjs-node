@@ -2,6 +2,8 @@ EclairJS Node
 ===================
 EclairJS Node provides Node.js language bindings for [Apache Spark](https://spark.apache.org).
 
+Learn more about the larger [EclairJS project](http://www.eclairjs.org).
+
 ## Installation
 
 ```
@@ -10,7 +12,7 @@ $ npm install eclairjs
 
 EclairJS Node requires Node 0.12 or higher and also requires a running instance of [EclairJS Nashorn](https://github.com/EclairJS/eclairjs-nashorn/).
 
-Supported Spark versions can be found in the [Version](#version) section below.
+Supported Spark versions can be found in the [Versions](#version) section below.
 
 ## Example
 ```node
