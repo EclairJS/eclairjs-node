@@ -24,9 +24,9 @@ var words = textFile.flatMap(function(sentence) {
   return sentence.split(" ");
 });
 
-var wordsWithCount = words.mapToPair(function(word, Tuple) {
-  return new Tuple(word, 1);
-}, [eclairjs.Tuple]);
+var wordsWithCount = words.mapToPair(function(word, Tuple2) {
+  return new Tuple2(word, 1);
+}, [eclairjs.Tuple2]);
 
 var reducedWordsWithCount = wordsWithCount.reduceByKey(function(value1, value2) {
   return value1 + value2;
@@ -56,7 +56,7 @@ export JUPYTER_PORT=8888
 Now you can run the Word count example:
 
 ```
-node --harmony examples/rddtop10.js
+node --harmony examples/rddtop10.js ./dream.txt
 ```
 
 Please see [Using-the-Docker-Container](https://github.com/EclairJS/eclairjs-node/wikis/Using-the-Docker-Container) for more about the Docker container.
