@@ -1,0 +1,19 @@
+{
+  "display_name": "Spark 1.6.0 (Javascript)",
+  "language": "javascript",
+  "argv": [
+    "/usr/local/share/jupyter/kernels/apache_toree_scala/bin/run.sh",
+    "--interpreter-plugin",
+    "eclair:org.eclairjs.nashorn.JavascriptInterpreter",
+    "--default-interpreter",
+    "eclair",
+    "--nosparkcontext",
+    "--profile",
+    "{connection_file}"
+  ],
+  "env": {
+    "SPARK_OPTS": "--jars file:/opt/nashorn/lib/eclairjs.jar",
+    "SPARK_HOME": "/usr/local/spark"
+  },
+  "codemirror_mode": "scala"
+}

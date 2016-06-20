@@ -42,12 +42,7 @@
  * limitations under the License.
  */
 
-var protocol = require('../kernel.js');
 var Utils = require('../utils.js');
-
-var SqlDate = require('./SqlDate.js');
-var SqlTimestamp = require('./SqlTimestamp.js');
-var StructType = require('./types/StructType.js');
 
 /*
  * NOTE: the following have not been implemented as they do not make sense for JavaScript
@@ -77,43 +72,45 @@ var StructType = require('./types/StructType.js');
 function _resolveBool(result, resolve, reject) {
   // parse stringified result here
   resolve(JSON.parse(result));
-};
+}
 
 function _resolveFloat(result, resolve, reject) {
   resolve(parseFloat(result));
-};
+}
 
 function _resolveInt(result, resolve, reject) {
   resolve(parseInt(result));
-};
+}
 
 function _resolveObj(result, resolve, reject) {
   // have to parse if number or bool
   resolve(isFinite(result) ? new Number(result).valueOf() : isBool(result) ? JSON.parse(result) : result);
-};
+}
 
 /**
  * @constructor
+ * @memberof module:eclairjs/sql
  * @classdesc Represents one row of output from a relational operator. Allows both generic access by ordinal, which will incur boxing overhead for primitives, as well as native primitive access.
  * It is invalid to use the native primitive interface to retrieve a value that is null, instead a user must check isNullAt before attempting to retrieve a value that might be null.
  * To create a new Row, use RowFactory.create()
- *
  */
-function Row(kernelP, refIdP, row) {
+function Row(kernelP, refIdP) {
   this.kernelP = kernelP;
   this.refIdP = refIdP;
-
-  this.row = row;
-};
+}
 
 /**
  * Returns true if there are any NULL values in this row.
  * @returns {boolean}
  */
 Row.prototype.anyNull = function() {
-  var templateStr = '{{inRefId}}.anyNull();';
+  var args = {
+    target: this,
+    method: 'anyNull',
+    returnType: Boolean
+  };
 
-  return Utils.generateResultPromise(this, templateStr, null, _resolveBool);
+  return Utils.generate(args);
 };
 
 function isBool (val) {
@@ -126,19 +123,29 @@ function isBool (val) {
  * @returns {object}
  */
 Row.prototype.apply = function(index) {
-  var templateStr = '{{inRefId}}.apply({{index}});';
+  var args = {
+    target: this,
+    method: 'apply',
+    args: Utils.wrapArguments(arguments),
+    returnType: Object,
+    resolver: _resolveObj
+  };
 
-  return Utils.generateResultPromise(this, templateStr, {index: index}, _resolveObj);
+  return Utils.generate(args);
 };
 
 /**
  * Make a copy of the current Row object
- * @returns {Row}
+ * @returns {module:eclairjs/sql.Row}
  */
 Row.prototype.copy = function() {
-  var templateStr = 'var {{refId}} = {{inRefId}}.copy();';
+  var args = {
+    target: this,
+    method: 'copy',
+    returnType: Row
+  };
 
-  return Utils.generateAssignment(this, Row, templateStr);
+  return Utils.generate(args);
 };
 
 /**
@@ -147,31 +154,14 @@ Row.prototype.copy = function() {
  * @returns {boolean}
  */
 Row.prototype.equals = function(obj) {
-  var self = this;
+  var args = {
+    target: this,
+    method: 'equals',
+    args: Utils.wrapArguments(arguments),
+    returnType: Boolean
+  };
 
-  return new Promise(function(resolve, reject) {
-    function _resolve(result) {
-      // parse stringified result here
-      resolve(JSON.parse(result));
-    }
-
-    var promises = [self.refIdP, self.kernelP];
-    // we have an object, so we need to resolve its refId
-    if (typeof obj == 'object') {
-      promises.push(obj.refIdP);
-    }
-
-    Promise.all(promises).then(function(values) {
-      var refId = values[0];
-      var kernel = values[1];
-      // do we have an object or string to test for equality?
-      var argObj = values[2] ? values[2] : obj;
-
-      var templateStr = typeof obj == 'object' ? '{{inRefId}}.equals({{arg}});' : '{{inRefId}}.equals("{{arg}}");';
-      var code = Utils.processTemplate(templateStr, {inRefId: refId, arg: argObj});
-      protocol.verifyResult(kernel.execute({code: code}), _resolve, reject);
-    }).catch(reject);
-  })
+  return Utils.generate(args);
 };
 
 /**
@@ -180,9 +170,14 @@ Row.prototype.equals = function(obj) {
  * @returns {integer}
  */
 Row.prototype.fieldIndex = function(name) {
-  var templateStr = '{{inRefId}}.fieldIndex("{{name}}");';
+  var args = {
+    target: this,
+    method: 'fieldIndex',
+    args: Utils.wrapArguments(arguments),
+    returnType: Number
+  };
 
-  return Utils.generateResultPromise(this, templateStr, {name: name}, _resolveInt);
+  return Utils.generate(args);
 };
 
 /**
@@ -191,9 +186,15 @@ Row.prototype.fieldIndex = function(name) {
  * @returns {object}
  */
 Row.prototype.get = function(index) {
-  var templateStr = '{{inRefId}}.get({{index}});';
+  var args = {
+    target: this,
+    method: 'get',
+    args: Utils.wrapArguments(arguments),
+    returnType: Object,
+    resolver: _resolveObj
+  };
 
-  return Utils.generateResultPromise(this, templateStr, {index: index}, _resolveObj);
+  return Utils.generate(args);
 };
 
 /**
@@ -202,9 +203,14 @@ Row.prototype.get = function(index) {
  * @returns {boolean}
  */
 Row.prototype.getBoolean = function(index) {
-  var templateStr = '{{inRefId}}.getBoolean({{index}});';
+  var args = {
+    target: this,
+    method: 'getBoolean',
+    args: Utils.wrapArguments(arguments),
+    returnType: Boolean
+  };
 
-  return Utils.generateResultPromise(this, templateStr, {index: index}, _resolveBool);
+  return Utils.generate(args);
 };
 
 /**
@@ -223,12 +229,19 @@ Row.prototype.getByte = function(index) {
 /**
  * Returns the value at position index of type as Date.
  * @param {integer} index
- * @returns {SqlDate}
+ * @returns {module:eclairjs/sql.SqlDate}
  */
 Row.prototype.getDate = function(index) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.getDate({{index}});';
+  var SqlDate = require('./SqlDate.js')(this.kernelP);
 
-  return Utils.generateAssignment(this, SqlDate, templateStr, {index: index});
+  var args = {
+    target: this,
+    method: 'getDate',
+    args: Utils.wrapArguments(arguments),
+    returnType: SqlDate
+  };
+
+  return Utils.generate(args);
 };
 
 /**
@@ -250,9 +263,14 @@ Row.prototype.getDecimal = function(index) {
  * @returns {double}
  */
 Row.prototype.getDouble = function(index) {
-  var templateStr = '{{inRefId}}.getDouble({{index}});';
+  var args = {
+    target: this,
+    method: 'getDouble',
+    args: Utils.wrapArguments(arguments),
+    returnType: Number
+  };
 
-  return Utils.generateResultPromise(this, templateStr, {index: index}, _resolveFloat);
+  return Utils.generate(args);
 };
 
 /**
@@ -261,9 +279,14 @@ Row.prototype.getDouble = function(index) {
  * @returns {float}
  */
 Row.prototype.getFloat = function(index) {
-  var templateStr = '{{inRefId}}.getFloat({{index}});';
+  var args = {
+    target: this,
+    method: 'getFloat',
+    args: Utils.wrapArguments(arguments),
+    returnType: Number
+  };
 
-  return Utils.generateResultPromise(this, templateStr, {index: index}, _resolveFloat);
+  return Utils.generate(args);
 };
 
 /**
@@ -272,9 +295,14 @@ Row.prototype.getFloat = function(index) {
  * @returns {integer}
  */
 Row.prototype.getInt = function(index) {
-  var templateStr = '{{inRefId}}.getInt({{index}});';
+  var args = {
+    target: this,
+    method: 'getInt',
+    args: Utils.wrapArguments(arguments),
+    returnType: Number
+  };
 
-  return Utils.generateResultPromise(this, templateStr, {index: index}, _resolveInt);
+  return Utils.generate(args);
 };
 
 /**
@@ -309,31 +337,48 @@ Row.prototype.getShort = function(index) {
  * @returns {String}
  */
 Row.prototype.getString = function(index) {
-  var templateStr = '{{inRefId}}.getString({{index}});';
+  var args = {
+    target: this,
+    method: 'getString',
+    args: Utils.wrapArguments(arguments),
+    returnType: String
+  };
 
-  return Utils.generateResultPromise(this, templateStr, {index: index});
+  return Utils.generate(args);
 };
 
 /**
  * Returns the value at position index of struct type as a Row object.
  * @param {integer} index
- * @returns {Row}
+ * @returns {module:eclairjs/sql.Row}
  */
 Row.prototype.getStruct = function(index) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.getStruct({{index}});';
+  var args = {
+    target: this,
+    method: 'getStruct',
+    args: Utils.wrapArguments(arguments),
+    returnType: Row
+  };
 
-  return Utils.generateAssignment(this, Row, templateStr, {index: index});
+  return Utils.generate(args);
 };
 
 /**
  * Returns the value at position index of date type as Date.
  * @param {integer} index
- * @returns {SqlTimestamp}
+ * @returns {module:eclairjs/sql.SqlTimestamp}
  */
 Row.prototype.getTimestamp = function(index) {
-  var templateStr = 'var {{refId}} = {{inRefId}}.getTimestamp({{index}});';
+  var SqlTimestamp = require('./SqlTimestamp.js')(this.kernelP);
 
-  return Utils.generateAssignment(this, SqlTimestamp, templateStr, {index: index});
+  var args = {
+    target: this,
+    method: 'getTimestamp',
+    args: Utils.wrapArguments(arguments),
+    returnType: SqlTimestamp
+  };
+
+  return Utils.generate(args);
 };
 
 /**
@@ -341,10 +386,14 @@ Row.prototype.getTimestamp = function(index) {
  * @returns {int}
  */
 Row.prototype.hashCode = function() {
-  var templateStr = '{{inRefId}}.hashCode();';
+  var args = {
+    target: this,
+    method: 'hashCode',
+    returnType: Number
+  };
 
-  return Utils.generateResultPromise(this, templateStr, null, _resolveInt);
-}
+  return Utils.generate(args);
+};
 
 /**
  * Checks whether the value at position index is null.
@@ -352,55 +401,62 @@ Row.prototype.hashCode = function() {
  * @returns {boolean}
  */
 Row.prototype.isNullAt = function(index) {
-  var templateStr = '{{inRefId}}.isNullAt({{index}});';
+  var args = {
+    target: this,
+    method: 'isNullAt',
+    args: Utils.wrapArguments(arguments),
+    returnType: Boolean
+  };
 
-  return Utils.generateResultPromise(this, templateStr, {index: index}, _resolveBool);
-}
+  return Utils.generate(args);
+};
 
 /**
  * Number of elements in the Row.
  * @returns {integer}
  */
 Row.prototype.length = function() {
-  var templateStr = '{{inRefId}}.length();';
+  var args = {
+    target: this,
+    method: 'length',
+    returnType: Number
+  };
 
-  return Utils.generateResultPromise(this, templateStr, null, _resolveInt);
+  return Utils.generate(args);
 };
 
 /**
  * Displays all elements of this traversable or iterator in a string using start, end, and separator strings.
- * @param {string} Optional separator
- * @param {string} Optional start
- * @param {string} Required end, if start specified
+ * @param {string} [separator]
+ * @param {string} [start] start will be ignored if end parameter is not specified
+ * @param {string} [end] Required if start specified
  * @returns {string}
  */
 Row.prototype.mkString = function() {
-  var args = Array.prototype.slice.call(arguments);
+  var args = {
+    target: this,
+    method: 'mkString',
+    args: Utils.wrapArguments(arguments),
+    returnType: String
+  };
 
-  var templateStr = "";
-  if (args.length == 3) {
-    templateStr = '{{inRefId}}.mkString("{{arg1}}", "{{arg2}}", "{{arg3}}");';
-  } else if (args.length == 1) {
-    templateStr = '{{inRefId}}.mkString("{{arg1}}");';
-  } else {
-    templateStr = '{{inRefId}}.mkString();';
-  }
-
-  return Utils.generateResultPromise(this, templateStr, {arg1: args[0], arg2: args[1], arg3: args[2]});
+  return Utils.generate(args);
 };
 
 /**
  * Schema for the row.
- * @returns {StructType}
+ * @returns {module:eclairjs/sql/types.StructType}
  */
 Row.prototype.schema = function() {
-  function _resolve(result, resolve, reject) {
-    resolve(result);
+  var StructType = require('./types/StructType.js')(this.kernelP);
+
+  var args = {
+    target: this,
+    method: 'schema',
+    returnType: StructType
   };
 
-  var templateStr = 'var {{refId}} = {{inRefId}}.schema();';
-
-  return Utils.generateAssignment(this, StructType, templateStr);
+  return Utils.generate(args);
 };
 
 /**
@@ -408,13 +464,18 @@ Row.prototype.schema = function() {
  * @returns {integer}
  */
 Row.prototype.size = function() {
-  var templateStr = '{{inRefId}}.size();';
+  var args = {
+    target: this,
+    method: 'size',
+    returnType: Number
+  };
 
-  return Utils.generateResultPromise(this, templateStr, null, _resolveInt);
+  return Utils.generate(args);
 };
 
-module.exports = Row;
-</code></pre>
+Row.moduleLocation = '/sql/Row';
+
+module.exports = Row;</code></pre>
         </article>
     </section>
 
@@ -424,13 +485,13 @@ module.exports = Row;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-eclairjs.html">eclairjs</a></li><li><a href="module-eclairjs_ml.html">eclairjs/ml</a></li><li><a href="module-eclairjs_ml_classification.html">eclairjs/ml/classification</a></li><li><a href="module-eclairjs_ml_clustering.html">eclairjs/ml/clustering</a></li><li><a href="module-eclairjs_ml_evaluation.html">eclairjs/ml/evaluation</a></li><li><a href="module-eclairjs_ml_feature.html">eclairjs/ml/feature</a></li><li><a href="module-eclairjs_ml_param.html">eclairjs/ml/param</a></li><li><a href="module-eclairjs_ml_recommendation.html">eclairjs/ml/recommendation</a></li><li><a href="module-eclairjs_ml_regression.html">eclairjs/ml/regression</a></li><li><a href="module-eclairjs_ml_tuning.html">eclairjs/ml/tuning</a></li><li><a href="module-eclairjs_mllib.html">eclairjs/mllib</a></li><li><a href="module-eclairjs_mllib_classification.html">eclairjs/mllib/classification</a></li><li><a href="module-eclairjs_mllib_clustering.html">eclairjs/mllib/clustering</a></li><li><a href="module-eclairjs_mllib_evaluation.html">eclairjs/mllib/evaluation</a></li><li><a href="module-eclairjs_mllib_feature.html">eclairjs/mllib/feature</a></li><li><a href="module-eclairjs_mllib_fpm.html">eclairjs/mllib/fpm</a></li><li><a href="module-eclairjs_mllib_linalg.html">eclairjs/mllib/linalg</a></li><li><a href="module-eclairjs_mllib_linalg_distributed.html">eclairjs/mllib/linalg/distributed</a></li><li><a href="module-eclairjs_mllib_optimization.html">eclairjs/mllib/optimization</a></li><li><a href="module-eclairjs_mllib_random.html">eclairjs/mllib/random</a></li><li><a href="module-eclairjs_mllib_recommendation.html">eclairjs/mllib/recommendation</a></li><li><a href="module-eclairjs_mllib_regression.html">eclairjs/mllib/regression</a></li><li><a href="module-eclairjs_mllib_tree.html">eclairjs/mllib/tree</a></li><li><a href="module-eclairjs_mllib_tree_configuration.html">eclairjs/mllib/tree/configuration</a></li><li><a href="module-eclairjs_mllib_tree_loss.html">eclairjs/mllib/tree/loss</a></li><li><a href="module-eclairjs_mllib_tree_model.html">eclairjs/mllib/tree/model</a></li><li><a href="module-eclairjs_mllib_util.html">eclairjs/mllib/util</a></li><li><a href="module-eclairjs_rdd.html">eclairjs/rdd</a></li><li><a href="module-eclairjs_sql.html">eclairjs/sql</a></li><li><a href="module-eclairjs_sql_types.html">eclairjs/sql/types</a></li><li><a href="module-eclairjs_storage.html">eclairjs/storage</a></li><li><a href="module-eclairjs_streaming.html">eclairjs/streaming</a></li><li><a href="module-eclairjs_streaming_dstream.html">eclairjs/streaming/dstream</a></li><li><a href="module-eclairjs_streaming_kafka.html">eclairjs/streaming/kafka</a></li><li><a href="module-eclairjs_streaming_twitter.html">eclairjs/streaming/twitter</a></li></ul><h3>Classes</h3><ul><li><a href="AFTSurvivalRegression.html">AFTSurvivalRegression</a></li><li><a href="ALS.html">ALS</a></li><li><a href="ArrayType.html">ArrayType</a></li><li><a href="Attribute.html">Attribute</a></li><li><a href="AttributeGroup.html">AttributeGroup</a></li><li><a href="Binarizer.html">Binarizer</a></li><li><a href="Bucketizer.html">Bucketizer</a></li><li><a href="ChiSqSelector.html">ChiSqSelector</a></li><li><a href="CountVectorizer.html">CountVectorizer</a></li><li><a href="CountVectorizerModel.html">CountVectorizerModel</a></li><li><a href="DCT.html">DCT</a></li><li><a href="FreqItemset.html">FreqItemset</a></li><li><a href="HashingTF.html">HashingTF</a></li><li><a href="IDF.html">IDF</a></li><li><a href="InputDStream.html">InputDStream</a></li><li><a href="IsotonicRegression.html">IsotonicRegression</a></li><li><a href="IsotonicRegressionModel.html">IsotonicRegressionModel</a></li><li><a href="module-eclairjs.Accumulable.html">Accumulable</a></li><li><a href="module-eclairjs.AccumulableParam.html">AccumulableParam</a></li><li><a href="module-eclairjs.Accumulator.html">Accumulator</a></li><li><a href="module-eclairjs.FloatAccumulatorParam.html">FloatAccumulatorParam</a></li><li><a href="module-eclairjs.IntAccumulatorParam.html">IntAccumulatorParam</a></li><li><a href="module-eclairjs.List.html">List</a></li><li><a href="module-eclairjs.SparkConf.html">SparkConf</a></li><li><a href="module-eclairjs.SparkContext.html">SparkContext</a></li><li><a href="module-eclairjs.Tuple.html">Tuple</a></li><li><a href="module-eclairjs.Tuple2.html">Tuple2</a></li><li><a href="module-eclairjs.Tuple3.html">Tuple3</a></li><li><a href="module-eclairjs.Tuple4.html">Tuple4</a></li><li><a href="module-eclairjs_ml.Estimator.html">Estimator</a></li><li><a href="module-eclairjs_ml.Model.html">Model</a></li><li><a href="module-eclairjs_ml.Pipeline.html">Pipeline</a></li><li><a href="module-eclairjs_ml.PipelineModel.html">PipelineModel</a></li><li><a href="module-eclairjs_ml.PipelineStage.html">PipelineStage</a></li><li><a href="module-eclairjs_ml.PredictionModel.html">PredictionModel</a></li><li><a href="module-eclairjs_ml.Predictor.html">Predictor</a></li><li><a href="module-eclairjs_ml.Transformer.html">Transformer</a></li><li><a href="module-eclairjs_ml.UnaryTransformer.html">UnaryTransformer</a></li><li><a href="module-eclairjs_ml_attribute.NumericAttribute.html">NumericAttribute</a></li><li><a href="module-eclairjs_ml_classification.ClassificationModel.html">ClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.Classifier.html">Classifier</a></li><li><a href="module-eclairjs_ml_classification.DecisionTreeClassifier.html">DecisionTreeClassifier</a></li><li><a href="module-eclairjs_ml_classification.GBTClassifier.html">GBTClassifier</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegression.html">LogisticRegression</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegressionSummary.html">LogisticRegressionSummary</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegressionTrainingSummary.html">LogisticRegressionTrainingSummary</a></li><li><a href="module-eclairjs_ml_classification.MultilayerPerceptronClassificationModel.html">MultilayerPerceptronClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.NaiveBayes.html">NaiveBayes</a></li><li><a href="module-eclairjs_ml_classification.NaiveBayesModel.html">NaiveBayesModel</a></li><li><a href="module-eclairjs_ml_classification.ProbabilisticClassificationModel.html">ProbabilisticClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.ProbabilisticClassifier.html">ProbabilisticClassifier</a></li><li><a href="module-eclairjs_ml_classification.RandomForestClassificationModel.html">RandomForestClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.RandomForestClassifier.html">RandomForestClassifier</a></li><li><a href="module-eclairjs_ml_clustering.KMeans.html">KMeans</a></li><li><a href="module-eclairjs_ml_clustering.KMeansModel.html">KMeansModel</a></li><li><a href="module-eclairjs_ml_clustering.LDA.html">LDA</a></li><li><a href="module-eclairjs_ml_clustering.LDAModel.html">LDAModel</a></li><li><a href="module-eclairjs_ml_evaluation.MulticlassClassificationEvaluator.html">MulticlassClassificationEvaluator</a></li><li><a href="module-eclairjs_ml_evaluation.RegressionEvaluator.html">RegressionEvaluator</a></li><li><a href="module-eclairjs_ml_feature.ChiSqSelectorModel.html">ChiSqSelectorModel</a></li><li><a href="module-eclairjs_ml_feature.ElementwiseProduct.html">ElementwiseProduct</a></li><li><a href="module-eclairjs_ml_feature.IDFModel.html">IDFModel</a></li><li><a href="module-eclairjs_ml_feature.IndexToString.html">IndexToString</a></li><li><a href="module-eclairjs_ml_feature.MinMaxScaler.html">MinMaxScaler</a></li><li><a href="module-eclairjs_ml_feature.MinMaxScalerModel.html">MinMaxScalerModel</a></li><li><a href="module-eclairjs_ml_feature.NGram.html">NGram</a></li><li><a href="module-eclairjs_ml_feature.Normalizer.html">Normalizer</a></li><li><a href="module-eclairjs_ml_feature.OneHotEncoder.html">OneHotEncoder</a></li><li><a href="module-eclairjs_ml_feature.PCA.html">PCA</a></li><li><a href="module-eclairjs_ml_feature.PCAModel.html">PCAModel</a></li><li><a href="module-eclairjs_ml_feature.PolynomialExpansion.html">PolynomialExpansion</a></li><li><a href="module-eclairjs_ml_feature.QuantileDiscretizer.html">QuantileDiscretizer</a></li><li><a href="module-eclairjs_ml_feature.RFormulaModel.html">RFormulaModel</a></li><li><a href="module-eclairjs_ml_feature.StandardScalerModel.html">StandardScalerModel</a></li><li><a href="module-eclairjs_ml_feature.StringIndexer.html">StringIndexer</a></li><li><a href="module-eclairjs_ml_feature.StringIndexerModel.html">StringIndexerModel</a></li><li><a href="module-eclairjs_ml_feature.VectorIndexer.html">VectorIndexer</a></li><li><a href="module-eclairjs_ml_feature.VectorIndexerModel.html">VectorIndexerModel</a></li><li><a href="module-eclairjs_ml_feature.Word2VecModel.html">Word2VecModel</a></li><li><a href="module-eclairjs_ml_param.BooleanParam.html">BooleanParam</a></li><li><a href="module-eclairjs_ml_param.DoubleParam.html">DoubleParam</a></li><li><a href="module-eclairjs_ml_param.IntParam.html">IntParam</a></li><li><a href="module-eclairjs_ml_param.Param.html">Param</a></li><li><a href="module-eclairjs_ml_param.ParamMap.html">ParamMap</a></li><li><a href="module-eclairjs_ml_param.ParamPair.html">ParamPair</a></li><li><a href="module-eclairjs_ml_recommendation.ALSModel.html">ALSModel</a></li><li><a href="module-eclairjs_ml_regression.AFTSurvivalRegressionModel.html">AFTSurvivalRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.DecisionTreeRegressionModel.html">DecisionTreeRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.DecisionTreeRegressor.html">DecisionTreeRegressor</a></li><li><a href="module-eclairjs_ml_regression.GBTRegressionModel.html">GBTRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.GBTRegressor.html">GBTRegressor</a></li><li><a href="module-eclairjs_ml_regression.LinearRegression.html">LinearRegression</a></li><li><a href="module-eclairjs_ml_regression.LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.LinearRegressionSummary.html">LinearRegressionSummary</a></li><li><a href="module-eclairjs_ml_regression.LinearRegressionTrainingSummary.html">LinearRegressionTrainingSummary</a></li><li><a href="module-eclairjs_ml_regression.RandomForestRegressionModel.html">RandomForestRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.RandomForestRegressor.html">RandomForestRegressor</a></li><li><a href="module-eclairjs_ml_regression.RegressionModel.html">RegressionModel</a></li><li><a href="module-eclairjs_ml_tuning.ParamGridBuilder.html">ParamGridBuilder</a></li><li><a href="module-eclairjs_ml_tuning.TrainValidationSplit.html">TrainValidationSplit</a></li><li><a href="module-eclairjs_ml_tuning.TrainValidationSplitModel.html">TrainValidationSplitModel</a></li><li><a href="module-eclairjs_mllib.MLUtils.html">MLUtils</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionWithLBFGS.html">LogisticRegressionWithLBFGS</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionWithSGD.html">LogisticRegressionWithSGD</a></li><li><a href="module-eclairjs_mllib_classification.NaiveBayes.html">NaiveBayes</a></li><li><a href="module-eclairjs_mllib_classification.NaiveBayesModel.html">NaiveBayesModel</a></li><li><a href="module-eclairjs_mllib_classification.SVMModel.html">SVMModel</a></li><li><a href="module-eclairjs_mllib_classification.SVMWithSGD.html">SVMWithSGD</a></li><li><a href="module-eclairjs_mllib_clustering.BisectingKMeans.html">BisectingKMeans</a></li><li><a href="module-eclairjs_mllib_clustering.BisectingKMeansModel.html">BisectingKMeansModel</a></li><li><a href="module-eclairjs_mllib_clustering.KMeans.html">KMeans</a></li><li><a href="module-eclairjs_mllib_clustering.KMeansModel.html">KMeansModel</a></li><li><a href="module-eclairjs_mllib_clustering.LDA.html">LDA</a></li><li><a href="module-eclairjs_mllib_clustering.LDAModel.html">LDAModel</a></li><li><a href="module-eclairjs_mllib_clustering.PowerIterationClustering.html">PowerIterationClustering</a></li><li><a href="module-eclairjs_mllib_clustering.PowerIterationClusteringModel.html">PowerIterationClusteringModel</a></li><li><a href="module-eclairjs_mllib_evaluation.BinaryClassificationMetrics.html">BinaryClassificationMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.MulticlassMetrics.html">MulticlassMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.RankingMetrics.html">RankingMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.RegressionMetrics.html">RegressionMetrics</a></li><li><a href="module-eclairjs_mllib_feature.Word2Vec.html">Word2Vec</a></li><li><a href="module-eclairjs_mllib_feature.Word2VecModel.html">Word2VecModel</a></li><li><a href="module-eclairjs_mllib_fpm.AssociationRules.html">AssociationRules</a></li><li><a href="module-eclairjs_mllib_fpm.FPGrowth.html">FPGrowth</a></li><li><a href="module-eclairjs_mllib_fpm.FPGrowthModel.html">FPGrowthModel</a></li><li><a href="module-eclairjs_mllib_fpm.PrefixSpan.html">PrefixSpan</a></li><li><a href="module-eclairjs_mllib_fpm.PrefixSpanModel.html">PrefixSpanModel</a></li><li><a href="module-eclairjs_mllib_linalg.DenseVector.html">DenseVector</a></li><li><a href="module-eclairjs_mllib_linalg.Matrix.html">Matrix</a></li><li><a href="module-eclairjs_mllib_linalg.SingularValueDecomposition.html">SingularValueDecomposition</a></li><li><a href="module-eclairjs_mllib_linalg.Vector.html">Vector</a></li><li><a href="module-eclairjs_mllib_linalg.Vectors.html">Vectors</a></li><li><a href="module-eclairjs_mllib_linalg_distributed.RowMatrix.html">RowMatrix</a></li><li><a href="module-eclairjs_mllib_optimization.LBFGS.html">LBFGS</a></li><li><a href="module-eclairjs_mllib_optimization.LogisticGradient.html">LogisticGradient</a></li><li><a href="module-eclairjs_mllib_optimization.SquaredL2Updater.html">SquaredL2Updater</a></li><li><a href="module-eclairjs_mllib_random.RandomRDDs.html">RandomRDDs</a></li><li><a href="module-eclairjs_mllib_recommendation.ALS.html">ALS</a></li><li><a href="module-eclairjs_mllib_recommendation.MatrixFactorizationModel.html">MatrixFactorizationModel</a></li><li><a href="module-eclairjs_mllib_recommendation.Rating.html">Rating</a></li><li><a href="module-eclairjs_mllib_regression.LabeledPoint.html">LabeledPoint</a></li><li><a href="module-eclairjs_mllib_regression.LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="module-eclairjs_mllib_regression.LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="module-eclairjs_mllib_tree.DecisionTree.html">DecisionTree</a></li><li><a href="module-eclairjs_mllib_tree.GradientBoostedTrees.html">GradientBoostedTrees</a></li><li><a href="module-eclairjs_mllib_tree.RandomForest.html">RandomForest</a></li><li><a href="module-eclairjs_mllib_tree_configuration.BoostingStrategy.html">BoostingStrategy</a></li><li><a href="module-eclairjs_mllib_tree_configuration.Strategy.html">Strategy</a></li><li><a href="module-eclairjs_mllib_tree_loss.Loss.html">Loss</a></li><li><a href="module-eclairjs_mllib_tree_model.DecisionTreeModel.html">DecisionTreeModel</a></li><li><a href="module-eclairjs_mllib_tree_model.GradientBoostedTreesModel.html">GradientBoostedTreesModel</a></li><li><a href="module-eclairjs_mllib_tree_model.RandomForestModel.html">RandomForestModel</a></li><li><a href="module-eclairjs_rdd.FloatRDD.html">FloatRDD</a></li><li><a href="module-eclairjs_rdd.PairRDD.html">PairRDD</a></li><li><a href="module-eclairjs_rdd.RDD.html">RDD</a></li><li><a href="module-eclairjs_sql.Column.html">Column</a></li><li><a href="module-eclairjs_sql.DataFrame.html">DataFrame</a></li><li><a href="module-eclairjs_sql.DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="module-eclairjs_sql.DataFrameReader.html">DataFrameReader</a></li><li><a href="module-eclairjs_sql.DataFrameStatFunctions.html">DataFrameStatFunctions</a></li><li><a href="module-eclairjs_sql.DataFrameWriter.html">DataFrameWriter</a></li><li><a href="module-eclairjs_sql.functions.html">functions</a></li><li><a href="module-eclairjs_sql.GroupedData.html">GroupedData</a></li><li><a href="module-eclairjs_sql.Row.html">Row</a></li><li><a href="module-eclairjs_sql.RowFactory.html">RowFactory</a></li><li><a href="module-eclairjs_sql.SQLContext.html">SQLContext</a></li><li><a href="module-eclairjs_sql.SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="module-eclairjs_sql.SqlDate.html">SqlDate</a></li><li><a href="module-eclairjs_sql.SqlTimestamp.html">SqlTimestamp</a></li><li><a href="module-eclairjs_sql_types.DataTypes.html">DataTypes</a></li><li><a href="module-eclairjs_sql_types.Metadata.html">Metadata</a></li><li><a href="module-eclairjs_sql_types.StructField.html">StructField</a></li><li><a href="module-eclairjs_sql_types.StructType.html">StructType</a></li><li><a href="module-eclairjs_storage.StorageLevel.html">StorageLevel</a></li><li><a href="module-eclairjs_streaming.Duration.html">Duration</a></li><li><a href="module-eclairjs_streaming.StreamingContext.html">StreamingContext</a></li><li><a href="module-eclairjs_streaming_dstream.DStream.html">DStream</a></li><li><a href="module-eclairjs_streaming_dstream.PairDStream.html">PairDStream</a></li><li><a href="module-eclairjs_streaming_kafka.KafkaUtils.html">KafkaUtils</a></li><li><a href="module-eclairjs_streaming_twitter.TwitterAuthorization.html">TwitterAuthorization</a></li><li><a href="module-eclairjs_streaming_twitter.TwitterUtils.html">TwitterUtils</a></li><li><a href="MultilayerPerceptronClassifier.html">MultilayerPerceptronClassifier</a></li><li><a href="ReceiverInputDStream.html">ReceiverInputDStream</a></li><li><a href="RegexTokenizer.html">RegexTokenizer</a></li><li><a href="RFormula.html">RFormula</a></li><li><a href="SQLTransformer.html">SQLTransformer</a></li><li><a href="StandardScaler.html">StandardScaler</a></li><li><a href="StopWordsRemover.html">StopWordsRemover</a></li><li><a href="Tokenizer.html">Tokenizer</a></li><li><a href="VectorAssembler.html">VectorAssembler</a></li><li><a href="VectorSlicer.html">VectorSlicer</a></li><li><a href="VectorUDT.html">VectorUDT</a></li><li><a href="Word2Vec.html">Word2Vec</a></li></ul><h3>Global</h3><ul><li><a href="global.html#gAppName">gAppName</a></li><li><a href="global.html#handleArguments">handleArguments</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Fri Dec 11 2015 15:14:01 GMT-0500 (EST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Mon Jun 20 2016 13:37:18 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

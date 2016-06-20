@@ -52,7 +52,7 @@ describe('Top 10 Test', function() {
       done();
     }
 
-    sc.kernel.then(function(kernel) {
+    sc.kernelP.then(function(kernel) {
       if (!listenerAdded) {
         listenerAdded = true;
         kernel.addExecuteListener(listener);
@@ -124,7 +124,7 @@ describe('Top 10 Test', function() {
 
           onceDone(rdd4).then(callback);
         }, function(result) {
-          expect(result).equals('var rdd4 = rdd3.mapToPair(function (word) {\n            return [word.toLowerCase(),1]\n          });');
+          expect(result).equals('var pairRDD1 = rdd3.mapToPair(function (word) {\n            return [word.toLowerCase(),1]\n          });');
         },
         done
       );
@@ -141,7 +141,7 @@ describe('Top 10 Test', function() {
 
           onceDone(rdd5).then(callback);
         }, function(result) {
-          expect(result).equals('var rdd5 = rdd4.reduceByKey(function (acc, v) {\n            return acc + v;\n          });');
+          expect(result).equals('var pairRDD2 = pairRDD1.reduceByKey(function (acc, v) {\n            return acc + v;\n          });');
         },
         done
       );
@@ -158,7 +158,7 @@ describe('Top 10 Test', function() {
 
           onceDone(rdd6).then(callback);
         }, function(result) {
-          expect(result).equals('var rdd6 = rdd5.mapToPair(function (tuple) {\n            return [tuple[1]+0.0, tuple[0]];\n          });');
+          expect(result).equals('var pairRDD3 = pairRDD2.mapToPair(function (tuple) {\n            return [tuple[1]+0.0, tuple[0]];\n          });');
         },
         done
       );
@@ -173,7 +173,7 @@ describe('Top 10 Test', function() {
 
           onceDone(rdd7).then(callback);
         }, function(result) {
-          expect(result).equals('var rdd7 = rdd6.sortByKey(false);');
+          expect(result).equals('var pairRDD4 = pairRDD3.sortByKey(false);');
         },
         done
       );
@@ -186,7 +186,7 @@ describe('Top 10 Test', function() {
         function(callback) {
           rdd7.take(10).then(callback);
         }, function(result) {
-          expect(result).equals('JSON.stringify(rdd7.take(10));');
+          expect(result).equals('JSON.stringify(pairRDD4.take(10));');
         },
         done
       );

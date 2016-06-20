@@ -19,7 +19,7 @@ var expect = require('chai').expect;
 
 var spark = require('./lib/spark.js');
 var sc = new spark.SparkContext("local[*]", "foo");
-var sqlContext = new spark.SQLContext(sc);
+var sqlContext = new spark.sql.SQLContext(sc);
 
 var testOutput = [];
 var listenerAdded = false;
@@ -57,7 +57,7 @@ describe('DataFrame', function() {
       }
     }
 
-    sc.kernel.then(function(kernel) {
+    sc.kernelP.then(function(kernel) {
       if (!listenerAdded) {
         listenerAdded = true;
         kernel.addExecuteListener(listener);
@@ -85,7 +85,7 @@ describe('DataFrame', function() {
             };
           });
 
-          var DataTypes = sqlContext.types.DataTypes;
+          var DataTypes = spark.sql.types.DataTypes;
 
           var fields = [];
           fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));
@@ -335,7 +335,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var dataFrame6 = dataFrame1.select("name","age");');
+          expect(result).equals('var dataFrame6 = dataFrame1.select("name", "age");');
         },
         done
       );
@@ -352,7 +352,7 @@ describe('DataFrame', function() {
         }, function(result) {
           expect(result[0]).equals('var column5 = dataFrame1.col("name");');
           expect(result[1]).equals('var column6 = dataFrame1.col("age");');
-          expect(result[2]).equals('var dataFrame7 = dataFrame1.select(column5,column6);');
+          expect(result[2]).equals('var dataFrame7 = dataFrame1.select(column5, column6);');
         },
         done
       );
@@ -489,7 +489,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var groupedData3 = dataFrame1.cube("name","expense");');
+          expect(result).equals('var groupedData3 = dataFrame1.cube("name", "expense");');
         },
         done
       );
@@ -504,7 +504,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var dataFrame12 = dataFrame1.describe("name","expense");');
+          expect(result).equals('var dataFrame12 = dataFrame1.describe("name", "expense");');
         },
         done
       );
@@ -638,7 +638,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var rdd8 = dataFrame1.toJSON();');
+          expect(result).equals('JSON.stringify(dataFrame1.toJSON());');
         },
         done
       );
@@ -653,7 +653,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var rdd9 = dataFrame1.toRDD();');
+          expect(result).equals('var rdd8 = dataFrame1.toRDD();');
         },
         done
       );
@@ -719,4 +719,365 @@ describe('DataFrame', function() {
     });
   });
 
+  describe("join(right)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.join(df)).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame18 = dataFrame1.join(dataFrame1);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("join(right, columnName)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.join(df, "test")).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame19 = dataFrame1.join(dataFrame1, "test");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("join(right, [columnName, columnName2])", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.join(df, ["test", "test2"])).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame20 = dataFrame1.join(dataFrame1, [\"test\",\"test2\"]);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("join(right, column)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.join(df, df.col("age"))).then(callback);
+        }, function(result) {
+          expect(result[1]).equals('var dataFrame21 = dataFrame1.join(dataFrame1, column10);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("join(right, column, outer)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.join(df, df.col("age"), "outer")).then(callback);
+        }, function(result) {
+          expect(result[1]).equals('var dataFrame22 = dataFrame1.join(dataFrame1, column11, "outer");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("limit()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.limit(1)).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame23 = dataFrame1.limit(1);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("mapPartitions()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.mapPartitions(function(rows) {
+            return [rows.length];
+          })).then(callback);
+        }, function(result) {
+          expect(result).equals('var rdd9 = dataFrame1.mapPartitions(function (rows) {\n            return [rows.length];\n          });');
+        },
+        done
+      );
+    });
+  });
+
+  describe("na()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.na()).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrameNaFunctions1 = dataFrame1.na();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("orderBy(columnName)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.orderBy("name", "age")).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame24 = dataFrame1.orderBy(\"name\", \"age\");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("orderBy(col)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.orderBy(df.col("name"), df.col("age"))).then(callback);
+        }, function(result) {
+          expect(result[2]).equals('var dataFrame25 = dataFrame1.orderBy(column12, column13);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("persist()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.persist()).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame26 = dataFrame1.persist();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("persist(storageLevel)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.persist(spark.storage.StorageLevel.NONE())).then(callback);
+        }, function(result) {
+          expect(result[0]).equals('var StorageLevel = require(EclairJS_Globals.NAMESPACE + \'/storage/StorageLevel\');\nvar storageLevel1 = StorageLevel.NONE();');
+          expect(result[1]).equals('var dataFrame27 = dataFrame1.persist(storageLevel1);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("queryExecution()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.queryExecution()).then(callback);
+        }, function(result) {
+          expect(result).equals('var sqlcontextQueryExecution1 = dataFrame1.queryExecution();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("rdd()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.rdd()).then(callback);
+        }, function(result) {
+          expect(result).equals('var rdd10 = dataFrame1.rdd();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("repartition()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.repartition(3)).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame28 = dataFrame1.repartition(3);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("rollup()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.rollup("age", "name")).then(callback);
+        }, function(result) {
+          expect(result).equals('var groupedData4 = dataFrame1.rollup(\"age\", \"name\");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("sample(true, 0.5)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.sample("true", 0.4)).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame29 = dataFrame1.sample(true, 0.4);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("sample(true, 0.5, 10)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.sample("true", 0.4, 10)).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame30 = dataFrame1.sample(true, 0.4, 10);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("schema()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.schema()).then(callback);
+        }, function(result) {
+          expect(result).equals('var structType2 = dataFrame1.schema();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("sort(columnName)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.sort("name", "age")).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame31 = dataFrame1.sort(\"name\", \"age\");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("sort(col)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.sort(df.col("name"), df.col("age"))).then(callback);
+        }, function(result) {
+          expect(result[2]).equals('var dataFrame32 = dataFrame1.sort(column14, column15);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("toDF()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.toDF("newName", "newAge")).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame33 = dataFrame1.toDF("newName", "newAge");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("selectExpr()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.selectExpr("name", "age > 19")).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrame34 = dataFrame1.selectExpr("name", "age > 19");');
+        },
+        done
+      );
+    });
+  });
+
+  describe("unionAll()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var df2 = df.filter("age > 20");
+
+          onceDone(df.unionAll(df2)).then(callback);
+        }, function(result) {
+          expect(result[1]).equals('var dataFrame36 = dataFrame1.unionAll(dataFrame35);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("unpersist()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          global.ECLAIRJS_TEST_MODE = 'void';
+
+          onceDone(df.unpersist(false)).then(callback);
+        }, function(result) {
+          delete global.ECLAIRJS_TEST_MODE;
+
+          expect(result).equals('dataFrame1.unpersist(false);');
+        },
+        done
+      );
+    });
+  });
+
+  describe("write()", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          onceDone(df.write()).then(callback);
+        }, function(result) {
+          expect(result).equals('var dataFrameWriter1 = dataFrame1.write();');
+        },
+        done
+      );
+    });
+  });
+
+  describe("drop(col)", function() {
+    it("should generate the correct output", function(done) {
+      executeTest(
+        function(callback) {
+          var result = df.drop(df.col("name"));
+
+          onceDone(result).then(callback);
+        }, function(result) {
+          expect(result[1]).equals('var dataFrame37 = dataFrame1.drop(column16);');
+        },
+        done
+      );
+    });
+  });
 });

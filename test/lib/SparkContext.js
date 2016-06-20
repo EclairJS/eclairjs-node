@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-var SparkContext = require('../../lib/sparkcontext.js');
+var SparkContext = require('../../lib/SparkContext.js');
+
 
 var MODE_RESULT = 0;
 var MODE_ASSIGN = 1;
@@ -24,17 +25,13 @@ function FakeKernelExecuteHandle(mode) {
   var self = this;
 
   setTimeout(function() {
-    if (self.handleMsg) {
-      var msg;
-      if (mode == MODE_ASSIGN) {
-        msg = {msg_type: 'status', content: {execution_state: 'idle'}};
-      } else if (mode == MODE_RESULT) {
-        msg =  {msg_type: 'execute_result', content: {data: {"text/plain": "{}"}}};
-      } else if (mode == MODE_VOID_ASSIGN) {
-        msg =  {msg_type: 'execute_reply', content: {status: 'ok'}};
+    if (self.onDone) {
+      if (mode == MODE_RESULT) {
+        var msg = {msg_type: 'execute_result', content: {data: {"text/plain": "{}"}}};
+        self.onIOPub(msg)
       }
 
-      self.handleMsg(msg);
+      self.onDone()
     }
   }, 10);
 }
@@ -72,14 +69,29 @@ FakeKernel.prototype.execute = function(msg) {
       return new FakeKernelExecuteHandle(MODE_RESULT);
     }
   }
-}
+};
 
-function FakeSparkContext(master, name) {
-  this.kernel = new Promise(function(resolve, reject) {
-    resolve(new FakeKernel());
+var kernelP = new Promise(function(resolve, reject) {
+  resolve(new FakeKernel());
+});
+
+function FakeSparkContext(master, name, foo) {
+  this.kernelP = new Promise(function(resolve, reject) {
+    kernelP.then(function(k) {
+      //console.log("res");
+      resolve(k);
+    }).catch(reject);
   });
+
+  this.refIdP = new Promise(function(resolve, reject) {
+    this.kernelP.then(function() {
+      resolve('jsc');
+    }).catch(reject);
+  }.bind(this));
 }
 
-FakeSparkContext.prototype = SparkContext.prototype;
+FakeSparkContext.prototype = SparkContext()[1].prototype;
 
-module.exports = FakeSparkContext;
+module.exports = function() {
+  return [kernelP, FakeSparkContext];
+};

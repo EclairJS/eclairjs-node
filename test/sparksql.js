@@ -44,7 +44,7 @@ describe('SQL Test', function() {
       done();
     }
 
-    ctx.kernel.then(function(kernel) {
+    ctx.kernelP.then(function(kernel) {
       k = kernel;
       kernel.addExecuteListener(listener);
 
@@ -56,9 +56,9 @@ describe('SQL Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function() {
-          sqlContext = new spark.SQLContext(ctx);
+          sqlContext = new spark.sql.SQLContext(ctx);
         }, function(msg) {
-          expect(msg.code).equals('var sqlContext = new SQLContext(jsc);');
+          expect(msg.code).equals('var sqlcontext1 = new SQLContext(jsc);');
         },
         done
       );
@@ -83,12 +83,12 @@ describe('SQL Test', function() {
       executeTest(
         function() {
           //Generate the schema
-          var DataTypes = sqlContext.types.DataTypes;
+          var DataTypes = spark.sql.types.DataTypes;
 
           fields = [];
           fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));
         }, function(msg) {
-          expect(msg.code).equals('var sqlStructField1 = DataTypes.createStructField("name", org.apache.spark.sql.types.DataTypes.StringType, true);');
+          expect(msg.code).equals('var structField1 = DataTypes.createStructField("name", DataTypes.StringType, true);');
         },
         done
       );
@@ -100,11 +100,11 @@ describe('SQL Test', function() {
       executeTest(
         function() {
           //Generate the schema
-          var DataTypes = sqlContext.types.DataTypes;
+          var DataTypes = spark.sql.types.DataTypes;
 
           fields.push(DataTypes.createStructField("age", DataTypes.IntegerType, true));
         }, function(msg) {
-          expect(msg.code).equals('var sqlStructField2 = DataTypes.createStructField("age", org.apache.spark.sql.types.DataTypes.IntegerType, true);');
+          expect(msg.code).equals('var structField2 = DataTypes.createStructField("age", DataTypes.IntegerType, true);');
         },
         done
       );
@@ -115,10 +115,10 @@ describe('SQL Test', function() {
     it("should generate the correct output", function(done) {
       executeTest(
         function() {
-          var DataTypes = sqlContext.types.DataTypes;
+          var DataTypes = spark.sql.types.DataTypes;
           schema = DataTypes.createStructType(fields);
         }, function(msg) {
-          expect(msg.code).equals('var sqlStructType1 = DataTypes.createStructType([sqlStructField1,sqlStructField2]);');
+          expect(msg.code).equals('var structType1 = DataTypes.createStructType([structField1, structField2]);');
         },
         done
       );
@@ -166,7 +166,7 @@ describe('SQL Test', function() {
         function() {
           peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema);
         }, function(msg) {
-          expect(msg.code).equals('var dataFrame1 = sqlContext.createDataFrame(rdd3, sqlStructType1);');
+          expect(msg.code).equals('var dataFrame1 = sqlcontext1.createDataFrame(rdd3, structType1);');
         },
         done
       );
@@ -192,7 +192,7 @@ describe('SQL Test', function() {
         function() {
           results = sqlContext.sql("SELECT name FROM people");
         }, function(msg) {
-          expect(msg.code).equals('var dataFrame2 = sqlContext.sql("SELECT name FROM people");');
+          expect(msg.code).equals('var dataFrame2 = sqlcontext1.sql("SELECT name FROM people");');
         },
         done
       );

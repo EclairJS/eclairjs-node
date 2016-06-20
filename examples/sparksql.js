@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-var spark = require('../spark.js');
+var spark = require('../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "foo");
-var sqlContext = new spark.SQLContext(sc);
+var sc = new spark.SparkContext("local[*]", "Spark SQL Example");
+var sqlContext = new spark.sql.SQLContext(sc);
 
 // Load a text file and convert each line to a JavaScript Object.
-var rdd = sc.textFile("__dirname + '/people.txt");
+var rdd = sc.textFile(__dirname + '/people.txt');
 
 var people = rdd.map(function(line) {
   var parts = line.split(",");
@@ -32,7 +32,7 @@ var people = rdd.map(function(line) {
 });
 
 //Generate the schema
-var DataTypes = sqlContext.types.DataTypes;
+var DataTypes = spark.sql.types.DataTypes;
 
 var fields = [];
 fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));
@@ -40,12 +40,16 @@ fields.push(DataTypes.createStructField("age", DataTypes.IntegerType, true));
 var schema = DataTypes.createStructType(fields);
 
 // Convert records of the RDD (people) to Rows.
-var rowRDD = people.map(function(person){
+var rowRDD = people.map(function(person, RowFactory){
   return RowFactory.create([person.name, person.age]);
-});
+}, [spark.sql.RowFactory]);
 
 //Apply the schema to the RDD.
 var peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema);
+
+peopleDataFrame.toJSON().then(function(res){
+    console.log("peopleDataFrame.toJSON(): ",res);
+});
 
 // Register the DataFrame as a table.
 peopleDataFrame.registerTempTable("people").then(function() {
@@ -60,6 +64,19 @@ peopleDataFrame.registerTempTable("people").then(function() {
 
   names.take(10).then(function(results) {
     console.log("results:", results)
-  })
+
+    sc.stop().then(function() {
+      process.exit();
+    }).catch(function(e) {
+      console.log(e);
+      process.exit();
+    });
+  }).catch(function(e) {
+    console.log("Error:", err);
+
+    sc.stop().then(function() {
+      process.exit();
+    });
+  });
 });
 

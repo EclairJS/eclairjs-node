@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-var spark = require('../spark.js');
+var spark = require('../lib/index.js');
 
 var sparkContext = new spark.SparkContext("local[*]", "dataframe test");
-var sqlContext = new spark.SQLContext(sparkContext);
+var sqlContext = new spark.sql.SQLContext(sparkContext);
 
-var dataFrame = sqlContext.read.json("/tmp/examples/test.json");
+var dataFrame = sqlContext.read().json("/tmp/examples/test.json");
 //var gd = dataFrame.groupBy(dataFrame.col("first"));
 //var df2 = gd.count();
 dataFrame.show();

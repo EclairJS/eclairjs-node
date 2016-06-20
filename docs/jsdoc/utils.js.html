@@ -46,6 +46,8 @@ var protocol = require('./kernel.js');
 
 var Utils = {};
 
+var moduleRequireCache = {};
+
 Utils.processTemplate = function(templateStr, replacements) {
   //return templateStr.replace(/\$[a-zA-Z0-9]*/g, function(match) {
   return templateStr.replace(/\{\{[a-zA-Z0-9]*\}\}/g, function(match) {
@@ -63,171 +65,676 @@ Utils.processTemplate = function(templateStr, replacements) {
 };
 
 /**
- * Handles running assignments (var x = inRef.foo(...)).  Will return a new instance of classRef.
- * @param {object} inRef - the reference we are using to generate the result.  Expected to be a class that has kernelP/refIdP members.
- * @param {Class} classRef - the class object that corresponds to the returned type.
- * @param {string} templateStr - the template string to use when generating the assignment.
- * @param {object} replacements - replacements to use in templateStr.  If the value of a replacement is a Promise, that
- *                 promise is resolved and the resolved value is used to replace the promise in replacements.  A member
- *                 of replacements can also be an array of promises.
+ * Prepares a variable to be used as a template replacement.  Null safe.
+ *
+ * - If its a Spark object, will return its refIdP (promise that resolves to the id of the object onces its been generated in the kernel
+ * - If its a string, returns "stringvalue"
+ * - If its an array, returns '[x,y,x]'.  Applies prepForReplacement on each array item.
+ *   - If skipArrayCreation is set, returns 'x,y,z' instead.
+ *
+ * @param {object} obj
  * @returns {object}
  */
-Utils.generateAssignment = function(inRef, classRef, templateStr, replacements) {
-  var varName = classRef.name == 'RDD' ? 'rdd' : classRef.name.charAt(0).toLowerCase() + classRef.name.slice(1);
+Utils.prepForReplacement = function(obj, skipArrayCreation) {
+  if (obj &amp;&amp; obj.refIdP) {
+    return obj.refIdP;
+  } else if (typeof(obj) == "string") {
+    return '"' + obj.replace(/"/g, '\\\"') + '"';
+  } else if (Array.isArray(obj)) {
+    var newArr = [];
 
-  var refId = protocol.genVariable(varName);
+    obj.forEach(function(item) {
+      newArr.push(Utils.prepForReplacement(item));
+    });
 
-  var finalReplacements = {};
-
-  var promises = [inRef.kernelP, inRef.refIdP];
-  var replacementPromiseNames = [];
-
-  if (replacements) {
-    // Check for any promises inside replacements
-    for (var name in replacements) {
-      var replacement = replacements[name];
-
-      if (replacement instanceof Promise) {
-        replacementPromiseNames.push(name);
-
-        promises.push(replacement);
-      } else if (Array.isArray(replacement) &amp;&amp; replacement[0] instanceof Promise) {
-        // we have an array of promises
-        replacement.forEach(function(promise) {
-          // each promise gets the same name
-          replacementPromiseNames.push(name);
-
-          promises.push(promise);
-        });
+    if (newArr.length > 0 &amp;&amp; newArr[0] instanceof Promise) {
+      return newArr;
+    } else {
+      if (skipArrayCreation) {
+        return newArr.join(',');
       } else {
-        finalReplacements[name] = replacement;
+        return '[' + newArr.join(',') + ']';
       }
     }
+  } else if (typeof(obj) == "object") {
+    return JSON.stringify(obj);
+  } else {
+    return obj;
+  }
+};
+
+
+function serializeLambda(func) {
+  return (typeof func === 'function') ? serializeFunction(func) : Promise.resolve(func);
+}
+
+//var bs = require('browserify-string');
+
+function serializeFunction(func, opts) {
+  /*
+
+
+   var funcStr = "EXPORTEDFUNCTION=" + func.toString();
+
+   var bsOpts = {};
+
+   if (opts &amp;&amp; opts.baseDir) {
+   bsOpts.basedir = opts.baseDir;
+   }
+
+   bs(funcStr, bsOpts).bundle(function(err, src) {
+   if (err) {
+   reject(err);
+   } else {
+   var finalStr = src + '';
+   resolve(JSON.stringify(finalStr));
+   }
+   });
+   });
+   */
+  return Promise.resolve(func.toString());
+}
+
+function isNativeType(obj) {
+  return (obj === Number || obj === String || obj === Boolean || obj === Object);
+}
+
+function generateVarName(name) {
+  var upperCaseCount = name.match(/[A-Z]*/)[0].length;
+
+  return name.substr(0, upperCaseCount).toLowerCase() + name.substr(upperCaseCount);
+}
+
+function generateRequires(requires) {
+  var code = '';
+
+  requires.forEach(function(r) {
+    var loc = r.moduleLocation;
+
+    if (!moduleRequireCache[loc]) {
+      moduleRequireCache[loc] = true;
+
+      var subExport = null;
+
+      // A file can export multiple modules, denoted by Foo/Bar#Baz
+      var subModuleLoc = loc.indexOf('#');
+      if (subModuleLoc >= 0) {
+        subExport = loc.substr(subModuleLoc + 1);
+        loc = loc.substr(0, subModuleLoc);
+      }
+
+      if (subExport) {
+        code += 'var ' + r.name + ' = require(EclairJS_Globals.NAMESPACE + \'' + loc + '\').' + subExport + ';\n';
+      } else {
+        code += 'var ' + r.name + ' = require(EclairJS_Globals.NAMESPACE + \'' + loc + '\');\n';
+      }
+    }
+  });
+
+  return code;
+}
+
+/**
+ * Handles calling a remote Spark method on EclairJS-nashorn.
+ *
+ * @param args {object} - A map that has the following members:
+ *     - target      {object} The target class or class instance to call a method on.
+ *     - method      {string} The method name we are calling.
+ *     - returnType  {object} The return type for the method.
+ *         - null for void methods
+ *         - SparkClass (RDD for example)
+ *         - Native JavaScript types (Number, String, Boolean, etc)
+ *         - Array (either Native or Spark type, so [Number] or [RDD])
+ *
+ *     - [args]      {array}  Arguments for the method. Each argument needs to look like this:
+ *         - value      {object}   The actual value
+ *         - [type]     {string}   The type
+ *         - [optional] {boolean}
+ *
+ *     - [resolver]  {function} A resolver function
+ */
+Utils.generate = function(args) {
+  var target = args.target;
+  var method = args.method;
+  var returnType = args.returnType;
+  var callArgs = args.args ? args.args : null;
+  var customResolver = args.resolver;
+
+  var type;
+
+  var EXECUTION = {
+    RESULT_TYPE: 'result',
+    RESULT_ARRAY_TYPE: 'resultarray',
+    RESULT_NATIVE_ARRAY_TYPE: 'resultnativearray',
+    ASSIGNMENT_TYPE: 'assignment',
+    VOID_TYPE: 'void'
+  };
+
+  // TODO: certain cases should auto stringify (returning an array of native types for example)
+  var shouldStringify = false;
+
+  var executionType;
+  if (returnType === null || typeof returnType === 'undefined') {
+    // Calling a void method
+    executionType = EXECUTION.VOID_TYPE;
+  } else if (isNativeType(returnType) || args.stringify || Array.isArray(returnType)) {
+    // Calling a method that returns a built in JS type
+    executionType = EXECUTION.RESULT_TYPE;
+
+    if (args.stringify) {
+      shouldStringify = true;
+    }
+
+    if (Array.isArray(returnType)) {
+      if (isNativeType(returnType[0])) {
+        shouldStringify = true;
+        executionType = EXECUTION.RESULT_NATIVE_ARRAY_TYPE;
+      } else {
+        // An array of Spark objects so special case it here
+        executionType = EXECUTION.RESULT_ARRAY_TYPE;
+      }
+    }
+  } else {
+    // Basic assignment, so returning a Spark object instance
+    executionType = EXECUTION.ASSIGNMENT_TYPE;
   }
 
-  return new classRef(inRef.kernelP, new Promise(function(resolve, reject) {
+  var promises = [];
+
+  var kernelP;
+
+  if (args.static) {
+    // static alls pass in a kernelP through args
+    type = 'staticMethodCall';
+    promises.push(args.kernelP);
+
+    kernelP = args.kernelP;
+  } else {
+    type = 'methodCall';
+
+    // we have a class reference, so we have kernelP/refIdP
+    promises.push(target.kernelP);
+    promises.push(target.refIdP);
+
+    kernelP = target.kernelP;
+  }
+
+  promises.push(handleArguments(callArgs));
+
+  var refId;
+
+  // Generate the variable id before we go into promise land to make sure we create them in the order of definition.
+  if (executionType == EXECUTION.ASSIGNMENT_TYPE) {
+    refId = protocol.genVariable(generateVarName(returnType.name));
+  } else if (executionType == EXECUTION.RESULT_ARRAY_TYPE) {
+    refId = protocol.genVariable(generateVarName(returnType[0].name)+"Array");
+  }
+
+  // This is our main promise that handles generating and executing code remotely on Toree.
+  var refIdP = new Promise(function(resolve, reject) {
     Promise.all(promises).then(function(values) {
+      // Kernel is always there
       var kernel = values[0];
-      var inRefId = values[1];
 
-      finalReplacements["inRefId"] = inRefId;
-      finalReplacements["refId"] = refId;
+      function _resultTypeResolver(result) {
+        if (customResolver) {
+          // custom resolver
+          customResolver(result, resolve, reject);
+        } else if ((executionType == EXECUTION.RESULT_NATIVE_ARRAY_TYPE || (executionType == EXECUTION.RESULT_TYPE &amp;&amp; returnType !== String)) &amp;&amp; (args.stringify || shouldStringify)) {
+          // Array of native type or native, non-string type and we stringified
+          try {
+            resolve(JSON.parse(result));
+          } catch (e) {
+            var err = new Error("Parse Error: "+ e.message);
+            reject(err);
+          }
+        } else if (returnType === Number) {
+          try {
+            var parsed = parseFloat(result);
+            resolve(parsed);
+          } catch (e) {
+            reject(e);
+          }
+        } else if (returnType === Boolean) {
+          resolve(result === 'true');
+        } else {
+          resolve(result);
+        }
+      }
 
-      // handle any replacement promises
-      for (var i = 0; i &lt; replacementPromiseNames.length; i++) {
-        var name = replacementPromiseNames[i];
+      function _resultArrayResolver(result) {
+        function _countResolve(result) {
+          var count = parseInt(result);
 
-        // handle arrays of replacements
-        if (finalReplacements[name]) {
-          // if a Promise's name already is in the finalReplacements then we have an array of Promises so make the replacement
-          // an array of the results.
-          if (!Array.isArray(finalReplacements[name])) {
-            // make it an array
-            finalReplacements[name] = [finalReplacements[name]];
+          var resultArr = [];
+
+          for (var i = 0; i &lt; count; i++) {
+            // we know the refId is going to be called refId[i]
+            var clazz = new returnType[0](kernelP, Promise.resolve(refId+"["+i+"]"));
+            resultArr.push(clazz);
           }
 
-          finalReplacements[name].push(values[2 + i]);
-        } else {
-          finalReplacements[name] = values[2 + i];
+          resolve(resultArr);
+        }
+
+        // now that we generated the array, get the length of the array
+        protocol.verifyKernelExecution(kernel.execute({code: refId+".length;"}), _countResolve, reject);
+      }
+
+      var code = '';
+
+      // For static calls, we need to make sure we generate the require for the class.
+      if (type == 'staticMethodCall') {
+        var moduleLocation = target.moduleLocation ? target.moduleLocation : target.constructor ? target.constructor.moduleLocation : null;
+        if (moduleLocation) {
+          var targetClassName = typeof target == 'object' ? target.constructor.name : target.name;
+
+          code += generateRequires([{name: targetClassName, moduleLocation: moduleLocation}]);
         }
       }
 
-      var code = Utils.processTemplate(templateStr, finalReplacements);
+      if (callArgs) {
+        var requires = values[values.length - 1].requires;
 
-      protocol.verifyAssign(kernel.execute({code: code, silent: false}),
-        resolve,
-        reject,
-        refId);
-    }).catch(reject);
-  }));
-};
+        code += generateRequires(requires);
+      }
 
-/**
- * Handles running calls that return a Promise which resolves to an JavaScript primitive value (inRef.count()).
- * @param {object} inRef - the reference we are using to generate the result.  Expected to be a class that has kernelP/refIdP members.
- * @param {string} templateStr - the template string to use when generating the assignment.
- * @param {object} replacements - replacements to use in templateStr.  If the value of a replacement is a Promise, that
- *                 promise is resolved and the resolved value is used to replace the promise in replacements.
- * @param {function} customResolve - optional function that recieves the result value and the Promise resolve/reject handle as parameters.
- *                   Allows modifying the Promise result (parse an integer, handle JSON data for example) before it gets passed to the caller.
- * @returns {Promise}
- */
-Utils.generateResultPromise = function(inRef, templateStr, replacements, customResolve) {
-  return new Promise(function(resolve, reject) {
-    function _resolve(result) {
-      // If a custom resolve is passed in, pass it the result and resolve/reject handles
-      if (customResolve) {
-        try {
-          customResolve(result, resolve, reject);
-        } catch (e) {
-          reject(e);
-        }
+      if (executionType == EXECUTION.ASSIGNMENT_TYPE || executionType == EXECUTION.RESULT_ARRAY_TYPE) {
+        code += 'var ' + refId + ' = ';
+      }
+
+      if (shouldStringify) {
+        code += 'JSON.stringify(';
+      }
+
+      // we had a refId promise resolved
+      if (type == 'methodCall') {
+        code += values[1] + '.';
+      } else if (type == 'staticMethodCall') {
+        // Static method call
+        code += target.name + '.';
+      }
+
+      // method name
+      code += method + '(';
+
+      // arguments
+      if (callArgs) {
+        var finalArgs = values[values.length-1].args;
+
+        code += finalArgs.join(', ')
+      }
+
+      // close the method call
+      if (shouldStringify) {
+        code += '));';
       } else {
-        resolve(result);
-      }
-    }
-
-    Promise.all([inRef.kernelP, inRef.refIdP]).then(function(values) {
-      var kernel = values[0];
-      var inRefId = values[1];
-
-      if (!replacements) {
-        replacements = {};
+        code += ');';
       }
 
-      replacements["inRefId"] = inRefId;
+      // console.log(code);
 
-      var code = Utils.processTemplate(templateStr, replacements);
-
-      protocol.verifyResult(kernel.execute({code: code}), _resolve, reject);
+      if (executionType == EXECUTION.RESULT_TYPE || executionType == EXECUTION.RESULT_NATIVE_ARRAY_TYPE) {
+        protocol.verifyKernelExecution(kernel.execute({code: code}), _resultTypeResolver, reject);
+      } else if (executionType == EXECUTION.RESULT_ARRAY_TYPE) {
+        protocol.verifyKernelExecution(kernel.execute({code: code}), _resultArrayResolver, reject);
+      } else if (executionType == EXECUTION.VOID_TYPE) {
+        protocol.verifyKernelExecution(kernel.execute({code: code}), resolve, reject);
+      } else if (executionType == EXECUTION.ASSIGNMENT_TYPE) {
+        protocol.verifyKernelExecution(kernel.execute({code: code, silent: false}), resolve, reject, [refId]);
+      }
     }).catch(reject);
-  })
+  });
+
+  // handle target
+  if (executionType == EXECUTION.RESULT_TYPE || executionType == EXECUTION.RESULT_NATIVE_ARRAY_TYPE || executionType == EXECUTION.RESULT_ARRAY_TYPE || executionType == EXECUTION.VOID_TYPE) {
+    return refIdP;
+  } else if (executionType == EXECUTION.ASSIGNMENT_TYPE) {
+    // we have a class reference
+    return new returnType(kernelP, refIdP);
+  }
 };
 
-/**
- * Handles running calls that return a Promise which resolves to nothing.  The Promise can be used to wait for the action to finish.
- * @param {object} inRef - the reference we are using to generate the result.  Expected to be a class that has kernelP/refIdP members.
- * @param {string} templateStr - the template string to use when generating the assignment.
- * @param {object} replacements - replacements to use in templateStr.  If the value of a replacement is a Promise, that
- *                 promise is resolved and the resolved value is used to replace the promise in replacements.
- * @returns {Promise}
- */
-Utils.generateVoidPromise = function(inRef, templateStr, replacements) {
-  if (!replacements) {
-    replacements = {};
+Utils.handleAbstractConstructor = function(context, callArgs) {
+  if (callArgs &amp;&amp; callArgs.length == 2 &amp;&amp; callArgs[0] instanceof Promise &amp;&amp; callArgs[1] instanceof Promise) {
+    // Someone created an instance of this class for us
+    context.kernelP = callArgs[0];
+    context.refIdP = callArgs[1];
+  } else {
+    var targetClassName = typeof context == 'object' ? context.constructor.name : context.name;
+
+    throw "Can't instantiate abstract class - "+targetClassName;
+  }
+};
+
+Utils.handleConstructor = function(context, callArgs, kernelP) {
+  if (callArgs &amp;&amp; callArgs.length == 2 &amp;&amp; callArgs[0] instanceof Promise &amp;&amp; callArgs[1] instanceof Promise) {
+    // Someone created an instance of this class for us
+    context.kernelP = callArgs[0];
+    context.refIdP = callArgs[1];
+  } else {
+    var promises = [];
+    promises.push(kernelP);
+
+    promises.push(handleArguments(Utils.wrapArguments(callArgs)));
+
+    var targetClassName = typeof context == 'object' ? context.constructor.name : context.name;
+
+    var varName = generateVarName(targetClassName);
+    var refId = protocol.genVariable(varName);
+
+    var refIdP = new Promise(function(resolve, reject) {
+      Promise.all(promises).then(function(values) {
+        var kernel = values[0];
+        var code = '';
+
+        // get the class name of the target
+        var moduleLocation = context.moduleLocation ? context.moduleLocation : context.constructor ? context.constructor.moduleLocation : null;
+        if (moduleLocation) {
+          code += generateRequires([{name: targetClassName, moduleLocation: moduleLocation}]);
+        }
+
+        // requires from arguments
+        if (callArgs) {
+          var requires = values[values.length - 1].requires;
+
+          code += generateRequires(requires);
+        }
+
+        code += 'var ' + refId + ' = new ' + targetClassName + '(';
+
+        // arguments
+        if (callArgs) {
+          var finalArgs = values[values.length-1].args;
+
+          code += finalArgs.join(', ')
+        }
+
+        code += ');';
+
+        protocol.verifyKernelExecution(kernel.execute({code: code, silent: false}), resolve, reject, [refId]);
+      }).catch(reject);
+    });
+
+    context.kernelP = kernelP;
+    context.refIdP = refIdP;
+  }
+};
+
+Utils.generateConstructor = function(args) {
+  var target = args.target;
+  var callArgs = args.args ? args.args : null;
+  var kernelP = args.kernelP;
+
+  var promises = [];
+  promises.push(kernelP);
+
+  promises.push(handleArguments(callArgs));
+
+  var refId;
+
+  if (args.refId) {
+    refId = args.refId
+  } else {
+    var varName = generateVarName(target.name);
+    refId = protocol.genVariable(varName);
   }
 
-  var promises = [inRef.kernelP, inRef.refIdP];
-  var replacementPromiseNames = [];
-
-  // Check for any promises inside replacements
-  for (var name in replacements) {
-    if (replacements[name] instanceof Promise) {
-      replacementPromiseNames.push(name);
-
-      promises.push(replacements[name]);
-    }
-  }
-
-  return new Promise(function(resolve, reject) {
+  var refIdP = new Promise(function(resolve, reject) {
     Promise.all(promises).then(function(values) {
       var kernel = values[0];
-      var inRefId = values[1];
+      var code = '';
 
-      replacements["inRefId"] = inRefId;
+      // get the class name of the target
+      var moduleLocation = target.moduleLocation ? target.moduleLocation : target.constructor ? target.constructor.moduleLocation : null;
+      if (moduleLocation) {
+        var targetClassName = typeof target == 'object' ? target.constructor.name : target.name;
 
-      // handle any replacement promises
-      for (var i = 0; i &lt; replacementPromiseNames.length; i++) {
-        var name = replacementPromiseNames[i];
-
-        replacements[name] = values[2+i];
+        code += generateRequires([{name: targetClassName, moduleLocation: moduleLocation}]);
       }
 
-      var code = Utils.processTemplate(templateStr, replacements);
+      // requires from arguments
+      if (callArgs) {
+        var requires = values[values.length - 1].requires;
 
-      protocol.verifyVoidResult(kernel.execute({code: code}), resolve, reject);
+        code += generateRequires(requires);
+      }
+
+      code += 'var ' + refId + ' = new ' + target.name + '(';
+
+      // arguments
+      if (callArgs) {
+        var finalArgs = values[values.length-1].args;
+
+        code += finalArgs.join(', ')
+      }
+
+      code += ');';
+
+      protocol.verifyKernelExecution(kernel.execute({code: code, silent: false}), resolve, reject, [refId]);
     }).catch(reject);
-  })
+  });
+
+  return refIdP;
+};
+
+/**
+ * Returns a promise that resolves once all the arguments have been resolved.
+ */
+function handleArguments(args) {
+  return new Promise(function(resolve, reject) {
+    var requires = [];
+    var promises = [];
+
+    // check for Promises in args
+    if (args &amp;&amp; args instanceof Array) {
+      args.some(function (arg, i) {
+        if ((arg.value === null || typeof(arg.value) == 'undefined') &amp;&amp; arg.optional) {
+          return true;
+        }
+
+        if (arg.value &amp;&amp; Array.isArray(arg.value) &amp;&amp; arg.optional &amp;&amp; arg.value.length == 0) {
+          return true;
+        }
+
+        if (arg.type == 'string') {
+          var s = '"' + arg.value.replace(/"/g, '\\\"') + '"';
+          promises.push(Promise.resolve(s));
+        } else if (arg.type == 'lambda') {
+          promises.push(serializeLambda(arg.value));
+        } else if (arg.type == 'lambdaArgs') {
+          promises.push(new Promise(function(resolve, reject) {
+            handleArrayArgument(arg.value).then(function (result) {
+              resolve(result);
+            }).catch(reject);
+          }));
+        } else if (arg.type == 'map') {
+          promises.push(Promise.resolve(JSON.stringify(arg.value)));
+        } else if (arg.type == 'promise') {
+          promises.push(new Promise(function(resolve, reject) {
+            arg.value.then(function(val) {
+              if (typeof(val) == 'string') {
+                if (isNaN(val)) {
+                  // a string
+                  var s = '"' + val.replace(/"/g, '\\\"') + '"';
+                  resolve(s);
+                } else {
+                  resolve(parseFloat(val));
+                }
+              } else {
+                resolve(val);
+              }
+            });
+          }));
+        } else if (arg.value.refIdP) {
+          promises.push(arg.value.refIdP);
+        } else if (arg.type == 'List') {
+          promises.push(Promise.resolve(arg.value.toString()));
+        } else if (arg.type == 'array') {
+          // simple array argument
+          promises.push(handleArrayArgument(arg.value));
+        } else if (arg.type == '_eclairSerialize') {
+          if (arg.value._eclairSerialize == 'staticProperty') {
+            var val = arg.value.ref.name + '.' + arg.value.value;
+            promises.push(Promise.resolve(val));
+            requires.push({name: arg.value.ref.name, moduleLocation: arg.value.ref.moduleLocation});
+          }
+        } else if (Array.isArray(arg.value)) {
+          // TODO: should we try to wrap the array if it isn't?
+          promises.push(new Promise(function (resolve, reject) {
+            handleArguments(arg.value).then(function (result) {
+              if (result.requires.length > 0) {
+                result.requires.forEach(function (r) {
+                  requires.push(r)
+                });
+              }
+
+              resolve('[' + result.args + ']');
+            }).catch(reject);
+          }));
+        } else if (arg.type == '_eclairForceFloat') {
+          var val = arg.value.value;
+          if (val.toString().indexOf('.') === -1) {
+            val = val.toFixed(1);
+          }
+          promises.push(Promise.resolve(val));
+        } else if (arg.type == 'sparkclassref') {
+          // we have a spark class reference, so return its name
+          promises.push(Promise.resolve(arg.value.name));
+          // add the class to the requires list
+          requires.push({name: arg.value.name, moduleLocation: arg.value.moduleLocation});  
+        } else {
+          promises.push(Promise.resolve(arg.value));
+        }
+
+        return false;
+      });
+    }
+
+    Promise.all(promises).then(function(finalArgs) {
+      resolve({args: finalArgs, requires: requires});
+      //resolve(finalArgs);
+    }).catch(function(e) {
+      console.log(e);
+      reject(e)
+    });
+  });
+}
+
+function handleArrayArgument(arg) {
+  // go through array and return a promise
+  return new Promise(function(resolve, reject) {
+    var promises = [];
+
+    for (var i = 0; i &lt; arg.length; i++) {
+      var a = arg[i];
+      promises.push(Utils.prepForReplacement(a));
+    }
+
+    Promise.all(promises).then(function(result) {
+      var arr = '[';
+
+      arr += result.join(', ');
+
+      arr += ']';
+
+      resolve(arr);
+    }).catch(reject);
+  });
+}
+
+Utils.wrapArray = function(arr, sparkType) {
+  var wrapArr = [];
+
+  if (arr &amp;&amp; arr.length > 0) {
+    arr.forEach(function(item) {
+      var type;
+
+      if (sparkType &amp;&amp; item instanceof sparkType) {
+        type = sparkType;
+      } else {
+        if (item.refIdP) {
+          // spark class instance
+          type = undefined;
+        } else if (typeof(item) == 'function' &amp;&amp; item.moduleLocation) {
+          // spark class reference
+          type = 'sparkclassref';
+        } else if (typeof(item) == 'object' &amp;&amp; item.constructor.name == 'List') {
+          type = 'List';
+        } else if (item instanceof Promise) {
+          type = 'promise';
+        } else if (typeof(item) == 'number') {
+          type = 'number';
+        } else if (Array.isArray(item)) {
+          type = 'array';
+        } else if (typeof(item) == 'boolean') {
+          type = 'boolean';
+        } else if (typeof(item) == 'object') {
+          if (item._eclairSerialize) {
+            type = '_eclairSerialize';
+          } else if (item._eclairForceFloat) {
+            type = '_eclairForceFloat';
+          } else {
+            type = 'map';
+          }
+        } else {
+          type = 'string';
+        }
+      }
+
+      if (type) {
+        wrapArr.push({value: item, type: type});
+      } else {
+        wrapArr.push({value: item});
+      }
+    });
+  }
+
+  return wrapArr;
+};
+
+Utils.wrapArguments = function(args) {
+  var params = Array.prototype.slice.call(args);
+
+  return Utils.wrapArray(params);
+};
+
+Utils.wrapBindArgs = function(bindArgs) {
+  return Utils.wrapArray(bindArgs);
+};
+
+// Executes js code on Toree, use for testing only!
+Utils.execute = function(args) {
+  var code = args.code;
+  var returnType = args.returnType;
+  var kernelP = args.kernelP;
+
+  var promises = [];
+  promises.push(kernelP);
+
+  var refIdP = new Promise(function(resolve, reject) {
+    Promise.all(promises).then(function(values) {
+      var kernel = values[0];
+
+      protocol.verifyKernelExecution(kernel.execute({code: code}), resolve, reject);
+    }).catch(reject);
+  });
+
+  return refIdP;
+};
+
+// Given a JS context, gets the class.  Used in abstract classes to get the main class reference
+Utils.getContextClass = function(context) {
+  return context.constructor;
+};
+
+// Forces a number to be a float whan sent to Spark.
+Utils.forceFloat = function(value) {
+  return {_eclairForceFloat: true, value: value}
+};
+
+Utils.log = function(msg) {
+  console.log(msg);
 };
 
 module.exports = Utils;
@@ -241,13 +748,13 @@ module.exports = Utils;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Column.html">Column</a></li><li><a href="DataFrame.html">DataFrame</a></li><li><a href="DataFrameReader.html">DataFrameReader</a></li><li><a href="DataTypes.html">DataTypes</a></li><li><a href="DStream.html">DStream</a></li><li><a href="Duration.html">Duration</a></li><li><a href="GroupedData.html">GroupedData</a></li><li><a href="Metadata.html">Metadata</a></li><li><a href="RDD.html">RDD</a></li><li><a href="Row.html">Row</a></li><li><a href="RowFactory.html">RowFactory</a></li><li><a href="SparkContext.html">SparkContext</a></li><li><a href="SQLContext.html">SQLContext</a></li><li><a href="SqlDate.html">SqlDate</a></li><li><a href="SqlTimestamp.html">SqlTimestamp</a></li><li><a href="StreamingContext.html">StreamingContext</a></li><li><a href="StructField.html">StructField</a></li><li><a href="StructType.html">StructType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#verifyAssign">verifyAssign</a></li><li><a href="global.html#verifyResult">verifyResult</a></li><li><a href="global.html#verifyVoidResult">verifyVoidResult</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-eclairjs.html">eclairjs</a></li><li><a href="module-eclairjs_ml.html">eclairjs/ml</a></li><li><a href="module-eclairjs_ml_classification.html">eclairjs/ml/classification</a></li><li><a href="module-eclairjs_ml_clustering.html">eclairjs/ml/clustering</a></li><li><a href="module-eclairjs_ml_evaluation.html">eclairjs/ml/evaluation</a></li><li><a href="module-eclairjs_ml_feature.html">eclairjs/ml/feature</a></li><li><a href="module-eclairjs_ml_param.html">eclairjs/ml/param</a></li><li><a href="module-eclairjs_ml_recommendation.html">eclairjs/ml/recommendation</a></li><li><a href="module-eclairjs_ml_regression.html">eclairjs/ml/regression</a></li><li><a href="module-eclairjs_ml_tuning.html">eclairjs/ml/tuning</a></li><li><a href="module-eclairjs_mllib.html">eclairjs/mllib</a></li><li><a href="module-eclairjs_mllib_classification.html">eclairjs/mllib/classification</a></li><li><a href="module-eclairjs_mllib_clustering.html">eclairjs/mllib/clustering</a></li><li><a href="module-eclairjs_mllib_evaluation.html">eclairjs/mllib/evaluation</a></li><li><a href="module-eclairjs_mllib_feature.html">eclairjs/mllib/feature</a></li><li><a href="module-eclairjs_mllib_fpm.html">eclairjs/mllib/fpm</a></li><li><a href="module-eclairjs_mllib_linalg.html">eclairjs/mllib/linalg</a></li><li><a href="module-eclairjs_mllib_linalg_distributed.html">eclairjs/mllib/linalg/distributed</a></li><li><a href="module-eclairjs_mllib_optimization.html">eclairjs/mllib/optimization</a></li><li><a href="module-eclairjs_mllib_random.html">eclairjs/mllib/random</a></li><li><a href="module-eclairjs_mllib_recommendation.html">eclairjs/mllib/recommendation</a></li><li><a href="module-eclairjs_mllib_regression.html">eclairjs/mllib/regression</a></li><li><a href="module-eclairjs_mllib_tree.html">eclairjs/mllib/tree</a></li><li><a href="module-eclairjs_mllib_tree_configuration.html">eclairjs/mllib/tree/configuration</a></li><li><a href="module-eclairjs_mllib_tree_loss.html">eclairjs/mllib/tree/loss</a></li><li><a href="module-eclairjs_mllib_tree_model.html">eclairjs/mllib/tree/model</a></li><li><a href="module-eclairjs_mllib_util.html">eclairjs/mllib/util</a></li><li><a href="module-eclairjs_rdd.html">eclairjs/rdd</a></li><li><a href="module-eclairjs_sql.html">eclairjs/sql</a></li><li><a href="module-eclairjs_sql_types.html">eclairjs/sql/types</a></li><li><a href="module-eclairjs_storage.html">eclairjs/storage</a></li><li><a href="module-eclairjs_streaming.html">eclairjs/streaming</a></li><li><a href="module-eclairjs_streaming_dstream.html">eclairjs/streaming/dstream</a></li><li><a href="module-eclairjs_streaming_kafka.html">eclairjs/streaming/kafka</a></li><li><a href="module-eclairjs_streaming_twitter.html">eclairjs/streaming/twitter</a></li></ul><h3>Classes</h3><ul><li><a href="AFTSurvivalRegression.html">AFTSurvivalRegression</a></li><li><a href="ALS.html">ALS</a></li><li><a href="ArrayType.html">ArrayType</a></li><li><a href="Attribute.html">Attribute</a></li><li><a href="AttributeGroup.html">AttributeGroup</a></li><li><a href="Binarizer.html">Binarizer</a></li><li><a href="Bucketizer.html">Bucketizer</a></li><li><a href="ChiSqSelector.html">ChiSqSelector</a></li><li><a href="CountVectorizer.html">CountVectorizer</a></li><li><a href="CountVectorizerModel.html">CountVectorizerModel</a></li><li><a href="DCT.html">DCT</a></li><li><a href="FreqItemset.html">FreqItemset</a></li><li><a href="HashingTF.html">HashingTF</a></li><li><a href="IDF.html">IDF</a></li><li><a href="InputDStream.html">InputDStream</a></li><li><a href="IsotonicRegression.html">IsotonicRegression</a></li><li><a href="IsotonicRegressionModel.html">IsotonicRegressionModel</a></li><li><a href="module-eclairjs.Accumulable.html">Accumulable</a></li><li><a href="module-eclairjs.AccumulableParam.html">AccumulableParam</a></li><li><a href="module-eclairjs.Accumulator.html">Accumulator</a></li><li><a href="module-eclairjs.FloatAccumulatorParam.html">FloatAccumulatorParam</a></li><li><a href="module-eclairjs.IntAccumulatorParam.html">IntAccumulatorParam</a></li><li><a href="module-eclairjs.List.html">List</a></li><li><a href="module-eclairjs.SparkConf.html">SparkConf</a></li><li><a href="module-eclairjs.SparkContext.html">SparkContext</a></li><li><a href="module-eclairjs.Tuple.html">Tuple</a></li><li><a href="module-eclairjs.Tuple2.html">Tuple2</a></li><li><a href="module-eclairjs.Tuple3.html">Tuple3</a></li><li><a href="module-eclairjs.Tuple4.html">Tuple4</a></li><li><a href="module-eclairjs_ml.Estimator.html">Estimator</a></li><li><a href="module-eclairjs_ml.Model.html">Model</a></li><li><a href="module-eclairjs_ml.Pipeline.html">Pipeline</a></li><li><a href="module-eclairjs_ml.PipelineModel.html">PipelineModel</a></li><li><a href="module-eclairjs_ml.PipelineStage.html">PipelineStage</a></li><li><a href="module-eclairjs_ml.PredictionModel.html">PredictionModel</a></li><li><a href="module-eclairjs_ml.Predictor.html">Predictor</a></li><li><a href="module-eclairjs_ml.Transformer.html">Transformer</a></li><li><a href="module-eclairjs_ml.UnaryTransformer.html">UnaryTransformer</a></li><li><a href="module-eclairjs_ml_attribute.NumericAttribute.html">NumericAttribute</a></li><li><a href="module-eclairjs_ml_classification.ClassificationModel.html">ClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.Classifier.html">Classifier</a></li><li><a href="module-eclairjs_ml_classification.DecisionTreeClassifier.html">DecisionTreeClassifier</a></li><li><a href="module-eclairjs_ml_classification.GBTClassifier.html">GBTClassifier</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegression.html">LogisticRegression</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegressionSummary.html">LogisticRegressionSummary</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegressionTrainingSummary.html">LogisticRegressionTrainingSummary</a></li><li><a href="module-eclairjs_ml_classification.MultilayerPerceptronClassificationModel.html">MultilayerPerceptronClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.NaiveBayes.html">NaiveBayes</a></li><li><a href="module-eclairjs_ml_classification.NaiveBayesModel.html">NaiveBayesModel</a></li><li><a href="module-eclairjs_ml_classification.ProbabilisticClassificationModel.html">ProbabilisticClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.ProbabilisticClassifier.html">ProbabilisticClassifier</a></li><li><a href="module-eclairjs_ml_classification.RandomForestClassificationModel.html">RandomForestClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.RandomForestClassifier.html">RandomForestClassifier</a></li><li><a href="module-eclairjs_ml_clustering.KMeans.html">KMeans</a></li><li><a href="module-eclairjs_ml_clustering.KMeansModel.html">KMeansModel</a></li><li><a href="module-eclairjs_ml_clustering.LDA.html">LDA</a></li><li><a href="module-eclairjs_ml_clustering.LDAModel.html">LDAModel</a></li><li><a href="module-eclairjs_ml_evaluation.MulticlassClassificationEvaluator.html">MulticlassClassificationEvaluator</a></li><li><a href="module-eclairjs_ml_evaluation.RegressionEvaluator.html">RegressionEvaluator</a></li><li><a href="module-eclairjs_ml_feature.ChiSqSelectorModel.html">ChiSqSelectorModel</a></li><li><a href="module-eclairjs_ml_feature.ElementwiseProduct.html">ElementwiseProduct</a></li><li><a href="module-eclairjs_ml_feature.IDFModel.html">IDFModel</a></li><li><a href="module-eclairjs_ml_feature.IndexToString.html">IndexToString</a></li><li><a href="module-eclairjs_ml_feature.MinMaxScaler.html">MinMaxScaler</a></li><li><a href="module-eclairjs_ml_feature.MinMaxScalerModel.html">MinMaxScalerModel</a></li><li><a href="module-eclairjs_ml_feature.NGram.html">NGram</a></li><li><a href="module-eclairjs_ml_feature.Normalizer.html">Normalizer</a></li><li><a href="module-eclairjs_ml_feature.OneHotEncoder.html">OneHotEncoder</a></li><li><a href="module-eclairjs_ml_feature.PCA.html">PCA</a></li><li><a href="module-eclairjs_ml_feature.PCAModel.html">PCAModel</a></li><li><a href="module-eclairjs_ml_feature.PolynomialExpansion.html">PolynomialExpansion</a></li><li><a href="module-eclairjs_ml_feature.QuantileDiscretizer.html">QuantileDiscretizer</a></li><li><a href="module-eclairjs_ml_feature.RFormulaModel.html">RFormulaModel</a></li><li><a href="module-eclairjs_ml_feature.StandardScalerModel.html">StandardScalerModel</a></li><li><a href="module-eclairjs_ml_feature.StringIndexer.html">StringIndexer</a></li><li><a href="module-eclairjs_ml_feature.StringIndexerModel.html">StringIndexerModel</a></li><li><a href="module-eclairjs_ml_feature.VectorIndexer.html">VectorIndexer</a></li><li><a href="module-eclairjs_ml_feature.VectorIndexerModel.html">VectorIndexerModel</a></li><li><a href="module-eclairjs_ml_feature.Word2VecModel.html">Word2VecModel</a></li><li><a href="module-eclairjs_ml_param.BooleanParam.html">BooleanParam</a></li><li><a href="module-eclairjs_ml_param.DoubleParam.html">DoubleParam</a></li><li><a href="module-eclairjs_ml_param.IntParam.html">IntParam</a></li><li><a href="module-eclairjs_ml_param.Param.html">Param</a></li><li><a href="module-eclairjs_ml_param.ParamMap.html">ParamMap</a></li><li><a href="module-eclairjs_ml_param.ParamPair.html">ParamPair</a></li><li><a href="module-eclairjs_ml_recommendation.ALSModel.html">ALSModel</a></li><li><a href="module-eclairjs_ml_regression.AFTSurvivalRegressionModel.html">AFTSurvivalRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.DecisionTreeRegressionModel.html">DecisionTreeRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.DecisionTreeRegressor.html">DecisionTreeRegressor</a></li><li><a href="module-eclairjs_ml_regression.GBTRegressionModel.html">GBTRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.GBTRegressor.html">GBTRegressor</a></li><li><a href="module-eclairjs_ml_regression.LinearRegression.html">LinearRegression</a></li><li><a href="module-eclairjs_ml_regression.LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.LinearRegressionSummary.html">LinearRegressionSummary</a></li><li><a href="module-eclairjs_ml_regression.LinearRegressionTrainingSummary.html">LinearRegressionTrainingSummary</a></li><li><a href="module-eclairjs_ml_regression.RandomForestRegressionModel.html">RandomForestRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.RandomForestRegressor.html">RandomForestRegressor</a></li><li><a href="module-eclairjs_ml_regression.RegressionModel.html">RegressionModel</a></li><li><a href="module-eclairjs_ml_tuning.ParamGridBuilder.html">ParamGridBuilder</a></li><li><a href="module-eclairjs_ml_tuning.TrainValidationSplit.html">TrainValidationSplit</a></li><li><a href="module-eclairjs_ml_tuning.TrainValidationSplitModel.html">TrainValidationSplitModel</a></li><li><a href="module-eclairjs_mllib.MLUtils.html">MLUtils</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionWithLBFGS.html">LogisticRegressionWithLBFGS</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionWithSGD.html">LogisticRegressionWithSGD</a></li><li><a href="module-eclairjs_mllib_classification.NaiveBayes.html">NaiveBayes</a></li><li><a href="module-eclairjs_mllib_classification.NaiveBayesModel.html">NaiveBayesModel</a></li><li><a href="module-eclairjs_mllib_classification.SVMModel.html">SVMModel</a></li><li><a href="module-eclairjs_mllib_classification.SVMWithSGD.html">SVMWithSGD</a></li><li><a href="module-eclairjs_mllib_clustering.BisectingKMeans.html">BisectingKMeans</a></li><li><a href="module-eclairjs_mllib_clustering.BisectingKMeansModel.html">BisectingKMeansModel</a></li><li><a href="module-eclairjs_mllib_clustering.KMeans.html">KMeans</a></li><li><a href="module-eclairjs_mllib_clustering.KMeansModel.html">KMeansModel</a></li><li><a href="module-eclairjs_mllib_clustering.LDA.html">LDA</a></li><li><a href="module-eclairjs_mllib_clustering.LDAModel.html">LDAModel</a></li><li><a href="module-eclairjs_mllib_clustering.PowerIterationClustering.html">PowerIterationClustering</a></li><li><a href="module-eclairjs_mllib_clustering.PowerIterationClusteringModel.html">PowerIterationClusteringModel</a></li><li><a href="module-eclairjs_mllib_evaluation.BinaryClassificationMetrics.html">BinaryClassificationMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.MulticlassMetrics.html">MulticlassMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.RankingMetrics.html">RankingMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.RegressionMetrics.html">RegressionMetrics</a></li><li><a href="module-eclairjs_mllib_feature.Word2Vec.html">Word2Vec</a></li><li><a href="module-eclairjs_mllib_feature.Word2VecModel.html">Word2VecModel</a></li><li><a href="module-eclairjs_mllib_fpm.AssociationRules.html">AssociationRules</a></li><li><a href="module-eclairjs_mllib_fpm.FPGrowth.html">FPGrowth</a></li><li><a href="module-eclairjs_mllib_fpm.FPGrowthModel.html">FPGrowthModel</a></li><li><a href="module-eclairjs_mllib_fpm.PrefixSpan.html">PrefixSpan</a></li><li><a href="module-eclairjs_mllib_fpm.PrefixSpanModel.html">PrefixSpanModel</a></li><li><a href="module-eclairjs_mllib_linalg.DenseVector.html">DenseVector</a></li><li><a href="module-eclairjs_mllib_linalg.Matrix.html">Matrix</a></li><li><a href="module-eclairjs_mllib_linalg.SingularValueDecomposition.html">SingularValueDecomposition</a></li><li><a href="module-eclairjs_mllib_linalg.Vector.html">Vector</a></li><li><a href="module-eclairjs_mllib_linalg.Vectors.html">Vectors</a></li><li><a href="module-eclairjs_mllib_linalg_distributed.RowMatrix.html">RowMatrix</a></li><li><a href="module-eclairjs_mllib_optimization.LBFGS.html">LBFGS</a></li><li><a href="module-eclairjs_mllib_optimization.LogisticGradient.html">LogisticGradient</a></li><li><a href="module-eclairjs_mllib_optimization.SquaredL2Updater.html">SquaredL2Updater</a></li><li><a href="module-eclairjs_mllib_random.RandomRDDs.html">RandomRDDs</a></li><li><a href="module-eclairjs_mllib_recommendation.ALS.html">ALS</a></li><li><a href="module-eclairjs_mllib_recommendation.MatrixFactorizationModel.html">MatrixFactorizationModel</a></li><li><a href="module-eclairjs_mllib_recommendation.Rating.html">Rating</a></li><li><a href="module-eclairjs_mllib_regression.LabeledPoint.html">LabeledPoint</a></li><li><a href="module-eclairjs_mllib_regression.LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="module-eclairjs_mllib_regression.LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="module-eclairjs_mllib_tree.DecisionTree.html">DecisionTree</a></li><li><a href="module-eclairjs_mllib_tree.GradientBoostedTrees.html">GradientBoostedTrees</a></li><li><a href="module-eclairjs_mllib_tree.RandomForest.html">RandomForest</a></li><li><a href="module-eclairjs_mllib_tree_configuration.BoostingStrategy.html">BoostingStrategy</a></li><li><a href="module-eclairjs_mllib_tree_configuration.Strategy.html">Strategy</a></li><li><a href="module-eclairjs_mllib_tree_loss.Loss.html">Loss</a></li><li><a href="module-eclairjs_mllib_tree_model.DecisionTreeModel.html">DecisionTreeModel</a></li><li><a href="module-eclairjs_mllib_tree_model.GradientBoostedTreesModel.html">GradientBoostedTreesModel</a></li><li><a href="module-eclairjs_mllib_tree_model.RandomForestModel.html">RandomForestModel</a></li><li><a href="module-eclairjs_rdd.FloatRDD.html">FloatRDD</a></li><li><a href="module-eclairjs_rdd.PairRDD.html">PairRDD</a></li><li><a href="module-eclairjs_rdd.RDD.html">RDD</a></li><li><a href="module-eclairjs_sql.Column.html">Column</a></li><li><a href="module-eclairjs_sql.DataFrame.html">DataFrame</a></li><li><a href="module-eclairjs_sql.DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="module-eclairjs_sql.DataFrameReader.html">DataFrameReader</a></li><li><a href="module-eclairjs_sql.DataFrameStatFunctions.html">DataFrameStatFunctions</a></li><li><a href="module-eclairjs_sql.DataFrameWriter.html">DataFrameWriter</a></li><li><a href="module-eclairjs_sql.functions.html">functions</a></li><li><a href="module-eclairjs_sql.GroupedData.html">GroupedData</a></li><li><a href="module-eclairjs_sql.Row.html">Row</a></li><li><a href="module-eclairjs_sql.RowFactory.html">RowFactory</a></li><li><a href="module-eclairjs_sql.SQLContext.html">SQLContext</a></li><li><a href="module-eclairjs_sql.SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="module-eclairjs_sql.SqlDate.html">SqlDate</a></li><li><a href="module-eclairjs_sql.SqlTimestamp.html">SqlTimestamp</a></li><li><a href="module-eclairjs_sql_types.DataTypes.html">DataTypes</a></li><li><a href="module-eclairjs_sql_types.Metadata.html">Metadata</a></li><li><a href="module-eclairjs_sql_types.StructField.html">StructField</a></li><li><a href="module-eclairjs_sql_types.StructType.html">StructType</a></li><li><a href="module-eclairjs_storage.StorageLevel.html">StorageLevel</a></li><li><a href="module-eclairjs_streaming.Duration.html">Duration</a></li><li><a href="module-eclairjs_streaming.StreamingContext.html">StreamingContext</a></li><li><a href="module-eclairjs_streaming_dstream.DStream.html">DStream</a></li><li><a href="module-eclairjs_streaming_dstream.PairDStream.html">PairDStream</a></li><li><a href="module-eclairjs_streaming_kafka.KafkaUtils.html">KafkaUtils</a></li><li><a href="module-eclairjs_streaming_twitter.TwitterAuthorization.html">TwitterAuthorization</a></li><li><a href="module-eclairjs_streaming_twitter.TwitterUtils.html">TwitterUtils</a></li><li><a href="MultilayerPerceptronClassifier.html">MultilayerPerceptronClassifier</a></li><li><a href="ReceiverInputDStream.html">ReceiverInputDStream</a></li><li><a href="RegexTokenizer.html">RegexTokenizer</a></li><li><a href="RFormula.html">RFormula</a></li><li><a href="SQLTransformer.html">SQLTransformer</a></li><li><a href="StandardScaler.html">StandardScaler</a></li><li><a href="StopWordsRemover.html">StopWordsRemover</a></li><li><a href="Tokenizer.html">Tokenizer</a></li><li><a href="VectorAssembler.html">VectorAssembler</a></li><li><a href="VectorSlicer.html">VectorSlicer</a></li><li><a href="VectorUDT.html">VectorUDT</a></li><li><a href="Word2Vec.html">Word2Vec</a></li></ul><h3>Global</h3><ul><li><a href="global.html#gAppName">gAppName</a></li><li><a href="global.html#handleArguments">handleArguments</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0-dev</a> on Fri Dec 11 2015 15:14:01 GMT-0500 (EST)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Mon Jun 20 2016 13:37:18 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-var spark = require('../spark.js');
+var spark = require('../lib/index.js');
 
 var sc = new spark.SparkContext("local[*]", "foo");
 
@@ -35,22 +35,33 @@ var rdd3 = rdd2.filter(function(word) {
   return word.trim().length > 0;
 });
 
-var rdd4 = rdd3.mapToPair(function(word) {
-  return [word.toLowerCase(),1]
+var rdd4 = rdd3.mapToPair(function(word, Tuple2) {
+  return new Tuple2(word.toLowerCase(), 1);
+}, [spark.Tuple2]);
+
+var rdd5 = rdd4.reduceByKey(function(value1, value2) {
+  return value1 + value2;
 });
 
-var rdd5 = rdd4.reduceByKey(function(acc, v) {
-  return acc + v;
-});
-
-var rdd6 = rdd5.mapToPair(function(tuple) {
-  return [tuple[1]+0.0, tuple[0]];
-});
+var rdd6 = rdd5.mapToPair(function(tuple, Tuple2) {
+  return new Tuple2(tuple._2() + 0.0, tuple._1());
+}, [spark.Tuple2]);
 
 var rdd7 = rdd6.sortByKey(false);
 
 rdd7.take(10).then(function(val) {
   console.log("Success:", val);
+
+  sc.stop().then(function() {
+    process.exit();
+  }).catch(function(e) {
+    console.log(e);
+    process.exit();
+  });
+
 }).catch(function(err) {
   console.log("Error:", err);
+  sc.stop().then(function() {
+    process.exit();
+  });
 });

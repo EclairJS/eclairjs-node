@@ -14,5 +14,27 @@
  * limitations under the License.
  */
 
-module.exports.SparkContext = require('./SparkContext.js');
-module.exports.SQLContext = require('../../lib/sql/SQLContext.js');
+function EclairJS() {
+  var result = require('./SparkContext.js')();
+
+  var kernelP = result[0];
+
+  return {
+    SparkContext: result[1],
+
+    SQLContext: require('../../lib/sql/SQLContext.js'),
+    sql: require('../../lib/sql/module.js')(kernelP),
+
+    storage: {
+      StorageLevel: require('../../lib/storage/StorageLevel.js')(kernelP)
+    },
+
+    StreamingContext: require('../../lib/streaming/StreamingContext.js'),
+    streaming: {
+      KafkaUtils: require('../../lib/streaming/kafka/KafkaUtils.js'),
+      Duration: require('../../lib/streaming/Duration.js')
+    }
+  }
+}
+
+module.exports = new EclairJS();

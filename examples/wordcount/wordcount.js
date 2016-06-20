@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-var eclairjs = require('../../spark.js');
+var spark = require('../../lib/index.js');
+
+var sc;
 
 function WordCount() {
 }
 
 WordCount.prototype.do = function(callback) {
-  var sc = new eclairjs.SparkContext("local[*]", "foo");
+  sc = new spark.SparkContext("local[*]", "Wordcount Demo");
   var rdd = sc.textFile(__dirname + "/../dream.txt");
 
   var rdd2 = rdd.flatMap(function(sentence) {
@@ -42,7 +44,7 @@ WordCount.prototype.do = function(callback) {
     // remove trailing punctuation
     newWord = newWord.replace(/(\.|\"|\'|\,)*$/g, "");
 
-    return [newWord,1]
+    return new Tuple(newWord,1);
   });
 
   var rdd5 = rdd4.reduceByKey(function(acc, v) {
@@ -50,7 +52,7 @@ WordCount.prototype.do = function(callback) {
   });
 
   var rdd6 = rdd5.mapToPair(function(tuple) {
-    return [tuple[1]+0.0, tuple[0]];
+    return new Tuple(tuple[1]+0.0, tuple[0]);
   });
 
   var rdd7 = rdd6.sortByKey(false);
@@ -67,6 +69,15 @@ WordCount.prototype.do = function(callback) {
     console.log(err);
     callback(err)
   });
-}
+};
+
+WordCount.prototype.stop = function(callback) {
+  if (sc) {
+    sc.stop().then(callback).catch(callback);
+  } else {
+    callback();
+  }
+};
+
 
 module.exports = WordCount;

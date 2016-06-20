@@ -6,3 +6,4 @@ java/dependency-reduced-pom.xml
 .__browserify_string_empty.js
 .DS_Store
 jupyter-js-services
+examples/airline/public/data/2008bd.json/*

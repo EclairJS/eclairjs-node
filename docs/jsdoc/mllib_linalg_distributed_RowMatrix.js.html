@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: mllib/linalg/distributed/RowMatrix.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: mllib/linalg/distributed/RowMatrix.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*
+ * Copyright 2016 IBM Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+var Utils = require('../../../utils.js');
+var RDD = require('../../../rdd/RDD.js');
+var Matrix = require('../Matrix.js');
+var SingularValueDecomposition = require('../SingularValueDecomposition.js')();
+
+var gKernelP;
+
+/**
+ * Represents a row-oriented distributed Matrix with no meaningful row indices.
+ * @memberof module:eclairjs/mllib/linalg/distributed
+ * @classdesc
+ * @param {module:eclairjs/rdd.RDD} rows stored as an RDD[Vector]
+ * @param {number} [nRows] number of rows. A non-positive value means unknown, and then the number of rows will
+ *              be determined by the number of records in the RDD `rows`.
+ * @param {number} [nCols] number of columns. A non-positive value means unknown, and then the number of
+ *              columns will be determined by the size of the first row.
+ * @class
+ * @extends {DistributedMatrix}
+ * @example
+ * var RowMatrix = require('eclairjs/mllib/linalg/distributed/RowMatrix');
+ * var Vectors = require("'eclairjs/mllib/linalg/Vectors");;
+ * var rowsList = [Vectors.dense([1.12, 2.05, 3.12]), Vectors.dense([5.56, 6.28, 8.94]), Vectors.dense([10.2, 8.0, 20.5])];
+ * var rows = sc.parallelize(rowsList);
+ * var mat = new RowMatrix(rows);
+ */
+function RowMatrix() {
+  Utils.handleConstructor(this, arguments, gKernelP);
+}
+
+/**
+ * Computes the Gramian matrix `A^T A`. Note that this cannot be computed on matrices with
+ * more than 65535 columns.
+ * @returns {module:eclairjs/mllib/linalg.Matrix}
+ */
+RowMatrix.prototype.computeGramianMatrix = function() {
+  throw "not implemented by ElairJS";
+//   var args ={
+//     target: this,
+//     method: 'computeGramianMatrix',
+//     returnType: Matrix
+//
+//   };
+//
+//   return Utils.generate(args);
+};
+
+
+/**
+ * Computes singular value decomposition of this matrix. Denote this matrix by A (m x n). This
+ * will compute matrices U, S, V such that A ~= U * S * V', where S contains the leading k
+ * singular values, U and V contain the corresponding singular vectors.
+ *
+ * At most k largest non-zero singular values and associated vectors are returned. If there are k
+ * such values, then the dimensions of the return will be:
+ *  - U is a RowMatrix of size m x k that satisfies U' * U = eye(k),
+ *  - s is a Vector of size k, holding the singular values in descending order,
+ *  - V is a Matrix of size n x k that satisfies V' * V = eye(k).
+ *
+ * We assume n is smaller than m, though this is not strictly required.
+ * The singular values and the right singular vectors are derived
+ * from the eigenvalues and the eigenvectors of the Gramian matrix A' * A. U, the matrix
+ * storing the right singular vectors, is computed via matrix multiplication as
+ * U = A * (V * S^-1^), if requested by user. The actual method to use is determined
+ * automatically based on the cost:
+ *  - If n is small (n &amp;lt; 100) or k is large compared with n (k &amp;gt; n / 2), we compute
+ *    the Gramian matrix first and then compute its top eigenvalues and eigenvectors locally
+ *    on the driver. This requires a single pass with O(n^2^) storage on each executor and
+ *    on the driver, and O(n^2^ k) time on the driver.
+ *  - Otherwise, we compute (A' * A) * v in a distributive way and send it to ARPACK's DSAUPD to
+ *    compute (A' * A)'s top eigenvalues and eigenvectors on the driver node. This requires O(k)
+ *    passes, O(n) storage on each executor, and O(n k) storage on the driver.
+ *
+ * Several internal parameters are set to default values. The reciprocal condition number rCond
+ * is set to 1e-9. All singular values smaller than rCond * sigma(0) are treated as zeros, where
+ * sigma(0) is the largest singular value. The maximum number of Arnoldi update iterations for
+ * ARPACK is set to 300 or k * 3, whichever is larger. The numerical tolerance for ARPACK's
+ * eigen-decomposition is set to 1e-10.
+ *
+ * @note The conditions that decide which method to use internally and the default parameters are
+ *       subject to change.
+ *
+ * @param {number} k  number of leading singular values to keep (0 &amp;lt; k &amp;lt;= n).
+ *          It might return less than k if
+ *          there are numerically zero singular values or there are not enough Ritz values
+ *          converged before the maximum number of Arnoldi update iterations is reached (in case
+ *          that matrix A is ill-conditioned).
+ * @param {boolean} computeU  whether to compute U
+ * @param {number} rCond  the reciprocal condition number. All singular values smaller than rCond * sigma(0)
+ *              are treated as zero, where sigma(0) is the largest singular value.
+ * @returns {module:eclairjs/mllib/linalg.SingularValueDecomposition}  SingularValueDecomposition(U, s, V). U = null if computeU = false.
+ */
+RowMatrix.prototype.computeSVD = function(k,computeU,rCond) {
+  var args = {
+    target: this,
+    method: 'computeSVD',
+    args: Utils.wrapArguments(arguments),
+    returnType: SingularValueDecomposition
+  };
+
+  return Utils.generate(args);
+};
+
+/**
+ * Computes the covariance matrix, treating each row as an observation. Note that this cannot
+ * be computed on matrices with more than 65535 columns.
+ * @returns {module:eclairjs/mllib/linalg.Matrix}  a local dense matrix of size n x n
+ */
+RowMatrix.prototype.computeCovariance = function() {
+  throw "not implemented by ElairJS";
+//   var args ={
+//     target: this,
+//     method: 'computeCovariance',
+//     returnType: Matrix
+//
+//   };
+//
+//   return Utils.generate(args);
+};
+
+
+/**
+ * Computes the top k principal components.
+ * Rows correspond to observations and columns correspond to variables.
+ * The principal components are stored a local matrix of size n-by-k.
+ * Each column corresponds for one principal component,
+ * and the columns are in descending order of component variance.
+ * The row data do not need to be "centered" first; it is not necessary for
+ * the mean of each column to be 0.
+ *
+ * Note that this cannot be computed on matrices with more than 65535 columns.
+ *
+ * @param {number} k  number of top principal components.
+ * @returns {module:eclairjs/mllib/linalg.Matrix}  a matrix of size n-by-k, whose columns are principal components
+ */
+RowMatrix.prototype.computePrincipalComponents = function(k) {
+  var args = {
+    target: this,
+    method: 'computePrincipalComponents',
+    args: Utils.wrapArguments(arguments),
+    returnType: Matrix
+  };
+
+  return Utils.generate(args);
+};
+
+
+/**
+ * Computes column-wise summary statistics.
+ * @returns {MultivariateStatisticalSummary}
+ */
+RowMatrix.prototype.computeColumnSummaryStatistics = function() {
+  throw "not implemented by ElairJS";
+//   var args ={
+//     target: this,
+//     method: 'computeColumnSummaryStatistics',
+//     returnType: MultivariateStatisticalSummary
+//
+//   };
+//
+//   return Utils.generate(args);
+};
+
+
+/**
+ * Multiply this matrix by a local matrix on the right.
+ *
+ * @param {module:eclairjs/mllib/linalg.Matrix} B  a local matrix whose number of rows must match the number of columns of this matrix
+ *         which preserves partitioning
+ * @returns {module:eclairjs/mllib/linalg/distributed.RowMatrix}  a [[org.apache.spark.mllib.linalg.distributed.RowMatrix]] representing the product,
+ */
+RowMatrix.prototype.multiply = function(B) {
+  var args = {
+    target: this,
+    method: 'multiply',
+    args: Utils.wrapArguments(arguments),
+    returnType: RowMatrix
+  };
+
+  return Utils.generate(args);
+};
+
+
+/**
+ * Compute similarities between columns of this matrix using a sampling approach.
+ *
+ * The threshold parameter is a trade-off knob between estimate quality and computational cost.
+ *
+ * Setting a threshold of 0 guarantees deterministic correct results, but comes at exactly
+ * the same cost as the brute-force approach. Setting the threshold to positive values
+ * incurs strictly less computational cost than the brute-force approach, however the
+ * similarities computed will be estimates.
+ *
+ * The sampling guarantees relative-error correctness for those pairs of columns that have
+ * similarity greater than the given similarity threshold.
+ *
+ * To describe the guarantee, we set some notation:
+ * Let A be the smallest in magnitude non-zero element of this matrix.
+ * Let B be the largest  in magnitude non-zero element of this matrix.
+ * Let L be the maximum number of non-zeros per row.
+ *
+ * For example, for {0,1} matrices: A=B=1.
+ * Another example, for the Netflix matrix: A=1, B=5
+ *
+ * For those column pairs that are above the threshold,
+ * the computed similarity is correct to within 20% relative error with probability
+ * at least 1 - (0.981)^10/B^
+ *
+ * The shuffle size is bounded by the *smaller* of the following two expressions:
+ *
+ * O(n log(n) L / (threshold * A))
+ * O(m L^2^)
+ *
+ * The latter is the cost of the brute-force approach, so for non-zero thresholds,
+ * the cost is always cheaper than the brute-force approach.
+ *
+ * @param {number} [threshold]  Set to 0 for deterministic guaranteed correctness.
+ *                  Similarities above this threshold are estimated
+ *                  with the cost vs estimate quality trade-off described above.
+ *         between columns of this matrix.
+ * @returns {CoordinateMatrix}  An n x n sparse upper-triangular matrix of cosine similarities
+ */
+RowMatrix.prototype.columnSimilarities = function(threshold) {
+  throw "not implemented by ElairJS";
+// // TODO: handle optional parms 'threshold'
+//   var args ={
+//     target: this,
+//     method: 'columnSimilarities',
+//     args: [
+//       { value: threshold, type: 'number' ,  optional: true}
+//     ],
+//     returnType: CoordinateMatrix
+//
+//   };
+//
+//   return Utils.generate(args);
+};
+
+
+/**
+ * Compute QR decomposition for {@link RowMatrix}. The implementation is designed to optimize the QR
+ * decomposition (factorization) for the {@link RowMatrix} of a tall and skinny shape.
+ * Reference:
+ *  Paul G. Constantine, David F. Gleich. "Tall and skinny QR factorizations in MapReduce
+ *  architectures"  ([[http://dx.doi.org/10.1145/1996092.1996103]])
+ *
+ * @param {boolean} computeQ  whether to computeQ
+ * @returns {QRDecomposition}  QRDecomposition(Q, R), Q = null if computeQ = false.
+ */
+RowMatrix.prototype.tallSkinnyQR = function(computeQ) {
+  throw "not implemented by ElairJS";
+//   var args ={
+//     target: this,
+//     method: 'tallSkinnyQR',
+//     args: [
+//       { value: computeQ, type: 'boolean' }
+//     ],
+//     returnType: QRDecomposition
+//
+//   };
+//
+//   return Utils.generate(args);
+};
+
+RowMatrix.prototype.rows = function() {
+  var args = {
+    target: this,
+    method: 'rows',
+    returnType: RDD
+  };
+
+  return Utils.generate(args);
+};
+
+RowMatrix.moduleLocation = '/mllib/linalg/distributed/RowMatrix';
+
+module.exports = function(kP) {
+  if (kP) gKernelP = kP;
+
+  return RowMatrix;
+};</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-eclairjs.html">eclairjs</a></li><li><a href="module-eclairjs_ml.html">eclairjs/ml</a></li><li><a href="module-eclairjs_ml_classification.html">eclairjs/ml/classification</a></li><li><a href="module-eclairjs_ml_clustering.html">eclairjs/ml/clustering</a></li><li><a href="module-eclairjs_ml_evaluation.html">eclairjs/ml/evaluation</a></li><li><a href="module-eclairjs_ml_feature.html">eclairjs/ml/feature</a></li><li><a href="module-eclairjs_ml_param.html">eclairjs/ml/param</a></li><li><a href="module-eclairjs_ml_recommendation.html">eclairjs/ml/recommendation</a></li><li><a href="module-eclairjs_ml_regression.html">eclairjs/ml/regression</a></li><li><a href="module-eclairjs_ml_tuning.html">eclairjs/ml/tuning</a></li><li><a href="module-eclairjs_mllib.html">eclairjs/mllib</a></li><li><a href="module-eclairjs_mllib_classification.html">eclairjs/mllib/classification</a></li><li><a href="module-eclairjs_mllib_clustering.html">eclairjs/mllib/clustering</a></li><li><a href="module-eclairjs_mllib_evaluation.html">eclairjs/mllib/evaluation</a></li><li><a href="module-eclairjs_mllib_feature.html">eclairjs/mllib/feature</a></li><li><a href="module-eclairjs_mllib_fpm.html">eclairjs/mllib/fpm</a></li><li><a href="module-eclairjs_mllib_linalg.html">eclairjs/mllib/linalg</a></li><li><a href="module-eclairjs_mllib_linalg_distributed.html">eclairjs/mllib/linalg/distributed</a></li><li><a href="module-eclairjs_mllib_optimization.html">eclairjs/mllib/optimization</a></li><li><a href="module-eclairjs_mllib_random.html">eclairjs/mllib/random</a></li><li><a href="module-eclairjs_mllib_recommendation.html">eclairjs/mllib/recommendation</a></li><li><a href="module-eclairjs_mllib_regression.html">eclairjs/mllib/regression</a></li><li><a href="module-eclairjs_mllib_tree.html">eclairjs/mllib/tree</a></li><li><a href="module-eclairjs_mllib_tree_configuration.html">eclairjs/mllib/tree/configuration</a></li><li><a href="module-eclairjs_mllib_tree_loss.html">eclairjs/mllib/tree/loss</a></li><li><a href="module-eclairjs_mllib_tree_model.html">eclairjs/mllib/tree/model</a></li><li><a href="module-eclairjs_mllib_util.html">eclairjs/mllib/util</a></li><li><a href="module-eclairjs_rdd.html">eclairjs/rdd</a></li><li><a href="module-eclairjs_sql.html">eclairjs/sql</a></li><li><a href="module-eclairjs_sql_types.html">eclairjs/sql/types</a></li><li><a href="module-eclairjs_storage.html">eclairjs/storage</a></li><li><a href="module-eclairjs_streaming.html">eclairjs/streaming</a></li><li><a href="module-eclairjs_streaming_dstream.html">eclairjs/streaming/dstream</a></li><li><a href="module-eclairjs_streaming_kafka.html">eclairjs/streaming/kafka</a></li><li><a href="module-eclairjs_streaming_twitter.html">eclairjs/streaming/twitter</a></li></ul><h3>Classes</h3><ul><li><a href="AFTSurvivalRegression.html">AFTSurvivalRegression</a></li><li><a href="ALS.html">ALS</a></li><li><a href="ArrayType.html">ArrayType</a></li><li><a href="Attribute.html">Attribute</a></li><li><a href="AttributeGroup.html">AttributeGroup</a></li><li><a href="Binarizer.html">Binarizer</a></li><li><a href="Bucketizer.html">Bucketizer</a></li><li><a href="ChiSqSelector.html">ChiSqSelector</a></li><li><a href="CountVectorizer.html">CountVectorizer</a></li><li><a href="CountVectorizerModel.html">CountVectorizerModel</a></li><li><a href="DCT.html">DCT</a></li><li><a href="FreqItemset.html">FreqItemset</a></li><li><a href="HashingTF.html">HashingTF</a></li><li><a href="IDF.html">IDF</a></li><li><a href="InputDStream.html">InputDStream</a></li><li><a href="IsotonicRegression.html">IsotonicRegression</a></li><li><a href="IsotonicRegressionModel.html">IsotonicRegressionModel</a></li><li><a href="module-eclairjs.Accumulable.html">Accumulable</a></li><li><a href="module-eclairjs.AccumulableParam.html">AccumulableParam</a></li><li><a href="module-eclairjs.Accumulator.html">Accumulator</a></li><li><a href="module-eclairjs.FloatAccumulatorParam.html">FloatAccumulatorParam</a></li><li><a href="module-eclairjs.IntAccumulatorParam.html">IntAccumulatorParam</a></li><li><a href="module-eclairjs.List.html">List</a></li><li><a href="module-eclairjs.SparkConf.html">SparkConf</a></li><li><a href="module-eclairjs.SparkContext.html">SparkContext</a></li><li><a href="module-eclairjs.Tuple.html">Tuple</a></li><li><a href="module-eclairjs.Tuple2.html">Tuple2</a></li><li><a href="module-eclairjs.Tuple3.html">Tuple3</a></li><li><a href="module-eclairjs.Tuple4.html">Tuple4</a></li><li><a href="module-eclairjs_ml.Estimator.html">Estimator</a></li><li><a href="module-eclairjs_ml.Model.html">Model</a></li><li><a href="module-eclairjs_ml.Pipeline.html">Pipeline</a></li><li><a href="module-eclairjs_ml.PipelineModel.html">PipelineModel</a></li><li><a href="module-eclairjs_ml.PipelineStage.html">PipelineStage</a></li><li><a href="module-eclairjs_ml.PredictionModel.html">PredictionModel</a></li><li><a href="module-eclairjs_ml.Predictor.html">Predictor</a></li><li><a href="module-eclairjs_ml.Transformer.html">Transformer</a></li><li><a href="module-eclairjs_ml.UnaryTransformer.html">UnaryTransformer</a></li><li><a href="module-eclairjs_ml_attribute.NumericAttribute.html">NumericAttribute</a></li><li><a href="module-eclairjs_ml_classification.ClassificationModel.html">ClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.Classifier.html">Classifier</a></li><li><a href="module-eclairjs_ml_classification.DecisionTreeClassifier.html">DecisionTreeClassifier</a></li><li><a href="module-eclairjs_ml_classification.GBTClassifier.html">GBTClassifier</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegression.html">LogisticRegression</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegressionSummary.html">LogisticRegressionSummary</a></li><li><a href="module-eclairjs_ml_classification.LogisticRegressionTrainingSummary.html">LogisticRegressionTrainingSummary</a></li><li><a href="module-eclairjs_ml_classification.MultilayerPerceptronClassificationModel.html">MultilayerPerceptronClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.NaiveBayes.html">NaiveBayes</a></li><li><a href="module-eclairjs_ml_classification.NaiveBayesModel.html">NaiveBayesModel</a></li><li><a href="module-eclairjs_ml_classification.ProbabilisticClassificationModel.html">ProbabilisticClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.ProbabilisticClassifier.html">ProbabilisticClassifier</a></li><li><a href="module-eclairjs_ml_classification.RandomForestClassificationModel.html">RandomForestClassificationModel</a></li><li><a href="module-eclairjs_ml_classification.RandomForestClassifier.html">RandomForestClassifier</a></li><li><a href="module-eclairjs_ml_clustering.KMeans.html">KMeans</a></li><li><a href="module-eclairjs_ml_clustering.KMeansModel.html">KMeansModel</a></li><li><a href="module-eclairjs_ml_clustering.LDA.html">LDA</a></li><li><a href="module-eclairjs_ml_clustering.LDAModel.html">LDAModel</a></li><li><a href="module-eclairjs_ml_evaluation.MulticlassClassificationEvaluator.html">MulticlassClassificationEvaluator</a></li><li><a href="module-eclairjs_ml_evaluation.RegressionEvaluator.html">RegressionEvaluator</a></li><li><a href="module-eclairjs_ml_feature.ChiSqSelectorModel.html">ChiSqSelectorModel</a></li><li><a href="module-eclairjs_ml_feature.ElementwiseProduct.html">ElementwiseProduct</a></li><li><a href="module-eclairjs_ml_feature.IDFModel.html">IDFModel</a></li><li><a href="module-eclairjs_ml_feature.IndexToString.html">IndexToString</a></li><li><a href="module-eclairjs_ml_feature.MinMaxScaler.html">MinMaxScaler</a></li><li><a href="module-eclairjs_ml_feature.MinMaxScalerModel.html">MinMaxScalerModel</a></li><li><a href="module-eclairjs_ml_feature.NGram.html">NGram</a></li><li><a href="module-eclairjs_ml_feature.Normalizer.html">Normalizer</a></li><li><a href="module-eclairjs_ml_feature.OneHotEncoder.html">OneHotEncoder</a></li><li><a href="module-eclairjs_ml_feature.PCA.html">PCA</a></li><li><a href="module-eclairjs_ml_feature.PCAModel.html">PCAModel</a></li><li><a href="module-eclairjs_ml_feature.PolynomialExpansion.html">PolynomialExpansion</a></li><li><a href="module-eclairjs_ml_feature.QuantileDiscretizer.html">QuantileDiscretizer</a></li><li><a href="module-eclairjs_ml_feature.RFormulaModel.html">RFormulaModel</a></li><li><a href="module-eclairjs_ml_feature.StandardScalerModel.html">StandardScalerModel</a></li><li><a href="module-eclairjs_ml_feature.StringIndexer.html">StringIndexer</a></li><li><a href="module-eclairjs_ml_feature.StringIndexerModel.html">StringIndexerModel</a></li><li><a href="module-eclairjs_ml_feature.VectorIndexer.html">VectorIndexer</a></li><li><a href="module-eclairjs_ml_feature.VectorIndexerModel.html">VectorIndexerModel</a></li><li><a href="module-eclairjs_ml_feature.Word2VecModel.html">Word2VecModel</a></li><li><a href="module-eclairjs_ml_param.BooleanParam.html">BooleanParam</a></li><li><a href="module-eclairjs_ml_param.DoubleParam.html">DoubleParam</a></li><li><a href="module-eclairjs_ml_param.IntParam.html">IntParam</a></li><li><a href="module-eclairjs_ml_param.Param.html">Param</a></li><li><a href="module-eclairjs_ml_param.ParamMap.html">ParamMap</a></li><li><a href="module-eclairjs_ml_param.ParamPair.html">ParamPair</a></li><li><a href="module-eclairjs_ml_recommendation.ALSModel.html">ALSModel</a></li><li><a href="module-eclairjs_ml_regression.AFTSurvivalRegressionModel.html">AFTSurvivalRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.DecisionTreeRegressionModel.html">DecisionTreeRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.DecisionTreeRegressor.html">DecisionTreeRegressor</a></li><li><a href="module-eclairjs_ml_regression.GBTRegressionModel.html">GBTRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.GBTRegressor.html">GBTRegressor</a></li><li><a href="module-eclairjs_ml_regression.LinearRegression.html">LinearRegression</a></li><li><a href="module-eclairjs_ml_regression.LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.LinearRegressionSummary.html">LinearRegressionSummary</a></li><li><a href="module-eclairjs_ml_regression.LinearRegressionTrainingSummary.html">LinearRegressionTrainingSummary</a></li><li><a href="module-eclairjs_ml_regression.RandomForestRegressionModel.html">RandomForestRegressionModel</a></li><li><a href="module-eclairjs_ml_regression.RandomForestRegressor.html">RandomForestRegressor</a></li><li><a href="module-eclairjs_ml_regression.RegressionModel.html">RegressionModel</a></li><li><a href="module-eclairjs_ml_tuning.ParamGridBuilder.html">ParamGridBuilder</a></li><li><a href="module-eclairjs_ml_tuning.TrainValidationSplit.html">TrainValidationSplit</a></li><li><a href="module-eclairjs_ml_tuning.TrainValidationSplitModel.html">TrainValidationSplitModel</a></li><li><a href="module-eclairjs_mllib.MLUtils.html">MLUtils</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionModel.html">LogisticRegressionModel</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionWithLBFGS.html">LogisticRegressionWithLBFGS</a></li><li><a href="module-eclairjs_mllib_classification.LogisticRegressionWithSGD.html">LogisticRegressionWithSGD</a></li><li><a href="module-eclairjs_mllib_classification.NaiveBayes.html">NaiveBayes</a></li><li><a href="module-eclairjs_mllib_classification.NaiveBayesModel.html">NaiveBayesModel</a></li><li><a href="module-eclairjs_mllib_classification.SVMModel.html">SVMModel</a></li><li><a href="module-eclairjs_mllib_classification.SVMWithSGD.html">SVMWithSGD</a></li><li><a href="module-eclairjs_mllib_clustering.BisectingKMeans.html">BisectingKMeans</a></li><li><a href="module-eclairjs_mllib_clustering.BisectingKMeansModel.html">BisectingKMeansModel</a></li><li><a href="module-eclairjs_mllib_clustering.KMeans.html">KMeans</a></li><li><a href="module-eclairjs_mllib_clustering.KMeansModel.html">KMeansModel</a></li><li><a href="module-eclairjs_mllib_clustering.LDA.html">LDA</a></li><li><a href="module-eclairjs_mllib_clustering.LDAModel.html">LDAModel</a></li><li><a href="module-eclairjs_mllib_clustering.PowerIterationClustering.html">PowerIterationClustering</a></li><li><a href="module-eclairjs_mllib_clustering.PowerIterationClusteringModel.html">PowerIterationClusteringModel</a></li><li><a href="module-eclairjs_mllib_evaluation.BinaryClassificationMetrics.html">BinaryClassificationMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.MulticlassMetrics.html">MulticlassMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.RankingMetrics.html">RankingMetrics</a></li><li><a href="module-eclairjs_mllib_evaluation.RegressionMetrics.html">RegressionMetrics</a></li><li><a href="module-eclairjs_mllib_feature.Word2Vec.html">Word2Vec</a></li><li><a href="module-eclairjs_mllib_feature.Word2VecModel.html">Word2VecModel</a></li><li><a href="module-eclairjs_mllib_fpm.AssociationRules.html">AssociationRules</a></li><li><a href="module-eclairjs_mllib_fpm.FPGrowth.html">FPGrowth</a></li><li><a href="module-eclairjs_mllib_fpm.FPGrowthModel.html">FPGrowthModel</a></li><li><a href="module-eclairjs_mllib_fpm.PrefixSpan.html">PrefixSpan</a></li><li><a href="module-eclairjs_mllib_fpm.PrefixSpanModel.html">PrefixSpanModel</a></li><li><a href="module-eclairjs_mllib_linalg.DenseVector.html">DenseVector</a></li><li><a href="module-eclairjs_mllib_linalg.Matrix.html">Matrix</a></li><li><a href="module-eclairjs_mllib_linalg.SingularValueDecomposition.html">SingularValueDecomposition</a></li><li><a href="module-eclairjs_mllib_linalg.Vector.html">Vector</a></li><li><a href="module-eclairjs_mllib_linalg.Vectors.html">Vectors</a></li><li><a href="module-eclairjs_mllib_linalg_distributed.RowMatrix.html">RowMatrix</a></li><li><a href="module-eclairjs_mllib_optimization.LBFGS.html">LBFGS</a></li><li><a href="module-eclairjs_mllib_optimization.LogisticGradient.html">LogisticGradient</a></li><li><a href="module-eclairjs_mllib_optimization.SquaredL2Updater.html">SquaredL2Updater</a></li><li><a href="module-eclairjs_mllib_random.RandomRDDs.html">RandomRDDs</a></li><li><a href="module-eclairjs_mllib_recommendation.ALS.html">ALS</a></li><li><a href="module-eclairjs_mllib_recommendation.MatrixFactorizationModel.html">MatrixFactorizationModel</a></li><li><a href="module-eclairjs_mllib_recommendation.Rating.html">Rating</a></li><li><a href="module-eclairjs_mllib_regression.LabeledPoint.html">LabeledPoint</a></li><li><a href="module-eclairjs_mllib_regression.LinearRegressionModel.html">LinearRegressionModel</a></li><li><a href="module-eclairjs_mllib_regression.LinearRegressionWithSGD.html">LinearRegressionWithSGD</a></li><li><a href="module-eclairjs_mllib_tree.DecisionTree.html">DecisionTree</a></li><li><a href="module-eclairjs_mllib_tree.GradientBoostedTrees.html">GradientBoostedTrees</a></li><li><a href="module-eclairjs_mllib_tree.RandomForest.html">RandomForest</a></li><li><a href="module-eclairjs_mllib_tree_configuration.BoostingStrategy.html">BoostingStrategy</a></li><li><a href="module-eclairjs_mllib_tree_configuration.Strategy.html">Strategy</a></li><li><a href="module-eclairjs_mllib_tree_loss.Loss.html">Loss</a></li><li><a href="module-eclairjs_mllib_tree_model.DecisionTreeModel.html">DecisionTreeModel</a></li><li><a href="module-eclairjs_mllib_tree_model.GradientBoostedTreesModel.html">GradientBoostedTreesModel</a></li><li><a href="module-eclairjs_mllib_tree_model.RandomForestModel.html">RandomForestModel</a></li><li><a href="module-eclairjs_rdd.FloatRDD.html">FloatRDD</a></li><li><a href="module-eclairjs_rdd.PairRDD.html">PairRDD</a></li><li><a href="module-eclairjs_rdd.RDD.html">RDD</a></li><li><a href="module-eclairjs_sql.Column.html">Column</a></li><li><a href="module-eclairjs_sql.DataFrame.html">DataFrame</a></li><li><a href="module-eclairjs_sql.DataFrameNaFunctions.html">DataFrameNaFunctions</a></li><li><a href="module-eclairjs_sql.DataFrameReader.html">DataFrameReader</a></li><li><a href="module-eclairjs_sql.DataFrameStatFunctions.html">DataFrameStatFunctions</a></li><li><a href="module-eclairjs_sql.DataFrameWriter.html">DataFrameWriter</a></li><li><a href="module-eclairjs_sql.functions.html">functions</a></li><li><a href="module-eclairjs_sql.GroupedData.html">GroupedData</a></li><li><a href="module-eclairjs_sql.Row.html">Row</a></li><li><a href="module-eclairjs_sql.RowFactory.html">RowFactory</a></li><li><a href="module-eclairjs_sql.SQLContext.html">SQLContext</a></li><li><a href="module-eclairjs_sql.SQLContextQueryExecution.html">SQLContextQueryExecution</a></li><li><a href="module-eclairjs_sql.SqlDate.html">SqlDate</a></li><li><a href="module-eclairjs_sql.SqlTimestamp.html">SqlTimestamp</a></li><li><a href="module-eclairjs_sql_types.DataTypes.html">DataTypes</a></li><li><a href="module-eclairjs_sql_types.Metadata.html">Metadata</a></li><li><a href="module-eclairjs_sql_types.StructField.html">StructField</a></li><li><a href="module-eclairjs_sql_types.StructType.html">StructType</a></li><li><a href="module-eclairjs_storage.StorageLevel.html">StorageLevel</a></li><li><a href="module-eclairjs_streaming.Duration.html">Duration</a></li><li><a href="module-eclairjs_streaming.StreamingContext.html">StreamingContext</a></li><li><a href="module-eclairjs_streaming_dstream.DStream.html">DStream</a></li><li><a href="module-eclairjs_streaming_dstream.PairDStream.html">PairDStream</a></li><li><a href="module-eclairjs_streaming_kafka.KafkaUtils.html">KafkaUtils</a></li><li><a href="module-eclairjs_streaming_twitter.TwitterAuthorization.html">TwitterAuthorization</a></li><li><a href="module-eclairjs_streaming_twitter.TwitterUtils.html">TwitterUtils</a></li><li><a href="MultilayerPerceptronClassifier.html">MultilayerPerceptronClassifier</a></li><li><a href="ReceiverInputDStream.html">ReceiverInputDStream</a></li><li><a href="RegexTokenizer.html">RegexTokenizer</a></li><li><a href="RFormula.html">RFormula</a></li><li><a href="SQLTransformer.html">SQLTransformer</a></li><li><a href="StandardScaler.html">StandardScaler</a></li><li><a href="StopWordsRemover.html">StopWordsRemover</a></li><li><a href="Tokenizer.html">Tokenizer</a></li><li><a href="VectorAssembler.html">VectorAssembler</a></li><li><a href="VectorSlicer.html">VectorSlicer</a></li><li><a href="VectorUDT.html">VectorUDT</a></li><li><a href="Word2Vec.html">Word2Vec</a></li></ul><h3>Global</h3><ul><li><a href="global.html#gAppName">gAppName</a></li><li><a href="global.html#handleArguments">handleArguments</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Mon Jun 20 2016 13:37:18 GMT-0700 (PDT)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
