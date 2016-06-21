@@ -15,6 +15,8 @@ EclairJS Node requires Node 0.12 or higher and also requires a running instance 
 Supported Spark versions can be found in the [Versions](#version) section below.
 
 ## Example
+EclairJS Node's api mirrors the Spark api.  Here is the classic word count example:
+
 ```node
 var eclairjs = require('eclairjs');
 
