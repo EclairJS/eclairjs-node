@@ -54,7 +54,8 @@ describe('Local Rows Test', function() {
               DOB: parts[3].trim(),
               income: parts[4].trim(),
               married: parts[5].trim(),
-              networth: parts[6].trim()
+              networth: parts[6].trim(),
+              time: parts[6].trim()
             };
           });
 
@@ -66,13 +67,14 @@ describe('Local Rows Test', function() {
           fields.push(spark.sql.types.DataTypes.createStructField("income", spark.sql.types.DataTypes.DoubleType, true));
           fields.push(spark.sql.types.DataTypes.createStructField("married", spark.sql.types.DataTypes.BooleanType, true));
           fields.push(spark.sql.types.DataTypes.createStructField("networth", spark.sql.types.DataTypes.DoubleType, true));
+          fields.push(spark.sql.types.DataTypes.createStructField("time", spark.sql.types.DataTypes.TimestampType, true));
 
           var schema = spark.sql.types.DataTypes.createStructType(fields);
 
           // Convert records of the RDD (people) to Rows.
-          var rowRDD = people.map(function(person, RowFactory, SqlDate){
-            return RowFactory.create([(person.name ? person.name : null), person.age, person.expense, new SqlDate(person.DOB), parseFloat(person.income), person.married == "true" ? true : false, parseFloat(person.networth)]);
-          }, [spark.sql.RowFactory, spark.sql.SqlDate]);
+          var rowRDD = people.map(function(person, RowFactory, SqlDate, SqlTimestamp){
+            return RowFactory.create([(person.name ? person.name : null), person.age, person.expense, new SqlDate(person.DOB), parseFloat(person.income), person.married == "true" ? true : false, parseFloat(person.networth), new SqlTimestamp(person.time)]);
+          }, [spark.sql.RowFactory, spark.sql.SqlDate,  spark.sql.SqlTimestamp]);
 
           // Apply the schema to the RDD.
           df = sqlContext.createDataFrame(rowRDD, schema);
@@ -346,6 +348,127 @@ describe('Local Rows Test', function() {
       );
     });
   });
+
+  describe("Row.hashCode()", function() {
+    it("should return a hash", function(done) {
+      this.timeout(100000);
+
+      TestUtils.executeTest(
+        function(callback, error) {
+          rows[0].hashCode().then(callback).catch(error);
+        }, function(result) {
+          expect(Number.isInteger(result)).equals(true);
+        },
+        done
+      );
+    });
+  });
+
+  describe("Row.isNullAt()", function() {
+    it("should return false for row 0 column 0", function(done) {
+      this.timeout(100000);
+
+      TestUtils.executeTest(
+        function(callback, error) {
+          rows[0].isNullAt(0).then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals(false);
+        },
+        done
+      );
+    });
+  });
+
+  describe("Row.isNullAt()", function() {
+    it("should return true for row 2 column 2", function(done) {
+      this.timeout(100000);
+
+      TestUtils.executeTest(
+        function(callback, error) {
+          rows[2].isNullAt(2).then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals(true);
+        },
+        done
+      );
+    });
+  });
+
+  describe("Row.length()", function() {
+    it("should return 8", function(done) {
+      this.timeout(100000);
+
+      TestUtils.executeTest(
+        function(callback, error) {
+          rows[2].length().then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals(8);
+        },
+        done
+      );
+    });
+  });
+
+  describe("Row.mkString()", function() {
+    it("should return the correct value", function(done) {
+      this.timeout(100000);
+
+      TestUtils.executeTest(
+        function(callback, error) {
+          rows[0].mkString().then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('Michael2911996-03-071200.4true300000000.111969-12-31 16:00:00.0');
+        },
+        done
+      );
+    });
+  });
+
+  describe("Row.mkString(',')", function() {
+    it("should return the correct value", function(done) {
+      this.timeout(100000);
+
+      TestUtils.executeTest(
+        function(callback, error) {
+          rows[0].mkString(',').then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('Michael,29,1,1996-03-07,1200.4,true,300000000.11,1969-12-31 16:00:00.0');
+        },
+        done
+      );
+    });
+  });
+
+  describe("Row.mkString('start:', ',', ':finish')", function() {
+    it("should return the correct value", function(done) {
+      this.timeout(100000);
+
+      TestUtils.executeTest(
+        function(callback, error) {
+          rows[0].mkString('start:', ',', ':finish').then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('start:Michael,29,1,1996-03-07,1200.4,true,300000000.11,1969-12-31 16:00:00.0:finish');
+        },
+        done
+      );
+    });
+  });
+
+  describe("Row.schema()", function() {
+    it("should return the correct value", function(done) {
+      this.timeout(100000);
+
+      TestUtils.executeTest(
+        function(callback, error) {
+          var schema = rows[0].schema().simpleString().then(callback).catch(error);
+        }, function(result) {
+          expect(result).equals('struct<name:string,age:int,expense:int,DOB:date,income:double,married:boolean,networth:double,time:timestamp>');
+        },
+        done
+      );
+    });
+  });
+
 
   after(function(done) {
     if (!global.SC && sc) {
