@@ -418,7 +418,7 @@ describe('DataFrame Test', function() {
         function(callback) {
           var result = dataFrame.filter('age > 20');
           result.collect().then(function(rows) {
-            rows[0].mkString(" - ", "(", ")").then(callback);
+            rows[0].mkString('(', ' - ', ')').then(callback);
           });
         }, function(result) {
           expect(result).equals('(Michael - 29 - 1)');

@@ -1,4 +1,4 @@
-Jovi,Bon,53,March 02 1962,4,true,300000000.11,161.6,0.45
-Tyler,Steven,67,March 26 1948,4,false,130000000.55,150.9,0.55 
-Jagger,Mick,72,July 26 1943,7,false
-Springsteen,Bruce,66,Sept 09 1949,3,true,300000000.64,165.5,0.90
+Jovi,Bon,53,1962-03-02 00:00:00,4,true,300000000.11,161.6,0.45
+Tyler,Steven,67,1948-03-26 00:00:00,4,false,130000000.55,150.9,0.55
+Jagger,Mick,72,1943-07-26 00:00:00,7,false
+Springsteen,Bruce,66,1949-09-09 00:00:00,3,true,300000000.64,165.5,0.90

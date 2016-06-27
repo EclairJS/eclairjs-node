@@ -55,7 +55,7 @@ describe('Local Rows Test', function() {
               income: parts[4].trim(),
               married: parts[5].trim(),
               networth: parts[6].trim(),
-              time: parts[6].trim()
+              time: parts[7] ? parts[7].trim() : null
             };
           });
 
@@ -72,8 +72,11 @@ describe('Local Rows Test', function() {
           var schema = spark.sql.types.DataTypes.createStructType(fields);
 
           // Convert records of the RDD (people) to Rows.
-          var rowRDD = people.map(function(person, RowFactory, SqlDate, SqlTimestamp){
-            return RowFactory.create([(person.name ? person.name : null), person.age, person.expense, new SqlDate(person.DOB), parseFloat(person.income), person.married == "true" ? true : false, parseFloat(person.networth), new SqlTimestamp(person.time)]);
+          var rowRDD = people.map(function(person, RowFactory, SqlDate, SqlTimestamp) {
+            var name = (person.name ? person.name : null);
+            var married = person.married == "true" ? true : false;
+
+            return RowFactory.create([name, person.age, person.expense, new SqlDate(person.DOB), parseFloat(person.income), married, parseFloat(person.networth), person.time ? new SqlTimestamp(person.time) : null]);
           }, [spark.sql.RowFactory, spark.sql.SqlDate,  spark.sql.SqlTimestamp]);
 
           // Apply the schema to the RDD.
@@ -417,7 +420,7 @@ describe('Local Rows Test', function() {
         function(callback, error) {
           rows[0].mkString().then(callback).catch(error);
         }, function(result) {
-          expect(result).equals('Michael2911996-03-071200.4true300000000.111969-12-31 16:00:00.0');
+          expect(result).equals('Michael2911996-03-071200.4true300000000.111996-03-07 21:34:23.0');
         },
         done
       );
@@ -432,7 +435,7 @@ describe('Local Rows Test', function() {
         function(callback, error) {
           rows[0].mkString(',').then(callback).catch(error);
         }, function(result) {
-          expect(result).equals('Michael,29,1,1996-03-07,1200.4,true,300000000.11,1969-12-31 16:00:00.0');
+          expect(result).equals('Michael,29,1,1996-03-07,1200.4,true,300000000.11,1996-03-07 21:34:23.0');
         },
         done
       );
@@ -447,7 +450,7 @@ describe('Local Rows Test', function() {
         function(callback, error) {
           rows[0].mkString('start:', ',', ':finish').then(callback).catch(error);
         }, function(result) {
-          expect(result).equals('start:Michael,29,1,1996-03-07,1200.4,true,300000000.11,1969-12-31 16:00:00.0:finish');
+          expect(result).equals('start:Michael,29,1,1996-03-07,1200.4,true,300000000.11,1996-03-07 21:34:23.0:finish');
         },
         done
       );
@@ -469,6 +472,20 @@ describe('Local Rows Test', function() {
     });
   });
 
+  describe("Using local Rows in parallelize", function() {
+    it("should work", function(done) {
+      this.timeout(100000);
+
+      TestUtils.executeTest(
+        function(callback, error) {
+          var data = sc.parallelize([rows[0], rows[1]]).collect().then(callback).catch(error);
+        }, function(result) {
+          expect(result.length).equals(2);
+        },
+        done
+      );
+    });
+  });
 
   after(function(done) {
     if (!global.SC && sc) {

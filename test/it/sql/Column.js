@@ -258,7 +258,7 @@ describe('Column Test', function() {
         function(callback) {
           dataFrame.select(dataFrame.col("expense").divide(dataFrame.col("age"))).take(10).then(callback);
         }, function(result) {
-          expect(result[0].values[0]).equals(0.034482758620689655);
+          expect(result[0].values[0]).equals(0.034482758621);
         },
         done
       );
