@@ -62,7 +62,9 @@ describe('mllib Test', function() {
       var test = require('../../../examples/mllib/associationrules');
       test(sc).then(function(results) {
         expect(results.length).equals(1);
-        expect(results[0]).equals('{a} => {b}: 0.8');
+        expect(results[0].antecedent).deep.equals(['a']);
+        expect(results[0].confidence).equals(0.8);
+        expect(results[0].consequent).deep.equals(['b']);
         done();
       }).catch(done);
     });
@@ -173,7 +175,7 @@ describe('mllib Test', function() {
     it("should return the expected result", function(done) {
       var test = require('../../../examples/mllib/lr');
       test(sc).then(function(results) {
-        expect(results.length).equals(2);
+        expect(results).deep.equals({ type: 1, values: [ 0.9550072129824428, 0.7533138476702799 ] });
         done();
       }).catch(done);
     });

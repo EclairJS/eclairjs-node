@@ -69,8 +69,8 @@ function run(sc) {
         initialWeightsWithIntercept);
 
       run.then(function(result) {
-        var weightsWithIntercept = result[0];
-        var loss = result[1];
+        var weightsWithIntercept = result._1();
+        var loss = result._2();
 
         var copyOfWeightsWithIntercept = [];
         for (var i = 0; i < weightsWithIntercept.length - 1; i++) {
