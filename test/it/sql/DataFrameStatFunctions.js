@@ -161,11 +161,9 @@ describe('DataFrameStatFunctions Test', function() {
           var df = sqlContext.createDataFrame([[1,1], [1,2], [2,1], [2,1], [2,3], [3,2], [3,3]], schema);
 
           var fractions = {"1": 1.0, "3": 0.5};
-          df.stat().sampleBy("key", fractions, 36).take(10).then(callback).catch(error)
+          df.stat().sampleBy("key", fractions, 36).collect().then(callback).catch(error)
         }, function(result) {
-          expect(result[0].values).deep.equals([1,1]);
-          expect(result[1].values).deep.equals([1,2]);
-          expect(result[2].values).deep.equals([3,3]);
+          expect(result.length).equals(3);
         },
         done
       );

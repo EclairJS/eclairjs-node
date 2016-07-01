@@ -65,3 +65,21 @@ rdd7.take(10).then(function(val) {
     process.exit();
   });
 });
+
+// stop spark streaming when we stop the node program
+process.on('SIGTERM', stop);
+process.on('SIGINT', stop);
+
+function exit() {
+  process.exit(0);
+}
+
+function stop(e) {
+  if (e) {
+    console.log('Error:', e);
+  }
+
+  if (sc) {
+    sc.stop().then(exit).catch(exit);
+  }
+}

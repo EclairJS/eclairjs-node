@@ -147,9 +147,11 @@ describe('sql.functions Test', function() {
       TestUtils.executeTest(
         function(callback, error) {
           var na = dataFrame.na();
-          na.fill(99).take(10).then(callback).catch(error);
+          na.fill(99).collect().then(function(rows) {
+            rows[0].getInt(1).then(callback).catch(error);
+          }).catch(error);
         }, function(result) {
-          expect(result[0].values[1]).equals(99);
+          expect(result).equals(99);
         },
         done
       );
@@ -161,9 +163,11 @@ describe('sql.functions Test', function() {
       TestUtils.executeTest(
         function(callback, error) {
           var na = dataFrame.na();
-          na.fill(99, ["name", "age"]).take(10).then(callback).catch(error);
+          na.fill(99, ["name", "age"]).collect().then(function(rows) {
+            rows[0].getInt(1).then(callback).catch(error);
+          }).catch(error);
         }, function(result) {
-          expect(result[0].values[1]).equals(99);
+          expect(result).equals(99);
         },
         done
       );
@@ -175,9 +179,11 @@ describe('sql.functions Test', function() {
       TestUtils.executeTest(
         function(callback, error) {
           var na = dataFrame.na();
-          na.drop().na().replace(["name"], {"Andy": "Batman"}).take(10).then(callback).catch(error);
+          na.drop().na().replace(["name"], {"Andy": "Batman"}).take(10).then(function(rows) {
+            rows[0].getString(0).then(callback).catch(error);
+          }).catch(error);
         }, function(result) {
-          expect(result[0].values[0]).equals("Batman");
+          expect(result).equals("Batman");
         },
         done
       );

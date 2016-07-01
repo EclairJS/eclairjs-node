@@ -51,7 +51,7 @@ function run(sc) {
 
     var promises = [];
     promises.push(createResultPromise('U Factor', svd.U()));
-    promises.push(createResultPromise('Singular values are:', svd.s().toArray()));
+    promises.push(createResultPromise('Singular values are:', svd.s().toJSON()));
     promises.push(createResultPromise('V factor is:', svd.V()));
 
     Promise.all(promises).then(resolve).catch(reject);

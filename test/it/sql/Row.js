@@ -151,34 +151,6 @@ describe('Row Test', function() {
     });
   });
 
-  describe("row.apply()", function() {
-    it("should generate the correct output e.g. should be surname", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          // Use firstrow of table
-          firstrow.apply(0).then(callback);
-        }, function(result) {
-          expect(result).equals('Jovi');
-        },
-        done
-      );
-    });
-  });
-
-  describe("row.apply()", function() {
-    it("should generate the correct output e.g. should be Bon Jovi is married", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          // Use firstrow of table
-          firstrow.apply(5).then(callback);
-        }, function(result) {
-          expect(result).equals(true);
-        },
-        done
-      );
-    });
-  });
-
   describe("row.copy()", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(

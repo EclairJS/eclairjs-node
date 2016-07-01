@@ -375,9 +375,11 @@ describe('DataFrame Test', function() {
           m["age"] = "max";
           m["expense"] = "sum";
 
-          results.agg(m).take(10).then(callback);
+          results.agg(m).collect().then(function(rows) {
+            rows[0].getInt(0).then(callback);
+          });
         }, function(result) {
-          expect(result[0].values).deep.equals([30, 6]);
+          expect(result).equals(30);
         },
         done
       );
@@ -418,7 +420,7 @@ describe('DataFrame Test', function() {
         function(callback) {
           var result = dataFrame.filter('age > 20');
           result.collect().then(function(rows) {
-            rows[0].mkString(" - ", "(", ")").then(callback);
+            rows[0].mkString('(', ' - ', ')').then(callback);
           });
         }, function(result) {
           expect(result).equals('(Michael - 29 - 1)');
@@ -654,16 +656,17 @@ describe('DataFrame Test', function() {
   });
 
 
-  describe("dataFrame.inputFiles()", function() {
+  describe("dataFrame.intersect()", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
           var plus20s = dataFrame.filter("age > 20");
 
-          dataFrame.intersect(plus20s).take(10).then(callback);
+          dataFrame.intersect(plus20s).collect().then(function(rows) {
+            rows[0].mkString().then(callback);
+          });
         }, function(result) {
-          expect(result[0].values).deep.equals(["Andy", 30, 2]);
-          expect(result[1].values).deep.equals(["Michael",29, 1]);
+          expect(result).equals('Andy302');
         },
         done
       );
@@ -687,9 +690,11 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          var result = dataFrame.join(dataFrame).take(1).then(callback);
+          var result = dataFrame.join(dataFrame).take(1).then(function(rows) {
+            rows[0].mkString().then(callback)
+          });
         }, function(result) {
-          expect(result[0].values).deep.equals(["Michael", 29,1,"Michael",29,1]);
+          expect(result).equals('Michael291Michael291');
         },
         done
       );
@@ -700,9 +705,11 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          var result = dataFrame.join(dataFrame, "name").take(1).then(callback);
+          var result = dataFrame.join(dataFrame, "name").take(1).then(function(rows) {
+            rows[0].mkString().then(callback)
+          });
         }, function(result) {
-          expect(result[0].values).deep.equals([ 'Andy', 30, 2, 30, 2 ]);
+          expect(result).equals('Andy302302');
         },
         done
       );
@@ -713,9 +720,11 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          var result = dataFrame.join(dataFrame, ["age", "expense"]).take(1).then(callback);
+          var result = dataFrame.join(dataFrame, ["age", "expense"]).take(1).then(function(rows) {
+            rows[0].mkString().then(callback)
+          });
         }, function(result) {
-          expect(result[0].values.length).equals(4);
+          expect(result).equals('291MichaelMichael');
         },
         done
       );
@@ -733,9 +742,11 @@ describe('DataFrame Test', function() {
 
           var joinedDF = df1.join(df2, colExpr);
 
-          joinedDF.take(1).then(callback);
+          joinedDF.take(1).then(function(rows) {
+            rows[0].mkString().then(callback)
+          });
         }, function(result) {
-          expect(result[0].values).deep.equals([ 'Andy', 30, 'Andy', 2 ]);
+          expect(result).equals('Andy30Andy2');
         },
         done
       );
@@ -793,9 +804,11 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          dataFrame.orderBy("age", "name").take(10).then(callback);
+          dataFrame.orderBy("age", "name").take(10).then(function(rows) {
+            rows[0].getString(0).then(callback)
+          });
         }, function(result) {
-          expect(result[0].values[0]).equals("Justin");
+          expect(result).equals("Justin");
         },
         done
       );
@@ -876,9 +889,11 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          var df = dataFrame.sample(true, 0.5).take(10).then(callback);
+          var df = dataFrame.sample(true, 0.5).collect().then(function(rows) {
+              rows[0].getString(0).then(callback);
+          });
         }, function(result) {
-          expect(result[0].values[0]).equals("Andy");
+          expect(result).equals("Andy");
         },
         done
       );
@@ -902,9 +917,9 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          dataFrame.sort("age", "name").take(10).then(callback);
+          dataFrame.sort("age", "name").collect().then(callback);
         }, function(result) {
-          expect(result[0].values[0]).equals("Justin");
+          expect(result.length).equals(3);
         },
         done
       );
@@ -929,11 +944,11 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          dataFrame.selectExpr("name", "age > 19").take(10).then(callback);
+          dataFrame.selectExpr("name", "age > 19").take(10).then(function(rows) {
+            rows[2].getBoolean(1).then(callback);
+          });
         }, function(result) {
-          expect(result[0].values[1]).equals(true);
-          expect(result[1].values[1]).equals(true);
-          expect(result[2].values[1]).equals(false);
+          expect(result).equals(false);
         },
         done
       );

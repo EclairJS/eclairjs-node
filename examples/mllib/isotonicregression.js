@@ -48,13 +48,13 @@ function run(sc) {
 
       // Create tuples of predicted and real labels.
       var predictionAndLabel = test.mapToPair(function (point, model, Tuple2) {
-        var predictedLabel = model.predict(point[1]);
-        return new Tuple2(predictedLabel, point[0]);
+        var predictedLabel = model.predict(point._2());
+        return new Tuple2(predictedLabel, point._1());
       }, [model, spark.Tuple2]);
 
       // Calculate mean squared error between predicted and real labels.
       new spark.rdd.FloatRDD(predictionAndLabel.map(function (pl) {
-        return Math.pow(pl[0] - pl[1], 2);
+        return Math.pow(pl._1() - pl._2(), 2);
       })).mean().then(resolve).catch(reject);
     }).catch(reject);
   });

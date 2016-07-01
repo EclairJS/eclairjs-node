@@ -75,10 +75,18 @@ describe('ml Test', function() {
       var test = require('../../../examples/ml/binarizer');
       test(sc).then(function(results) {
         expect(results.length).equals(3);
-        expect(results[0].values).deep.equals([0]);
-        expect(results[1].values).deep.equals([1]);
-        expect(results[2].values).deep.equals([0]);
-        done();
+
+        var promises = [];
+        promises.push(results[0].getFloat(0));
+        promises.push(results[1].getFloat(0));
+        promises.push(results[2].getFloat(0));
+
+        Promise.all(promises).then(function(results) {
+          expect(results[0]).equals(0);
+          expect(results[1]).equals(1);
+          expect(results[2]).equals(0);
+          done();
+        }).catch(done);
       }).catch(done);
     });
   });
