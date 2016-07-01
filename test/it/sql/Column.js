@@ -148,11 +148,11 @@ describe('Column Test', function() {
     it("should remove any datasets outside the range", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          dataFrame.select(dataFrame.col("age").between(10, 29)).take(10).then(callback);
+          dataFrame.select(dataFrame.col("age").between(10, 29)).collect().then(function(rows) {
+            rows[1].getBoolean(0).then(callback)
+          });
         }, function(result) {
-          expect(result[0].values[0]).equals(true);
-          expect(result[1].values[0]).equals(false);
-          expect(result[2].values[0]).equals(true);
+          expect(result).equals(false);
         },
         done
       );
@@ -256,9 +256,11 @@ describe('Column Test', function() {
     it("should divide", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          dataFrame.select(dataFrame.col("expense").divide(dataFrame.col("age"))).take(10).then(callback);
+          dataFrame.select(dataFrame.col("expense").divide(dataFrame.col("age"))).collect().then(function(rows) {
+            rows[0].getFloat(0).then(callback);
+          });
         }, function(result) {
-          expect(result[0].values[0]).equals(0.034482758621);
+          expect(result).equals(0.034482758621);
         },
         done
       );
@@ -270,11 +272,11 @@ describe('Column Test', function() {
     it("should return false,false,true", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          dataFrame.select(dataFrame.col('name').endsWith('n')).take(10).then(callback);
+          dataFrame.select(dataFrame.col('name').endsWith('n')).collect().then(function(rows) {
+            rows[1].getBoolean(0).then(callback);
+          });
         }, function(result) {
-          expect(result[0].values[0]).equals(false);
-          expect(result[1].values[0]).equals(false);
-          expect(result[2].values[0]).equals(true);
+          expect(result).equals(false);
         },
         done
       );
@@ -415,11 +417,11 @@ describe('Column Test', function() {
     it("should false,false,true", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          dataFrame.select(dataFrame.col("age").in([20,19])).take(10).then(callback);
+          dataFrame.select(dataFrame.col("age").in([20,19])).collect().then(function(rows) {
+            rows[2].getBoolean(0).then(callback);
+          });
         }, function(result) {
-          expect(result[0].values[0]).equals(false);
-          expect(result[1].values[0]).equals(false);
-          expect(result[2].values[0]).equals(true);
+          expect(result).equals(true);
         },
         done
       );
@@ -578,11 +580,11 @@ describe('Column Test', function() {
       TestUtils.executeTest(
         function(callback, error) {
           var select = spark.sql.functions.when(dataFrame.col("age").notEqual(19), true).otherwise(false);
-          dataFrame.select(select).take(10).then(callback).catch(error);
+          dataFrame.select(select).collect().then(function(rows) {
+            rows[2].getBoolean(0).then(callback);
+          }).catch(error);
         }, function(result) {
-          expect(result[0].values[0]).equals(true);
-          expect(result[1].values[0]).equals(true);
-          expect(result[2].values[0]).equals(false);
+          expect(result).equals(false);
         },
         done
       );

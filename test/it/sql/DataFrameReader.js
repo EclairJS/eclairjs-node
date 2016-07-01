@@ -53,9 +53,11 @@ describe('sql.functions Test', function() {
         function(callback, error) {
 
           var url = "jdbc:mysql://localhost:3306/test";
-          sqlContext.read().jdbc(url, "test", {user: "root", password: "mypass"}).take(10).then(callback).catch(error);
+          sqlContext.read().jdbc(url, "test", {user: "root", password: "mypass"}).collect().then(function(rows) {
+            rows[0].getString(1).then(callback).catch(error)
+          }).catch(error);
         }, function(result) {
-          expect(result[0].values[1]).equals("batman");
+          expect(result).equals("batman");
         },
         done
       );
