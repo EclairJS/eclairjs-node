@@ -37,7 +37,7 @@ function run(sc) {
         return parseFloat(item.split(":")[1]);
       });
 
-      return new LabeledPoint(parseFloat(arr[0]), new Vectors.dense(features));
+      return new LabeledPoint(parseFloat(arr[0]), Vectors.dense(features));
     }, [spark.mllib.regression.LabeledPoint, spark.mllib.linalg.Vectors]).cache();
 
     var numIterations = 100;
