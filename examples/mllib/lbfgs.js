@@ -34,16 +34,16 @@ function run(sc) {
     var ret = {};
 
     data.take(1).then(function(results) {
-      var numFeatures = results[0].features.length;
+      var numFeatures = results[0].features.size;
 
       // Split initial RDD into two... [60% training data, 40% testing data].
       var trainingInit = data.sample(false, 0.6, 11);
       var test = data.subtract(trainingInit);
 
       // Append 1 into the training data as intercept.
-      var training = data.map(function (lp, Tuple2) {
+      var training = data.map(function (lp, Tuple2, MLUtils) {
         return new Tuple2(lp.getLabel(), MLUtils.appendBias(lp.getFeatures()));
-      }, [spark.Tuple2]);
+      }, [spark.Tuple2, spark.mllib.util.MLUtils]);
 
       training.cache();
 
@@ -69,12 +69,12 @@ function run(sc) {
         initialWeightsWithIntercept);
 
       run.then(function(result) {
-        var weightsWithIntercept = result._1();
-        var loss = result._2();
+        var weightsWithIntercept = result[0];
+        var loss = result[1];
 
         var copyOfWeightsWithIntercept = [];
-        for (var i = 0; i < weightsWithIntercept.length - 1; i++) {
-          copyOfWeightsWithIntercept.push(weightsWithIntercept[i]);
+        for (var i = 0; i < weightsWithIntercept.values.length - 1; i++) {
+          copyOfWeightsWithIntercept.push(weightsWithIntercept.values[i]);
         }
 
         var model = new spark.mllib.classification.LogisticRegressionModel(spark.mllib.linalg.Vectors.dense(copyOfWeightsWithIntercept), copyOfWeightsWithIntercept.length);
