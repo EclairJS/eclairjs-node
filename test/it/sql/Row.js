@@ -124,8 +124,10 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Get the first row of the table.
-          firstrow = dataFrame.head();
-          firstrow.anyNull().then(callback);
+          dataFrame.head().then(function(row) {
+            firstrow = row;
+            callback(row.anyNull());
+          });
         }, function(result) {
           expect(result).equals(false);
         },
@@ -156,7 +158,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.copy().mkString().then(callback);
+          callback(firstrow.copy().mkString());
         }, function(result) {
           expect(result).equals('JoviBon531962-03-024true300000000.11161.60.451962-03-02 00:00:00.0');
         },
@@ -170,7 +172,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.equals(firstrow).then(callback);
+          callback(firstrow.equals(firstrow));
         }, function(result) {
           expect(result).equals(true);
         },
@@ -184,7 +186,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.fieldIndex('forename').then(callback);
+          callback(firstrow.fieldIndex('forename'));
         }, function(result) {
           expect(result).equals(1);
         },
@@ -198,7 +200,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.get(1).then(callback);
+          callback(firstrow.get(1));
         }, function(result) {
           expect(result).equals('Bon');
         },
@@ -212,7 +214,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.get(7).then(callback);
+          callback(firstrow.get(7));
         }, function(result) {
           expect(result).equals(161.6);
         },
@@ -226,7 +228,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.getBoolean(5).then(callback);
+          callback(firstrow.getBoolean(5));
         }, function(result) {
           expect(result).equals(true);
         },
@@ -240,9 +242,11 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.getDate(3).toString().then(callback);
+          callback(firstrow.getDate(3));
         }, function(result) {
-          expect(result).equals('1962-03-02');
+          expect(result.getFullYear()).equals(1962);
+          expect(result.getMonth()).equals(2);
+          expect(result.getUTCDate()).equals(2);
         },
         done
       );
@@ -254,9 +258,11 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.getTimestamp(9).toString().then(callback);
+          callback(firstrow.getTimestamp(9));
         }, function(result) {
-          expect(result).equals('1962-03-02 00:00:00.0');
+          expect(result.getFullYear()).equals(1962);
+          expect(result.getMonth()).equals(2);
+          expect(result.getUTCDate()).equals(2);
         },
         done
       );
@@ -268,7 +274,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.getDouble(6).then(callback);
+          callback(firstrow.getDouble(6));
         }, function(result) {
           expect(result).equals(300000000.11);
         },
@@ -282,7 +288,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.getFloat(7).then(callback);
+          callback(firstrow.getFloat(7));
         }, function(result) {
           expect(result).equals(161.6);
         },
@@ -296,59 +302,9 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.getInt(2).then(callback);
+          callback(firstrow.getInt(2));
         }, function(result) {
           expect(result).equals(53);
-        },
-        done
-      );
-    });
-  });
-
-  /** 
-   * This is not coming back from the call this.getJavaObject().getStruct(index) on the Nashorn side. 
-   */
-  /*
-  describe("row.getStruct()", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          // Use firstrow of table
-          firstrow.getStruct(2).mkString().then(callback);
-        }, function(result) {
-          expect(result).equals('dadasd');
-        },
-        done
-      );
-    });
-  });
-  */
-
-  /** Need to implement SqlTimestamp for node
-  describe("row.getTimestamp()", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          // Use firstrow of table
-          firstrow.getTimestamp(3).then(callback);
-        }, function(result) {
-          expect(result).equals('"1962-03-02T05:00:00.000Z"');
-        },
-        done
-      );
-    });
-  });
-  */
-
-  /** have to come back and revisit - just times out **/
-  describe("row.hashCode()", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          // Use firstrow of table
-          firstrow.hashCode().then(callback);
-        }, function(result) {
-          expect(Number.isInteger(result)).equals(true);
         },
         done
       );
@@ -377,7 +333,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.length().then(callback);
+          callback(firstrow.length());
         }, function(result) {
           expect(result).equals(10);
         },
@@ -391,7 +347,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.mkString(',').then(callback);
+          callback(firstrow.mkString(','));
         }, function(result) {
           expect(result).equals('Jovi,Bon,53,1962-03-02,4,true,300000000.11,161.6,0.45,1962-03-02 00:00:00.0');
         },
@@ -419,7 +375,7 @@ describe('Row Test', function() {
       TestUtils.executeTest(
         function(callback) {
           // Use firstrow of table
-          firstrow.size().then(callback);
+          callback(firstrow.size());
         }, function(result) {
           expect(result).equals(10);
         },
