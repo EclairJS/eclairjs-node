@@ -18,19 +18,21 @@
 
  This example is a EclairJS (JavaScript) implementation of [movie recommending](https://github.com/jadianes/spark-movie-lens/blob/master/notebooks/building-recommender.ipynb).
  #### This example requires the following additional setup
- * Download the [movieLens rating dataset](http://grouplens.org/datasets/movielens/)
+ * Download the [movieLens rating dataset](http://grouplens.org/datasets/movielens/) and unzip is a location that is accessible by Spark.
  **[ml-latest-small.zip](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip)
- **[ml-latest.zip](http://files.grouplens.org/datasets/movielens/ml-latest.zip) and unzip is a location that is accessible by Spark.
- * Add the following options to the eclairjs/kernel.jon SPARK_OPTS
-````
-"SPARK_OPTS": "--driver-memory 4g --executor-memory 4g ..."
-````
+ **[ml-latest.zip](http://files.grouplens.org/datasets/movielens/ml-latest.zip) 
+
 
  */
 
 var spark = require('../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "movie_recommender");
+var sparkConf = new spark.SparkConf()
+	.set("spark.executor.memory", "10g")
+	.set("spark.driver.memory", "6g")
+	.setMaster("local[*]")
+	.setAppName("movie_recommender");
+var sc = new spark.SparkContext(sparkConf);
 var pathToSmallDataset = '/Users/billreed/eclairjs_dev/eclairjs-nashorn/examples/data/mllib/ml-latest-small';
 var pathToCompleteDataset = '/Users/billreed/eclairjs_dev/eclairjs-nashorn/examples/data/mllib/ml-latest';
 
