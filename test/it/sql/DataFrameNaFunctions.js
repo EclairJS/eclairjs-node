@@ -148,7 +148,7 @@ describe('sql.functions Test', function() {
         function(callback, error) {
           var na = dataFrame.na();
           na.fill(99).collect().then(function(rows) {
-            rows[0].getInt(1).then(callback).catch(error);
+            callback(rows[0].getInt(1));
           }).catch(error);
         }, function(result) {
           expect(result).equals(99);
@@ -164,7 +164,7 @@ describe('sql.functions Test', function() {
         function(callback, error) {
           var na = dataFrame.na();
           na.fill(99, ["name", "age"]).collect().then(function(rows) {
-            rows[0].getInt(1).then(callback).catch(error);
+            callback(rows[0].getInt(1));
           }).catch(error);
         }, function(result) {
           expect(result).equals(99);
@@ -180,7 +180,7 @@ describe('sql.functions Test', function() {
         function(callback, error) {
           var na = dataFrame.na();
           na.drop().na().replace(["name"], {"Andy": "Batman"}).take(10).then(function(rows) {
-            rows[0].getString(0).then(callback).catch(error);
+            callback(rows[0].getString(0));
           }).catch(error);
         }, function(result) {
           expect(result).equals("Batman");

@@ -98,7 +98,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[2].anyNull().then(callback).catch(error);
+          callback(rows[2].anyNull());
         }, function(result) {
           expect(result).equals(true);
         },
@@ -113,7 +113,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].anyNull().then(callback).catch(error);
+          callback(rows[0].anyNull());
         }, function(result) {
           expect(result).equals(false);
         },
@@ -128,7 +128,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].apply(0).then(callback).catch(error);
+          callback(rows[0].apply(0));
         }, function(result) {
           expect(result).equals('Michael');
         },
@@ -143,7 +143,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].equals(rows[0]).then(callback).catch(error);
+          callback(rows[0].equals(rows[0]));
         }, function(result) {
           expect(result).equals(true);
         },
@@ -158,7 +158,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].equals(rows[1]).then(callback).catch(error);
+          callback(rows[0].equals(rows[1]));
         }, function(result) {
           expect(result).equals(false);
         },
@@ -173,7 +173,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].fieldIndex('married').then(callback).catch(error);
+          callback(rows[0].fieldIndex('married'));
         }, function(result) {
           expect(result).equals(5);
         },
@@ -215,7 +215,7 @@ describe('Local Rows Test', function() {
           }
         }, function(result) {
           expect(result instanceof Error).equals(true);
-          expect(result.message).equals('index is out of bounds');
+          expect(result.message).equals('Index 10 is out of bounds');
         },
         done
       );
@@ -228,7 +228,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[1].get(0).then(callback).catch(error);
+          callback(rows[1].get(0));
         }, function(result) {
           expect(result).equals('Andy');
         },
@@ -243,7 +243,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[1].getBoolean(5).then(callback).catch(error);
+          callback(rows[1].getBoolean(5));
         }, function(result) {
           expect(result).equals(false);
         },
@@ -259,8 +259,8 @@ describe('Local Rows Test', function() {
       TestUtils.executeTest(
         function(callback, error) {
           try {
-            rows[0].getBoolean(0).then(callback).catch(error);
-          } catch(e) {
+            callback(rows[0].getBoolean(0));
+          } catch (e) {
             callback(e);
           }
         }, function(result) {
@@ -298,9 +298,11 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].getDate(3).toString().then(callback).catch(error);
+          callback(rows[0].getDate(3));
         }, function(result) {
-          expect(result).equals('1996-03-06');
+          expect(result.getMonth()).equals(2);
+          expect(result.getDate()).equals(6);
+          expect(result.getFullYear()).equals(1996);
         },
         done
       );
@@ -313,7 +315,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].getDouble(4).then(callback).catch(error);
+          callback(rows[0].getDouble(4));
         }, function(result) {
           expect(result).equals(1200.4);
         },
@@ -328,7 +330,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].getInt(1).then(callback).catch(error);
+          callback(rows[0].getInt(1));
         }, function(result) {
           expect(result).equals(29);
         },
@@ -343,24 +345,9 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].getString(0).then(callback).catch(error);
+          callback(rows[0].getString(0));
         }, function(result) {
           expect(result).equals("Michael");
-        },
-        done
-      );
-    });
-  });
-
-  describe("Row.hashCode()", function() {
-    it("should return a hash", function(done) {
-      this.timeout(100000);
-
-      TestUtils.executeTest(
-        function(callback, error) {
-          rows[0].hashCode().then(callback).catch(error);
-        }, function(result) {
-          expect(Number.isInteger(result)).equals(true);
         },
         done
       );
@@ -373,7 +360,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].isNullAt(0).then(callback).catch(error);
+          callback(rows[0].isNullAt(0));
         }, function(result) {
           expect(result).equals(false);
         },
@@ -388,7 +375,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[2].isNullAt(2).then(callback).catch(error);
+          callback(rows[2].isNullAt(2));
         }, function(result) {
           expect(result).equals(true);
         },
@@ -403,7 +390,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[2].length().then(callback).catch(error);
+          callback(rows[2].length());
         }, function(result) {
           expect(result).equals(8);
         },
@@ -418,7 +405,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].mkString().then(callback).catch(error);
+          callback(rows[0].mkString());
         }, function(result) {
           expect(result).equals('Michael2911996-03-071200.4true300000000.111996-03-07 21:34:23.0');
         },
@@ -433,7 +420,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].mkString(',').then(callback).catch(error);
+          callback(rows[0].mkString(','));
         }, function(result) {
           expect(result).equals('Michael,29,1,1996-03-07,1200.4,true,300000000.11,1996-03-07 21:34:23.0');
         },
@@ -448,7 +435,7 @@ describe('Local Rows Test', function() {
 
       TestUtils.executeTest(
         function(callback, error) {
-          rows[0].mkString('start:', ',', ':finish').then(callback).catch(error);
+          callback(rows[0].mkString('start:', ',', ':finish'));
         }, function(result) {
           expect(result).equals('start:Michael,29,1,1996-03-07,1200.4,true,300000000.11,1996-03-07 21:34:23.0:finish');
         },

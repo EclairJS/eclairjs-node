@@ -47,7 +47,7 @@ var ssc = new spark.streaming.StreamingContext(sparkContext, new spark.streaming
 var messages = spark.streaming.kafka.KafkaUtils.createStream(ssc, kafkaHost, topic, topicMap);
 
 var lines = messages.map(function(tuple2) {
-  return tuple2[1];
+  return tuple2._2();
 });
 
 var words = lines.flatMap(function( x) {

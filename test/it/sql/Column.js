@@ -149,7 +149,7 @@ describe('Column Test', function() {
       TestUtils.executeTest(
         function(callback) {
           dataFrame.select(dataFrame.col("age").between(10, 29)).collect().then(function(rows) {
-            rows[1].getBoolean(0).then(callback)
+            callback(rows[1].getBoolean(0));
           });
         }, function(result) {
           expect(result).equals(false);
@@ -257,7 +257,7 @@ describe('Column Test', function() {
       TestUtils.executeTest(
         function(callback) {
           dataFrame.select(dataFrame.col("expense").divide(dataFrame.col("age"))).collect().then(function(rows) {
-            rows[0].getFloat(0).then(callback);
+            callback(rows[0].getFloat(0));
           });
         }, function(result) {
           expect(result).equals(0.034482758621);
@@ -273,7 +273,7 @@ describe('Column Test', function() {
       TestUtils.executeTest(
         function(callback) {
           dataFrame.select(dataFrame.col('name').endsWith('n')).collect().then(function(rows) {
-            rows[1].getBoolean(0).then(callback);
+            callback(rows[1].getBoolean(0));
           });
         }, function(result) {
           expect(result).equals(false);
@@ -284,7 +284,7 @@ describe('Column Test', function() {
   });
 
   describe("Column.eqNullSafe()", function() {
-    it("should generate (name <=> Andy)t", function(done) {
+    it("should generate (name <=> Andy)", function(done) {
       TestUtils.executeTest(
         function(callback) {
           dataFrame.col("name").eqNullSafe("Andy").toString().then(callback);
@@ -418,7 +418,7 @@ describe('Column Test', function() {
       TestUtils.executeTest(
         function(callback) {
           dataFrame.select(dataFrame.col("age").in([20,19])).collect().then(function(rows) {
-            rows[2].getBoolean(0).then(callback);
+            callback(rows[2].getBoolean(0));
           });
         }, function(result) {
           expect(result).equals(true);
@@ -581,7 +581,7 @@ describe('Column Test', function() {
         function(callback, error) {
           var select = spark.sql.functions.when(dataFrame.col("age").notEqual(19), true).otherwise(false);
           dataFrame.select(select).collect().then(function(rows) {
-            rows[2].getBoolean(0).then(callback);
+            callback(rows[2].getBoolean(0));
           }).catch(error);
         }, function(result) {
           expect(result).equals(false);
