@@ -6,7 +6,7 @@ Learn more about the larger [EclairJS project](http://www.eclairjs.org).
 
 ## Installation
 
-```
+```bash
 $ npm install eclairjs
 ```
 
@@ -45,6 +45,8 @@ reducedWordsWithCount.collect().then(function(results) {
 ## Try It
 EclairJS Node provides a Docker container that contains all of its dependencies on [Dockerhub](https://hub.docker.com/r/eclairjs/minimal-gateway/).
 
+The Docker image supports the latest released version of EclairJS Node and may not work with `master`.   You can simple check out the appropriate branch (` git checkout branch-0.5` for example).
+
 ```bash
 docker pull eclairjs/minimal-gateway
 docker run -p 8888:8888 eclairjs/minimal-gateway
@@ -59,7 +61,7 @@ export JUPYTER_PORT=8888
 
 Now you can run the Word count example:
 
-```
+```bash
 node --harmony examples/rddtop10.js ./dream.txt
 ```
 
