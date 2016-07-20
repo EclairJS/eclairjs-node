@@ -293,7 +293,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line365">line 365</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line427">line 427</a>
     </li></ul></dd>
     
 
@@ -793,7 +793,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line231">line 231</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line255">line 255</a>
     </li></ul></dd>
     
 
@@ -965,7 +965,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line211">line 211</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line235">line 235</a>
     </li></ul></dd>
     
 
@@ -1106,7 +1106,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line348">line 348</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line410">line 410</a>
     </li></ul></dd>
     
 
@@ -1145,6 +1145,169 @@
     <dd>
         
 <span class="param-type">Promise.&lt;Void></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="groupByKey"><span class="type-signature"></span>groupByKey<span class="signature">(number<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {<a href="module-eclairjs_rdd.PairRDD.html">module:eclairjs/rdd.PairRDD</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Group the values for each key in the RDD into a single sequence. Allows controlling the partitioning of the resulting 
+key-value pair RDD by passing a Partitioner. Note: If you are grouping in order to perform an aggregation (such as a sum or average) 
+over each key, using PairRDD.reduceByKey or combineByKey will provide much better performance.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>number</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">number of partitions</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line296">line 296</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="module-eclairjs_rdd.PairRDD.html">module:eclairjs/rdd.PairRDD</a></span>
 
 
     </dd>
@@ -1285,7 +1448,7 @@ pair of elements will be returned as a (k, (v1, v2)) tuple, where (k, v1) is in 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line387">line 387</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line449">line 449</a>
     </li></ul></dd>
     
 
@@ -1457,7 +1620,7 @@ pair of elements will be returned as a (k, (v1, v2)) tuple, where (k, v1) is in 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line171">line 171</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line195">line 195</a>
     </li></ul></dd>
     
 
@@ -1492,6 +1655,178 @@ pair of elements will be returned as a (k, (v1, v2)) tuple, where (k, v1) is in 
     <dd>
         
 <span class="param-type"><a href="module-eclairjs_rdd.PairRDD.html">module:eclairjs/rdd.PairRDD</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="mapToFloat"><span class="type-signature"></span>mapToFloat<span class="signature">(func, bindArgs)</span><span class="type-signature"> &rarr; {<a href="module-eclairjs_rdd.FloatRDD.html">module:eclairjs/rdd.FloatRDD</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Return a new RDD by applying a function to all elements of this RDD.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>bindArgs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Object></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Optional array whose values will be added to func's argument list.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line313">line 313</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="module-eclairjs_rdd.FloatRDD.html">module:eclairjs/rdd.FloatRDD</a></span>
 
 
     </dd>
@@ -1629,7 +1964,7 @@ pair of elements will be returned as a (k, (v1, v2)) tuple, where (k, v1) is in 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line251">line 251</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line275">line 275</a>
     </li></ul></dd>
     
 
@@ -1801,7 +2136,7 @@ pair of elements will be returned as a (k, (v1, v2)) tuple, where (k, v1) is in 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line191">line 191</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line215">line 215</a>
     </li></ul></dd>
     
 
@@ -1952,7 +2287,7 @@ associative binary operator.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line291">line 291</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line353">line 353</a>
     </li></ul></dd>
     
 
@@ -2146,7 +2481,7 @@ the merging locally on each mapper before sending results to a reducer, similarl
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line313">line 313</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line375">line 375</a>
     </li></ul></dd>
     
 
@@ -2667,7 +3002,7 @@ the merging locally on each mapper before sending results to a reducer, similarl
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line332">line 332</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line394">line 394</a>
     </li></ul></dd>
     
 
@@ -2869,6 +3204,233 @@ the merging locally on each mapper before sending results to a reducer, similarl
 
     
 
+    <h4 class="name" id="takeOrdered"><span class="type-signature"></span>takeOrdered<span class="signature">(num, func, bindArgs<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Promise.&lt;Array>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    Asynchronously returns the first k (smallest) elements from this RDD as defined by the specified implicit Ordering[T] and maintains the ordering. This does the opposite of top.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>num</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">(undocumented) Function with one parameter</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>bindArgs</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Object></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">array whose values will be added to func's argument list.</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line135">line 135</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    A Promise that resolves to an array containing the first num elements in this RDD.
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Array></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
     <h4 class="name" id="takeSample"><span class="type-signature"></span>takeSample<span class="signature">(withReplacement, num, seed)</span><span class="type-signature"> &rarr; {Promise.&lt;Array>}</span></h4>
 
     
@@ -3015,7 +3577,7 @@ the merging locally on each mapper before sending results to a reducer, similarl
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line135">line 135</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line159">line 159</a>
     </li></ul></dd>
     
 
@@ -3119,7 +3681,7 @@ the merging locally on each mapper before sending results to a reducer, similarl
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line151">line 151</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line175">line 175</a>
     </li></ul></dd>
     
 
@@ -3223,7 +3785,7 @@ the merging locally on each mapper before sending results to a reducer, similarl
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line402">line 402</a>
+        <a href="rdd_PairRDD.js.html">rdd/PairRDD.js</a>, <a href="rdd_PairRDD.js.html#line464">line 464</a>
     </li></ul></dd>
     
 
@@ -3289,7 +3851,7 @@ the merging locally on each mapper before sending results to a reducer, similarl
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Mon Jun 20 2016 13:37:22 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Wed Jul 20 2016 09:07:20 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

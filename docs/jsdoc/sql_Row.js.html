@@ -44,6 +44,8 @@
 
 var Utils = require('../utils.js');
 
+var gKernelP;
+
 /*
  * NOTE: the following have not been implemented as they do not make sense for JavaScript
  *
@@ -87,6 +89,65 @@ function _resolveObj(result, resolve, reject) {
   resolve(isFinite(result) ? new Number(result).valueOf() : isBool(result) ? JSON.parse(result) : result);
 }
 
+function isBool (val) {
+  return val === 'true' || val === 'false';
+}
+
+function deepEquals(obj1, obj2) {
+  var isEqual = false;
+
+  if (typeof(obj1) === typeof(obj2)) {
+    if (Array.isArray(obj1)) {
+      if (obj1.length == obj2.length) {
+        isEqual = obj1.some(function(val, index) {
+          return val === obj2[index];
+        });
+      }
+    } else if (obj1 !== null &amp;&amp; typeof(obj1) === 'object') {
+      var keys1 = [], keys2 = [], values1 = [], values2 = [];
+
+      for (var key in obj1) {
+        keys1.push(key);
+        values1.push(obj1[key]);
+      }
+
+      for (var key in obj2) {
+        keys2.push(key);
+        values2.push(obj2[key]);
+      }
+
+      if (deepEquals(keys1, keys2) &amp;&amp; deepEquals(values1, values2)) {
+        isEqual = true;
+      }
+    } else {
+      isEqual = (obj1 === obj2);
+    }
+  }
+
+  return isEqual;
+}
+
+function areTwoRowsEqual(row1, row2) {
+  var isEqual = row1 instanceof Row &amp;&amp; row2 instanceof Row &amp;&amp; deepEquals(row1._schema, row2._schema) &amp;&amp; deepEquals(row1._values, row2._values);
+
+  return isEqual;
+}
+
+function getByIndex(row, index) {
+  var obj = {value: null, schema: null};
+
+  if (row._values) {
+    if (index &lt; row._values.length) {
+      obj.value = row._values[index];
+      obj.schema = row._schema.fields[index];
+    } else {
+      throw new Error('Index ' + index + ' is out of bounds');
+    }
+  }
+
+  return obj;
+}
+
 /**
  * @constructor
  * @memberof module:eclairjs/sql
@@ -94,9 +155,16 @@ function _resolveObj(result, resolve, reject) {
  * It is invalid to use the native primitive interface to retrieve a value that is null, instead a user must check isNullAt before attempting to retrieve a value that might be null.
  * To create a new Row, use RowFactory.create()
  */
-function Row(kernelP, refIdP) {
-  this.kernelP = kernelP;
-  this.refIdP = refIdP;
+function Row() {
+  if (arguments &amp;&amp; arguments.length == 2 &amp;&amp; arguments[0] instanceof Promise &amp;&amp; arguments[1] instanceof Promise) {
+    this.kernelP = arguments[0];
+    this.refIdP = arguments[1];
+  } else {
+    // local copy of data
+    this._values = arguments[0];
+    this._schema = arguments[1];
+    this._eclairLocal = true;
+  }
 }
 
 /**
@@ -104,18 +172,16 @@ function Row(kernelP, refIdP) {
  * @returns {boolean}
  */
 Row.prototype.anyNull = function() {
-  var args = {
-    target: this,
-    method: 'anyNull',
-    returnType: Boolean
-  };
+  var result = false;
 
-  return Utils.generate(args);
+  if (this._values) {
+    result = this._values.some(function(item) {
+      return item === null;
+    });
+  }
+
+  return result;
 };
-
-function isBool (val) {
-  return val === 'true' || val === 'false';
-}
 
 /**
  * Returns the value at position index.
@@ -123,15 +189,7 @@ function isBool (val) {
  * @returns {object}
  */
 Row.prototype.apply = function(index) {
-  var args = {
-    target: this,
-    method: 'apply',
-    args: Utils.wrapArguments(arguments),
-    returnType: Object,
-    resolver: _resolveObj
-  };
-
-  return Utils.generate(args);
+  return getByIndex(this, index).value;
 };
 
 /**
@@ -139,13 +197,7 @@ Row.prototype.apply = function(index) {
  * @returns {module:eclairjs/sql.Row}
  */
 Row.prototype.copy = function() {
-  var args = {
-    target: this,
-    method: 'copy',
-    returnType: Row
-  };
-
-  return Utils.generate(args);
+  return new Row(this._values, this._schema);
 };
 
 /**
@@ -154,14 +206,28 @@ Row.prototype.copy = function() {
  * @returns {boolean}
  */
 Row.prototype.equals = function(obj) {
-  var args = {
-    target: this,
-    method: 'equals',
-    args: Utils.wrapArguments(arguments),
-    returnType: Boolean
-  };
+  return areTwoRowsEqual(this, obj);
+};
 
-  return Utils.generate(args);
+Row.prototype._fieldIndex = function(name) {
+  var index = -1;
+
+  if (this._schema) {
+    this._schema.fields.some(function(field, i) {
+      if (field.name === name) {
+        index = i;
+        return true;
+      } else {
+        return false;
+      }
+    });
+  }
+
+  if (index >= 0) {
+    return index;
+  } else {
+    throw new Error('field "'+name+'" does not exist');
+  }
 };
 
 /**
@@ -170,14 +236,11 @@ Row.prototype.equals = function(obj) {
  * @returns {integer}
  */
 Row.prototype.fieldIndex = function(name) {
-  var args = {
-    target: this,
-    method: 'fieldIndex',
-    args: Utils.wrapArguments(arguments),
-    returnType: Number
-  };
-
-  return Utils.generate(args);
+  if (this._schema) {
+    return this._fieldIndex(name);
+  } else {
+    throw new Error('fieldIndex on a Row without a schema is undefined');
+  }
 };
 
 /**
@@ -186,15 +249,7 @@ Row.prototype.fieldIndex = function(name) {
  * @returns {object}
  */
 Row.prototype.get = function(index) {
-  var args = {
-    target: this,
-    method: 'get',
-    args: Utils.wrapArguments(arguments),
-    returnType: Object,
-    resolver: _resolveObj
-  };
-
-  return Utils.generate(args);
+  return getByIndex(this, index).value;
 };
 
 /**
@@ -203,14 +258,13 @@ Row.prototype.get = function(index) {
  * @returns {boolean}
  */
 Row.prototype.getBoolean = function(index) {
-  var args = {
-    target: this,
-    method: 'getBoolean',
-    args: Utils.wrapArguments(arguments),
-    returnType: Boolean
-  };
+  var item = getByIndex(this, index);
 
-  return Utils.generate(args);
+  if (item.schema.dataType === 'boolean') {
+    return item.value;
+  } else {
+    throw new Error('the type for index '+index+' is not a Boolean');
+  }
 };
 
 /**
@@ -229,25 +283,22 @@ Row.prototype.getByte = function(index) {
 /**
  * Returns the value at position index of type as Date.
  * @param {integer} index
- * @returns {module:eclairjs/sql.SqlDate}
+ * @returns {Date}
  */
 Row.prototype.getDate = function(index) {
-  var SqlDate = require('./SqlDate.js')(this.kernelP);
+  var item = getByIndex(this, index);
 
-  var args = {
-    target: this,
-    method: 'getDate',
-    args: Utils.wrapArguments(arguments),
-    returnType: SqlDate
-  };
-
-  return Utils.generate(args);
+  if (item.schema.dataType === 'date') {
+    return new Date(item.value);
+  } else {
+    throw new Error('the type for index '+index+' is not a Date');
+  }
 };
 
 /**
  * Returns the value at position index of type as decimal.
  * @param {integer} index
- * @returns {decimal}
+ * @returns {Promise.&lt;decimal>}
  * @ignore
  */
 /* Not applicable to JavaScript
@@ -263,14 +314,13 @@ Row.prototype.getDecimal = function(index) {
  * @returns {double}
  */
 Row.prototype.getDouble = function(index) {
-  var args = {
-    target: this,
-    method: 'getDouble',
-    args: Utils.wrapArguments(arguments),
-    returnType: Number
-  };
+  var item = getByIndex(this, index);
 
-  return Utils.generate(args);
+  if (item.schema.dataType === 'double') {
+    return item.value;
+  } else {
+    throw new Error('the type for index '+index+' is not a Double');
+  }
 };
 
 /**
@@ -279,14 +329,13 @@ Row.prototype.getDouble = function(index) {
  * @returns {float}
  */
 Row.prototype.getFloat = function(index) {
-  var args = {
-    target: this,
-    method: 'getFloat',
-    args: Utils.wrapArguments(arguments),
-    returnType: Number
-  };
+  var item = getByIndex(this, index);
 
-  return Utils.generate(args);
+  if (item.schema.dataType === 'double') {
+    return item.value;
+  } else {
+    throw new Error('the type for index '+index+' is not a Float');
+  }
 };
 
 /**
@@ -295,14 +344,13 @@ Row.prototype.getFloat = function(index) {
  * @returns {integer}
  */
 Row.prototype.getInt = function(index) {
-  var args = {
-    target: this,
-    method: 'getInt',
-    args: Utils.wrapArguments(arguments),
-    returnType: Number
-  };
+  var item = getByIndex(this, index);
 
-  return Utils.generate(args);
+  if (item.schema.dataType === 'integer') {
+    return item.value;
+  } else {
+    throw new Error('the type for index '+index+' is not a Integer');
+  }
 };
 
 /**
@@ -337,14 +385,13 @@ Row.prototype.getShort = function(index) {
  * @returns {String}
  */
 Row.prototype.getString = function(index) {
-  var args = {
-    target: this,
-    method: 'getString',
-    args: Utils.wrapArguments(arguments),
-    returnType: String
-  };
+  var item = getByIndex(this, index);
 
-  return Utils.generate(args);
+  if (item.schema.dataType === 'string') {
+    return item.value;
+  } else {
+    throw new Error('the type for index '+index+' is not a String');
+  }
 };
 
 /**
@@ -353,6 +400,8 @@ Row.prototype.getString = function(index) {
  * @returns {module:eclairjs/sql.Row}
  */
 Row.prototype.getStruct = function(index) {
+  throw "not implemented by ElairJS";
+/*
   var args = {
     target: this,
     method: 'getStruct',
@@ -361,38 +410,22 @@ Row.prototype.getStruct = function(index) {
   };
 
   return Utils.generate(args);
+*/
 };
 
 /**
  * Returns the value at position index of date type as Date.
  * @param {integer} index
- * @returns {module:eclairjs/sql.SqlTimestamp}
+ * @returns {Date}
  */
 Row.prototype.getTimestamp = function(index) {
-  var SqlTimestamp = require('./SqlTimestamp.js')(this.kernelP);
+  var item = getByIndex(this, index);
 
-  var args = {
-    target: this,
-    method: 'getTimestamp',
-    args: Utils.wrapArguments(arguments),
-    returnType: SqlTimestamp
-  };
-
-  return Utils.generate(args);
-};
-
-/**
- * Returns hash code
- * @returns {int}
- */
-Row.prototype.hashCode = function() {
-  var args = {
-    target: this,
-    method: 'hashCode',
-    returnType: Number
-  };
-
-  return Utils.generate(args);
+  if (item.schema.dataType === 'timestamp') {
+    return new Date(item.value);
+  } else {
+    throw new Error('the type for index '+index+' is not a Timestamp');
+  }
 };
 
 /**
@@ -401,28 +434,15 @@ Row.prototype.hashCode = function() {
  * @returns {boolean}
  */
 Row.prototype.isNullAt = function(index) {
-  var args = {
-    target: this,
-    method: 'isNullAt',
-    args: Utils.wrapArguments(arguments),
-    returnType: Boolean
-  };
-
-  return Utils.generate(args);
+  return (getByIndex(this, index).value === null);
 };
 
 /**
  * Number of elements in the Row.
- * @returns {integer}
+ * @returns {Promise.&lt;integer>}
  */
 Row.prototype.length = function() {
-  var args = {
-    target: this,
-    method: 'length',
-    returnType: Number
-  };
-
-  return Utils.generate(args);
+  return this._values.length;
 };
 
 /**
@@ -430,17 +450,33 @@ Row.prototype.length = function() {
  * @param {string} [separator]
  * @param {string} [start] start will be ignored if end parameter is not specified
  * @param {string} [end] Required if start specified
- * @returns {string}
+ * @returns {Promise.&lt;string>}
  */
 Row.prototype.mkString = function() {
-  var args = {
-    target: this,
-    method: 'mkString',
-    args: Utils.wrapArguments(arguments),
-    returnType: String
-  };
+  var str = '';
+  var args = arguments;
 
-  return Utils.generate(args);
+  if (args.length == 3) {
+    str += args[0];
+  }
+
+  this._values.forEach(function (value, i, values) {
+    str += value;
+
+    if (i &lt; values.length - 1) {
+      if (args.length == 1) {
+        str += args[0];
+      } else if (args.length == 3) {
+        str += args[1];
+      }
+    }
+  });
+
+  if (args.length == 3) {
+    str += arguments[2];
+  }
+
+  return str;
 };
 
 /**
@@ -450,13 +486,50 @@ Row.prototype.mkString = function() {
 Row.prototype.schema = function() {
   var StructType = require('./types/StructType.js')(this.kernelP);
 
-  var args = {
-    target: this,
-    method: 'schema',
-    returnType: StructType
-  };
+  var StructField = require('./types/StructField.js')(this.kernelP);
+  var Metadata = require('./types/Metadata.js')(this.kernelP);
+  var DataTypes = require('./types/DataTypes.js')(this.kernelP);
 
-  return Utils.generate(args);
+  var fields = [];
+
+  this._schema.fields.forEach(function (field) {
+    var dt;
+
+    // TODO: make this easier, perhaps a method in datatypes?
+    switch (field.dataType) {
+      case 'boolean':
+        dt = DataTypes.BooleanType;
+        break;
+
+      case 'date':
+        dt = DataTypes.DateType;
+        break;
+
+      case 'double':
+        dt = DataTypes.DoubleType;
+        break;
+
+      case 'float':
+        dt = DataTypes.FloatType;
+        break;
+
+      case 'integer':
+        dt = DataTypes.IntegerType;
+        break;
+
+      case 'timestamp':
+        dt = DataTypes.TimestampType;
+        break;
+
+      case 'string':
+        dt = DataTypes.StringType;
+        break;
+    }
+
+    fields.push(new StructField(field.name, dt, field.nullable, Metadata.empty()));
+  });
+
+  return new StructType(fields);
 };
 
 /**
@@ -464,18 +537,36 @@ Row.prototype.schema = function() {
  * @returns {integer}
  */
 Row.prototype.size = function() {
-  var args = {
-    target: this,
-    method: 'size',
-    returnType: Number
-  };
+  return this._values.length;
+};
 
-  return Utils.generate(args);
+Row.prototype.toJSON = function() {
+  if (this._schema) {
+    var result = {};
+    var myThis = this;
+    this._schema.fields.forEach(function(field, i) {
+      result[field.name] = myThis._values[i];
+    }.bind(this));
+
+    return result;
+  } else {
+    return this._values;
+  }
+};
+
+Row.prototype._generateRemote = function() {
+  var RowFactory = require('./RowFactory')(gKernelP);
+
+  return RowFactory.createRemote(this._values);
 };
 
 Row.moduleLocation = '/sql/Row';
 
-module.exports = Row;</code></pre>
+module.exports = function(kernelP) {
+  gKernelP = kernelP;
+
+  return Row;
+};</code></pre>
         </article>
     </section>
 
@@ -491,7 +582,7 @@ module.exports = Row;</code></pre>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Mon Jun 20 2016 13:37:18 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Wed Jul 20 2016 09:07:16 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>

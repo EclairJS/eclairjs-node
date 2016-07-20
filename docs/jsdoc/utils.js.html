@@ -42,8 +42,6 @@
  * limitations under the License.
  */
 
-var protocol = require('./kernel.js');
-
 var Utils = {};
 
 var moduleRequireCache = {};
@@ -83,7 +81,7 @@ Utils.prepForReplacement = function(obj, skipArrayCreation) {
   } else if (Array.isArray(obj)) {
     var newArr = [];
 
-    obj.forEach(function(item) {
+    obj.forEach(function (item) {
       newArr.push(Utils.prepForReplacement(item));
     });
 
@@ -97,7 +95,12 @@ Utils.prepForReplacement = function(obj, skipArrayCreation) {
       }
     }
   } else if (typeof(obj) == "object") {
-    return JSON.stringify(obj);
+    if (obj._eclairLocal) {
+      // a local copy of data, for example Row
+      return obj._generateRemote().refIdP;
+    } else {
+      return JSON.stringify(obj);
+    }
   } else {
     return obj;
   }
@@ -194,6 +197,8 @@ function generateRequires(requires) {
  *     - [resolver]  {function} A resolver function
  */
 Utils.generate = function(args) {
+  var protocol = require('./kernel.js');
+
   var target = args.target;
   var method = args.method;
   var returnType = args.returnType;
@@ -372,7 +377,7 @@ Utils.generate = function(args) {
         code += ');';
       }
 
-      // console.log(code);
+      Utils.log('Executing: ' + code);
 
       if (executionType == EXECUTION.RESULT_TYPE || executionType == EXECUTION.RESULT_NATIVE_ARRAY_TYPE) {
         protocol.verifyKernelExecution(kernel.execute({code: code}), _resultTypeResolver, reject);
@@ -408,6 +413,8 @@ Utils.handleAbstractConstructor = function(context, callArgs) {
 };
 
 Utils.handleConstructor = function(context, callArgs, kernelP) {
+  var protocol = require('./kernel.js');
+
   if (callArgs &amp;&amp; callArgs.length == 2 &amp;&amp; callArgs[0] instanceof Promise &amp;&amp; callArgs[1] instanceof Promise) {
     // Someone created an instance of this class for us
     context.kernelP = callArgs[0];
@@ -452,6 +459,8 @@ Utils.handleConstructor = function(context, callArgs, kernelP) {
 
         code += ');';
 
+        Utils.log('Executing: ' + code);
+
         protocol.verifyKernelExecution(kernel.execute({code: code, silent: false}), resolve, reject, [refId]);
       }).catch(reject);
     });
@@ -462,6 +471,8 @@ Utils.handleConstructor = function(context, callArgs, kernelP) {
 };
 
 Utils.generateConstructor = function(args) {
+  var protocol = require('./kernel.js');
+
   var target = args.target;
   var callArgs = args.args ? args.args : null;
   var kernelP = args.kernelP;
@@ -510,6 +521,8 @@ Utils.generateConstructor = function(args) {
       }
 
       code += ');';
+
+      Utils.log('Executing: ' + code);
 
       protocol.verifyKernelExecution(kernel.execute({code: code, silent: false}), resolve, reject, [refId]);
     }).catch(reject);
@@ -598,11 +611,13 @@ function handleArguments(args) {
             val = val.toFixed(1);
           }
           promises.push(Promise.resolve(val));
+        } else if (arg.type == '_eclairLocal') {
+          promises.push(Promise.resolve(arg.value._generateRemote().refIdP));
         } else if (arg.type == 'sparkclassref') {
           // we have a spark class reference, so return its name
           promises.push(Promise.resolve(arg.value.name));
           // add the class to the requires list
-          requires.push({name: arg.value.name, moduleLocation: arg.value.moduleLocation});  
+          requires.push({name: arg.value.name, moduleLocation: arg.value.moduleLocation});
         } else {
           promises.push(Promise.resolve(arg.value));
         }
@@ -652,6 +667,7 @@ Utils.wrapArray = function(arr, sparkType) {
 
       if (sparkType &amp;&amp; item instanceof sparkType) {
         type = sparkType;
+      } else if (item === null) {
       } else {
         if (item.refIdP) {
           // spark class instance
@@ -674,6 +690,9 @@ Utils.wrapArray = function(arr, sparkType) {
             type = '_eclairSerialize';
           } else if (item._eclairForceFloat) {
             type = '_eclairForceFloat';
+          } else if (item._eclairLocal) {
+            // a local copy of data, for example Row
+            type = '_eclairLocal';
           } else {
             type = 'map';
           }
@@ -705,6 +724,8 @@ Utils.wrapBindArgs = function(bindArgs) {
 
 // Executes js code on Toree, use for testing only!
 Utils.execute = function(args) {
+  var protocol = require('./kernel.js');
+
   var code = args.code;
   var returnType = args.returnType;
   var kernelP = args.kernelP;
@@ -733,8 +754,27 @@ Utils.forceFloat = function(value) {
   return {_eclairForceFloat: true, value: value}
 };
 
+Utils.remoteLog = function(kernel) {
+  var logLevels=  process.env.ECLAIRJS_LOG || "";
+  var comm = kernel.connectToComm('logger', "ID1");
+
+  comm.onMsg = (msg) => {
+    console.log(msg.content.data.log)
+  };
+
+  comm.open(logLevels);
+};
+
 Utils.log = function(msg) {
-  console.log(msg);
+  if (process.env.ECLAIRJS_VERBOSE) {
+    console.log('\n'+msg);
+  }
+};
+
+Utils.error = function(msg, e) {
+  if (process.env.ECLAIRJS_VERBOSE) {
+    console.error('\n'+msg, e);
+  }
 };
 
 module.exports = Utils;
@@ -754,7 +794,7 @@ module.exports = Utils;
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Mon Jun 20 2016 13:37:18 GMT-0700 (PDT)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0-dev</a> on Wed Jul 20 2016 09:07:16 GMT-0700 (PDT)
 </footer>
 
 <script> prettyPrint(); </script>
