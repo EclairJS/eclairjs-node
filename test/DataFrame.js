@@ -286,7 +286,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var row1 = dataFrame1.head();');
+          expect(result).equals('JSON.stringify(dataFrame1.head());');
         },
         done
       );
@@ -592,7 +592,7 @@ describe('DataFrame', function() {
 
           onceDone(result).then(callback);
         }, function(result) {
-          expect(result).equals('var row2 = dataFrame1.first();');
+          expect(result).equals('JSON.stringify(dataFrame1.first());');
         },
         done
       );
