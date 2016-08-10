@@ -69,6 +69,7 @@ You can learn more about the Docker container [here](https://github.com/EclairJS
 You can also try out EclairJS in Jupyter notebooks running under the [IBM Bluemix Cloud](https://github.com/EclairJS/eclairjs-node/wikis/EclairJS-with-IBM-Bluemix).
 
 ## Documentation
+* [Developing with EclairJS](https://github.com/EclairJS/eclairjs-node/wiki/Developing-With-EclairJS)
 * [API Docs](https://github.com/EclairJS/eclairjs-node/wiki/API-Documentation)
 * [Wiki](https://github.com/EclairJS/eclairjs-node/wiki)
 * [Presentations](https://github.com/EclairJS/eclairjs-node/wiki/Project-and-Community#presentations)
@@ -92,7 +93,7 @@ or manually build and setup your own environment ([Build and Package](https://gi
 |SQL/DataFrames   | Partial Support    |
 |Streaming        | Partial Support    |
 |ml               | Partial Support    |
-|mllib             | Partial Support    |
+|mllib            | Partial Support    |
 |GraphX           | Unsupported        |
 
 Refer to the [API Documentation](https://github.com/EclairJS/eclairjs-node/wikis/API-Documentation) for a list of what is currently implemented.  Please note as new APIs are implemented for EclairJS Node they will be added to the master branch.
