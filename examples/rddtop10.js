@@ -16,7 +16,12 @@
 
 var spark = require('../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "foo");
+var session = spark.sql.SparkSession.builder()
+  .appName("Word Count")
+  .getOrCreate();
+
+//var sc = new spark.SparkContext("local[*]", "foo");
+var sc = session.sparkContext();
 
 var file = __dirname + '/dream.txt';
 
