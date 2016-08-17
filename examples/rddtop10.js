@@ -56,20 +56,8 @@ var rdd7 = rdd6.sortByKey(false);
 
 rdd7.take(10).then(function(val) {
   console.log("Success:", val);
-
-  sc.stop().then(function() {
-    process.exit();
-  }).catch(function(e) {
-    console.log(e);
-    process.exit();
-  });
-
-}).catch(function(err) {
-  console.log("Error:", err);
-  sc.stop().then(function() {
-    process.exit();
-  });
-});
+  stop();
+}).catch(stop);
 
 // stop spark streaming when we stop the node program
 process.on('SIGTERM', stop);
@@ -84,7 +72,7 @@ function stop(e) {
     console.log('Error:', e);
   }
 
-  if (sc) {
-    sc.stop().then(exit).catch(exit);
+  if (session) {
+    session.stop().then(exit).catch(exit);
   }
 }
