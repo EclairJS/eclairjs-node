@@ -23,7 +23,15 @@ var TestUtils = require('../lib/utils.js');
 
 var spark = require('../../lib/index.js');
 
-var sc = new spark.SparkContext("local[*]", "EclairJS Integration Tests");
+var sparkSession = spark.SparkSession
+  .builder()
+  .appName("EclairJS Integration Tests")
+  .master("local[*]")
+  .getOrCreate();
+
+var sc = sparkSession.sparkContext();
+
+global.SESSION = sparkSession;
 global.SC = sc;
 
 describe('SparkContext Integration Test', function() {
