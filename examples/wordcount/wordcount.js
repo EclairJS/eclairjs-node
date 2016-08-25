@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-var spark = require('../../lib/index.js');
-
-var sc;
+var eclairjs = require('../../lib/index.js');
 
 function WordCount() {
 }
 
 WordCount.prototype.do = function(callback) {
-  sc = new spark.SparkContext("local[*]", "Wordcount Demo");
+  var spark = new eclairjs();
+  var sc = this.sc = new spark.SparkContext("local[*]", "Wordcount Demo");
   var rdd = sc.textFile(__dirname + "/../dream.txt");
 
   var rdd2 = rdd.flatMap(function(sentence) {
@@ -38,22 +37,22 @@ WordCount.prototype.do = function(callback) {
     return word.trim().length > 0 && notFound;
   });
 
-  var rdd4 = rdd3.mapToPair(function(word) {
+  var rdd4 = rdd3.mapToPair(function(word, Tuple2) {
     var newWord = word.trim().toLowerCase();
 
     // remove trailing punctuation
     newWord = newWord.replace(/(\.|\"|\'|\,)*$/g, "");
 
-    return new Tuple(newWord,1);
-  });
+    return new Tuple2(newWord,1);
+  }, [spark.Tuple2]);
 
   var rdd5 = rdd4.reduceByKey(function(acc, v) {
     return acc + v;
   });
 
-  var rdd6 = rdd5.mapToPair(function(tuple) {
-    return new Tuple(tuple[1]+0.0, tuple[0]);
-  });
+  var rdd6 = rdd5.mapToPair(function(tuple, Tuple2) {
+    return new Tuple2(tuple._2()+0.0, tuple._1());
+  }, [spark.Tuple2]);
 
   var rdd7 = rdd6.sortByKey(false);
 
@@ -63,8 +62,8 @@ WordCount.prototype.do = function(callback) {
     results.forEach(function(tuple) {
       response.push({word: tuple[1], count: tuple[0]})
     });
-    callback(null, response)
-
+    callback(null, response);
+    sc.stop();
   }).catch(function(err) {
     console.log(err);
     callback(err)
@@ -72,8 +71,8 @@ WordCount.prototype.do = function(callback) {
 };
 
 WordCount.prototype.stop = function(callback) {
-  if (sc) {
-    sc.stop().then(callback).catch(callback);
+  if (this.sc) {
+    this.sc.stop().then(callback).catch(callback);
   } else {
     callback();
   }

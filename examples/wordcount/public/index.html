@@ -27,7 +27,8 @@
         <script src="https://raw.githubusercontent.com/jasondavies/d3-cloud/master/build/d3.layout.cloud.js"></script>
         <script>
             function _loadListener() {
-                buildCloud(JSON.parse(this.responseText));
+                //buildCloud(JSON.parse(this.responseText));
+                document.getElementById("chart").innerHTML = this.responseText;
 
                 // renable the run button
                 document.getElementById("runBtn").removeAttribute("disabled");
