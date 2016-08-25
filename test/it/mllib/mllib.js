@@ -20,19 +20,19 @@ var assert = require('assert');
 var expect = require('chai').expect;
 var TestUtils = require('../../lib/utils.js');
 
-var spark = require('../../../lib/index.js');
-
 var sc;
-
+var spark;
 var doWeOwnTheSC = false;
 
 if (global.SC) {
-  // we are being run inside another test, probably the main integration-test file
   sc = global.SC;
+  spark = global.SPARK;
 } else {
-  doWeOwnTheSC = true;
+  var eclairjs = require('../../../lib/index.js');
+  spark = new eclairjs();
   sc = new spark.SparkContext("local[*]", "mllib Integration Tests");
   global.SC = sc;
+  doWeOwnTheSC = true;
 }
 
 describe('mllib Test', function() {

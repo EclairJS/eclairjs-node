@@ -21,10 +21,12 @@ var expect = require('chai').expect;
 var path = require('path');
 var TestUtils = require('../lib/utils.js');
 
-var spark = require('../../lib/index.js');
+var eclairjs = require('../../lib/index.js');
+var spark = new eclairjs();
 
 var sc = new spark.SparkContext("local[*]", "EclairJS Integration Tests");
 global.SC = sc;
+global.SPARK = spark;
 
 describe('SparkContext Integration Test', function() {
   before(function(done) {
@@ -53,7 +55,7 @@ describe('SparkContext Integration Test', function() {
   describe("Streaming tests", function() {
     require('./streaming/DStream');
   });
-
+/*
   describe("ML tests", function() {
     require('./ml/ml.js');
   });
@@ -61,7 +63,7 @@ describe('SparkContext Integration Test', function() {
   describe("MLLib tests", function() {
     require('./mllib/mllib.js');
   });
-
+*/
   after(function(done) {
     if (sc) {
       sc.stop().then(done).catch(done);

@@ -21,13 +21,15 @@ var expect = require('chai').expect;
 var path = require('path');
 var TestUtils = require('../../lib/utils.js');
 
-var spark = require('../../../lib/index.js');
-
 var sc;
+var spark;
 
 if (global.SC) {
   sc = global.SC;
+  spark = global.SPARK;
 } else {
+  var eclairjs = require('../../../lib/index.js');
+  spark = new eclairjs();
   sc = new spark.SparkContext("local[*]", "sql.Column Integration Tests");
 }
 
@@ -101,7 +103,7 @@ describe('Column Test', function() {
       );
     });
   });
-
+/*
   describe("Column.and()", function() {
     it("should work in a select()", function(done) {
       TestUtils.executeTest(
@@ -604,7 +606,7 @@ describe('Column Test', function() {
       );
     });
   })
-
+*/
   after(function(done) {
     if (!global.SC && sc) {
       sc.stop().then(done).catch(done);

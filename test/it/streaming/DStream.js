@@ -23,13 +23,15 @@ var TestUtils = require('../../lib/utils.js');
 
 var net = require('net');
 
-var spark = require('../../../lib/index.js');
-
 var sc;
+var spark;
 
 if (global.SC) {
   sc = global.SC;
+  spark = global.SPARK;
 } else {
+  var eclairjs = require('../../../lib/index.js');
+  spark = new eclairjs();
   sc = new spark.SparkContext("local[*]", "DStream Integration Tests");
 }
 
