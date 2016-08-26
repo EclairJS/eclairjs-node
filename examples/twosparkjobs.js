@@ -22,8 +22,12 @@ var spark2 = new eclairjs();
 var sc1 = new spark1.SparkContext("local[*]", "Job 1");
 var sc2 = new spark2.SparkContext("local[*]", "Job 2");
 
-var p1 = sc1.parallelize([1,2,3,4]).collect();
-var p2 = sc2.parallelize([5,6,7,8]).collect();
+//var p1 = sc1.parallelize([1,2,3,4]).collect();
+//var p2 = sc2.parallelize([5,6,7,8]).collect();
+
+var p1 = sc1.appName();
+var p2 = sc2.appName();
+
 
 Promise.all([p1,p2]).then(function(results) {
   console.log("Success:", results);
