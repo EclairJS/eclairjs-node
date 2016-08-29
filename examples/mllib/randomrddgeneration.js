@@ -35,7 +35,7 @@ function createResulPromise(label, promise) {
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var numExamples = 10000; // # number of examples to generate
 

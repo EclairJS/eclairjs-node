@@ -35,7 +35,7 @@ function createResultPromise(label, promise) {
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var rows = sc.parallelize([
       spark.mllib.linalg.Vectors.dense([1.12, 2.05, 3.12]),

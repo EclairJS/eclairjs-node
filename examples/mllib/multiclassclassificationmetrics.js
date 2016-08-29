@@ -35,7 +35,7 @@ function createResulPromise(label, promise) {
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
 
     var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_multiclass_classification_data.txt");

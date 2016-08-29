@@ -29,7 +29,7 @@ var spark = require('../../lib/index.js');
 
 
 
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var freqItemsets = sc.parallelize(
       [

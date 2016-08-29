@@ -55,11 +55,11 @@ describe('SparkContext Integration Test', function() {
   describe("Streaming tests", function() {
     require('./streaming/DStream');
   });
-/*
+
   describe("ML tests", function() {
     require('./ml/ml.js');
   });
-
+/*
   describe("MLLib tests", function() {
     require('./mllib/mllib.js');
   });

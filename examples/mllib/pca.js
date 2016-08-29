@@ -37,7 +37,7 @@ function createResulPromise(label, promise) {
 var spark = require('../../lib/index.js');
 var Vectors = spark.mllib.linalg.Vectors;
 
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var data = sc.textFile(__dirname + "/data/random.data");
 

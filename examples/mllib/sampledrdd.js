@@ -28,7 +28,7 @@ function stop(e) {
 var spark = require('../../lib/index.js');
 
 
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var examples = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
 

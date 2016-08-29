@@ -27,7 +27,7 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var similarities = sc.parallelize([
       new spark.Tuple3(spark.forceFloat(0.0), spark.forceFloat(1.0), 0.9),

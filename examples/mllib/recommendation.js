@@ -27,7 +27,7 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var data = sc.textFile(__dirname + "/data/alsdata.txt");
 

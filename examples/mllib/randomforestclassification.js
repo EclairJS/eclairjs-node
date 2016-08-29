@@ -31,7 +31,7 @@ var k = 3;
 var iterations = 10;
 var runs = 1;
 
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var data =  spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
 
