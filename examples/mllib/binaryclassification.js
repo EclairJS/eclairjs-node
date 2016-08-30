@@ -25,8 +25,6 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
 function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
@@ -64,8 +62,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sc = new spark.SparkContext("local[*]", "Binary Classification Metrics");
-  run(sc).then(function(results) {
+  run(sc, spark).then(function(results) {
     console.log("Precision By Threshold:", results[0]);
     console.log("Recall By Threshold:", results[1]);
     console.log("Measure By Threshold:", results[2]);

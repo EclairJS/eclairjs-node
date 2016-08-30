@@ -24,10 +24,6 @@ function stop(e) {
   }
   sc.stop().then(exit).catch(exit);
 }
-
-var spark = require('../../lib/index.js');
-
-
 function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var List = spark.List;
@@ -52,8 +48,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sc = new spark.SparkContext("local[*]", "Prefix Span");
-  run(sc).then(function(result) {
+  run(sc, spark).then(function(result) {
     console.log(JSON.stringify(result));
     stop();
   }).catch(stop);

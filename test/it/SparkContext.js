@@ -21,7 +21,7 @@ var expect = require('chai').expect;
 var path = require('path');
 var TestUtils = require('../lib/utils.js');
 
-var spark = require('../../lib/index.js');
+
 
 var sc;
 var spark;

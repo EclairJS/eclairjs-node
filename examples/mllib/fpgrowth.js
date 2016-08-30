@@ -25,8 +25,6 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
 function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var minSupport = 0.3;
@@ -52,8 +50,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sc = new spark.SparkContext("local[*]", "FP Growth");
-  run(sc).then(function(results) {
+  run(sc, spark).then(function(results) {
     results.forEach(function(itemSet) {
       console.log(itemSet.items, itemSet.freq)
     });

@@ -59,11 +59,11 @@ describe('SparkContext Integration Test', function() {
   describe("ML tests", function() {
     require('./ml/ml.js');
   });
-/*
+
   describe("MLLib tests", function() {
     require('./mllib/mllib.js');
   });
-*/
+
   after(function(done) {
     if (sc) {
       sc.stop().then(done).catch(done);

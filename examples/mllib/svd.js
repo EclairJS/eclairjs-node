@@ -33,8 +33,6 @@ function createResultPromise(label, promise) {
   });
 }
 
-var spark = require('../../lib/index.js');
-
 function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var rows = sc.parallelize([
@@ -62,8 +60,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sc = new spark.SparkContext("local[*]", "SVD");
-  run(sc).then(function(results) {
+  run(sc, spark).then(function(results) {
     results.forEach(function(result) {
       console.log(result[0], '=', result[1])
     });

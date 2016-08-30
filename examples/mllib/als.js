@@ -25,8 +25,6 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
 var rank = 12;
 var iterations = 4;
 var blocks = -1;

@@ -28,7 +28,7 @@ function stop(e) {
   }
 }
 
-var spark = require('../../lib/index.js');
+
 var net = require('net');
 
 var server = net.createServer(function(socket) {

@@ -32,10 +32,6 @@ function createResulPromise(label, promise) {
     }).catch(reject);
   });
 }
-
-
-var spark = require('../../lib/index.js');
-
 function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var data = sc.textFile(__dirname + "/data/random.data");
@@ -65,8 +61,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sc = new spark.SparkContext("local[*]", "LR Test");
-  run(sc).then(function(result) {
+  run(sc, spark).then(function(result) {
     console.log('Final weight:', result);
     stop();
   }).catch(stop);

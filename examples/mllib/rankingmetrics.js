@@ -25,8 +25,6 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
 function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var data = sc.textFile(__dirname + "/data/sample_movielens_data.txt");
@@ -103,8 +101,6 @@ function run(sc, spark) {
 
     // Create regression metrics object
     var regressionMetrics = new spark.mllib.evaluation.RegressionMetrics(ratesAndPreds);
-
-
     function createResulPromise(label, promise) {
       return new Promise(function(resolve, reject) {
         promise.then(function(result) {
@@ -133,8 +129,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sc = new spark.SparkContext("local[*]", "Ranking Metrics");
-  run(sc).then(function(results) {
+  run(sc, spark).then(function(results) {
     results.forEach(function(result) {
       console.log(result[0], '=', result[1])
     });

@@ -24,10 +24,6 @@ function stop(e) {
   }
   sc.stop().then(exit).catch(exit);
 }
-
-var spark = require('../../lib/index.js');
-
-
 function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var examples = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
@@ -57,8 +53,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sc = new spark.SparkContext("local[*]", "Sampled RDDs");
-  run(sc).then(function(results) {
+  run(sc, spark).then(function(results) {
     console.log('RDD.sample(): sample has ' + results[0] + ' examples');
     console.log('RDD.takeSample(): sample has ' + results[1].length + ' examples');
     stop();

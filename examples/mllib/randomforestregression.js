@@ -25,8 +25,6 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
 function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var k = 3;
@@ -85,8 +83,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sc = new spark.SparkContext("local[*]", "Random Forest Regression");
-  run(sc).then(function(results) {
+  run(sc, spark).then(function(results) {
     console.log("Test Mean Squared Error:", results[0]/results[1]);
     stop();
   }).catch(stop);
