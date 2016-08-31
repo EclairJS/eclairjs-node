@@ -28,7 +28,6 @@ var sc2 = new spark2.SparkContext("local[*]", "Job 2");
 var p1 = sc1.appName();
 var p2 = sc2.appName();
 
-
 Promise.all([p1,p2]).then(function(results) {
   console.log("Success:", results);
   stop();

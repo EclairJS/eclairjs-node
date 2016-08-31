@@ -31,12 +31,15 @@ function stop(e) {
 
 var net = require('net');
 
+var eclairjs = require('../../lib/index.js');
+
 var server = net.createServer(function(socket) {
   setInterval(function() {
     socket.write("Words are great\n");
   }, 1000);
 }).listen(4000);
 
+var spark = new eclairjs();
 var sparkContext = new spark.SparkContext("local[*]", "Network Word Count");
 var ssc = new spark.streaming.StreamingContext(sparkContext, new spark.streaming.Duration(2000));
 

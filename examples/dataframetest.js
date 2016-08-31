@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-var spark = require('../lib/index.js');
+var eclairjs = require('../lib/index.js');
+var spark = new eclairjs();
 
 var sparkContext = new spark.SparkContext("local[*]", "dataframe test");
 var sqlContext = new spark.sql.SQLContext(sparkContext);
