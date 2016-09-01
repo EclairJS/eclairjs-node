@@ -17,7 +17,8 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 
-var spark = require('./lib/spark.js');
+var eclairjs = require('./lib/spark.js');
+var spark = new eclairjs();
 var ctx = new spark.SparkContext("local[*]", "foo");
 
 describe('SQL Test', function() {
@@ -58,7 +59,7 @@ describe('SQL Test', function() {
         function() {
           sqlContext = new spark.sql.SQLContext(ctx);
         }, function(msg) {
-          expect(msg.code).equals('var sqlcontext1 = new SQLContext(jsc);');
+          expect(msg.code).equals('var SQLContext = require(EclairJS_Globals.NAMESPACE + \'/sql/SQLContext\');\nvar sqlcontext1 = new SQLContext(jsc);');
         },
         done
       );
@@ -88,7 +89,7 @@ describe('SQL Test', function() {
           fields = [];
           fields.push(DataTypes.createStructField("name", DataTypes.StringType, true));
         }, function(msg) {
-          expect(msg.code).equals('var structField1 = DataTypes.createStructField("name", DataTypes.StringType, true);');
+          expect(msg.code).equals('var DataTypes = require(EclairJS_Globals.NAMESPACE + \'/sql/types/DataTypes\');\nvar structField1 = DataTypes.createStructField("name", DataTypes.StringType, true);');
         },
         done
       );

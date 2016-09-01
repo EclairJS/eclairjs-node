@@ -25,7 +25,8 @@
 
  */
 
-var spark = require('../lib/index.js');
+var eclairjs = require('../lib/index.js');
+var spark = new eclairjs();
 
 var sparkConf = new spark.SparkConf()
 	.set("spark.executor.memory", "10g")

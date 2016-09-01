@@ -28,8 +28,8 @@ function stop(e) {
   }
 }
 
-
-
+var eclairjs = require('../../lib/index.js');
+var spark = new eclairjs();
 var sparkContext = new spark.SparkContext("local[*]", "Queue Stream");
 var ssc = new spark.streaming.StreamingContext(sparkContext, new spark.streaming.Duration(1000));
 
@@ -43,7 +43,7 @@ for (var i = 0; i < 1000; i++) {
   list.push(i);
 }
 for (var i = 0; i < 30; i++) {
-  rddQueue.push(ssc.sparkContext().parallelize(list));
+  rddQueue.push(sparkContext.parallelize(list));
 }
 
 // Create the QueueInputDStream and use it do some processing

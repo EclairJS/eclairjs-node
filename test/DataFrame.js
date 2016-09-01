@@ -17,7 +17,8 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 
-var spark = require('./lib/spark.js');
+var eclairjs = require('./lib/spark.js');
+var spark = new eclairjs();
 var sc = new spark.SparkContext("local[*]", "foo");
 var sqlContext = new spark.sql.SQLContext(sc);
 
@@ -103,7 +104,7 @@ describe('DataFrame', function() {
           df = sqlContext.createDataFrame(rowRDD, schema);
           onceDone(df).then(callback);
         }, function(result) {
-          expect(result.length).equals(8);
+          expect(result.length).equals(9);
         },
         done
       );
