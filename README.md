@@ -20,7 +20,9 @@ EclairJS Node's api mirrors the Spark api.  Here is the classic word count examp
 ```node
 var eclairjs = require('eclairjs');
 
-var sc = new eclairjs.SparkContext("local[*]", "Simple Word Count");
+var spark = new eclairjs();
+
+var sc = new spark.SparkContext("local[*]", "Simple Word Count");
 
 var textFile = sc.textFile('foo.txt');
 
