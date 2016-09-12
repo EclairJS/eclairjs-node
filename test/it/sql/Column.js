@@ -95,7 +95,7 @@ describe('Column Test', function() {
           var col = dataFrame.col("age");
           col.alias("newAge").toString().then(callback);
         }, function(result) {
-          expect(result).contains("age AS newAge");
+          expect(result).contains("age AS `newAge`");
         },
         done
       );
@@ -108,7 +108,7 @@ describe('Column Test', function() {
         function(callback) {
           dataFrame.select(dataFrame.col("isOld").and(dataFrame.col("hasJob"))).toString().then(callback);
         }, function(result) {
-          expect(result).equals("[(isOld && hasJob): boolean]");
+          expect(result).equals("[(isOld AND hasJob): boolean]");
         },
         done
       );
@@ -122,7 +122,7 @@ describe('Column Test', function() {
           var col = dataFrame.col("age");
           col.as(["newAge", "ventage"]).toString().then(callback);
         }, function(result) {
-          expect(result).equals('age AS ArrayBuffer(newAge, ventage)');
+          expect(result).equals('multialias(age)');
         },
         done
       );
@@ -205,7 +205,7 @@ describe('Column Test', function() {
         function(callback, error) {
           dataFrame.col("age").cast(DataTypes.StringType).toString().then(callback).catch(error);
         }, function(result) {
-          expect(result).contain('cast(age as string)');
+          expect(result).contain('CAST(age AS STRING)');
         },
         done
       );
@@ -218,7 +218,7 @@ describe('Column Test', function() {
         function(callback) {
           dataFrame.col("age").cast('string').toString().then(callback);
         }, function(result) {
-          expect(result).contain('cast(age as string)');
+          expect(result).contain('CAST(age AS STRING)');
         },
         done
       );
@@ -232,7 +232,7 @@ describe('Column Test', function() {
         function(callback) {
           dataFrame.col("name").contains("dog").toString().then(callback);
         }, function(result) {
-          expect(result).equals('Contains(name, dog)');
+          expect(result).equals('contains(name, dog)');
         },
         done
       );
@@ -367,7 +367,7 @@ describe('Column Test', function() {
         function(callback) {
           dataFrame.col("age").getField("expense").toString().then(callback);
         }, function(result) {
-          expect(result).equals('age[expense]');
+          expect(result).equals('age["expense"]');
         },
         done
       );
@@ -380,7 +380,7 @@ describe('Column Test', function() {
         function(callback) {
           dataFrame.col("age").getItem("expense").toString().then(callback);
         }, function(result) {
-          expect(result).equals('age[expense]');
+          expect(result).equals('age["expense"]');
         },
         done
       );
@@ -413,11 +413,11 @@ describe('Column Test', function() {
     });
   })
 
-  describe("Column.in([20,19])", function() {
+  describe("Column.isin([20,19])", function() {
     it("should false,false,true", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          dataFrame.select(dataFrame.col("age").in([20,19])).collect().then(function(rows) {
+          dataFrame.select(dataFrame.col("age").isin([20,19])).collect().then(function(rows) {
             callback(rows[2].getBoolean(0));
           });
         }, function(result) {
@@ -449,7 +449,7 @@ describe('Column Test', function() {
         function(callback) {
           dataFrame.col("age").isNull().toString().then(callback);
         }, function(result) {
-          expect(result).equals("isnull(age)");
+          expect(result).equals("(age IS NULL)");
         },
         done
       );
@@ -462,7 +462,7 @@ describe('Column Test', function() {
         function(callback) {
           dataFrame.col("age").isNotNull().toString().then(callback);
         }, function(result) {
-          expect(result).equals("isnotnull(age)");
+          expect(result).equals("(age IS NOT NULL)");
         },
         done
       );
@@ -555,7 +555,7 @@ describe('Column Test', function() {
         function(callback) {
           dataFrame.col("expense").notEqual(dataFrame.col("age")).toString().then(callback);
         }, function(result) {
-          expect(result).equals('NOT (expense = age)');
+          expect(result).equals('(NOT (expense = age))');
         },
         done
       );
@@ -568,7 +568,7 @@ describe('Column Test', function() {
         function(callback) {
           dataFrame.col("expense").or(dataFrame.col("age")).toString().then(callback);
         }, function(result) {
-          expect(result).equals('(expense || age)');
+          expect(result).equals('(expense OR age)');
         },
         done
       );
@@ -598,7 +598,7 @@ describe('Column Test', function() {
           var whenCol = spark.sql.functions.when(dataFrame.col("name").equalTo("Andy"), 0);
           whenCol.when(dataFrame.col("age").equalTo(10), 100).toString().then(callback).catch(error);
         }, function(result) {
-          expect(result).equals('CASE WHEN (name = Andy) THEN 0 WHEN (age = 10) THEN 100');
+          expect(result).equals('CASE WHEN (name = Andy) THEN 0 WHEN (age = 10) THEN 100 END');
         },
         done
       );
