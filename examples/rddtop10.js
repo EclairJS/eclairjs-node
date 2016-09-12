@@ -20,9 +20,6 @@ var session = spark.sql.SparkSession.builder()
   .appName("Word Count")
   .getOrCreate();
 
-//var sc = new spark.SparkContext("local[*]", "foo");
-var sc = session.sparkContext();
-
 var file = __dirname + '/dream.txt';
 
 // first argument is a new filename
@@ -30,7 +27,9 @@ if (process.argv.length > 2) {
   file = process.argv[2];
 }
 
-var rdd = sc.textFile(file);
+//var rdd = sc.textFile(file);
+
+var rdd = session.read().textFile(file).rdd();
 
 var rdd2 = rdd.flatMap(function(sentence) {
   return sentence.split(" ");
