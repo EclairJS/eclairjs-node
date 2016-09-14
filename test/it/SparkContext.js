@@ -28,7 +28,9 @@ var sc;
 if (global.SC) {
   sc = global.SC;
 } else {
-  sc = new spark.SparkContext("local[*]", "SparkContext Integration Tests");
+  //sc = new spark.SparkContext("local[*]", "SparkContext Integration Tests");
+  session = spark.SparkSession.builder().appName("sql.Dataset Integration tests").master("local[*]").getOrCreate();
+  sc = session.sparkContext();
 }
 
 describe('SparkContext Test', function() {
@@ -71,11 +73,12 @@ describe('SparkContext Test', function() {
 
   describe("SparkContext.accumulable()", function(FloatAccumulatorParam) {
     it("should equal 11", function(done) {
+    	 this.timeout(100000);
       TestUtils.executeTest(
         function(callback, error) {
           var floatAccumParam = new spark.AccumulableParam.FloatAccumulatorParam();
 
-          floatAccumable = sc.accumulable(0, floatAccumParam);
+          floatAccumable = sc.accumulable(0.0, floatAccumParam);
           sc.parallelize([1.10, 2.2, 3.3, 4.4]).foreach(function(x, accumulable) {
             accumulable.add(x);
           }, [floatAccumable]).then(function() {
