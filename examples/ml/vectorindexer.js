@@ -22,17 +22,15 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
-
-    var data = sqlContext.read().format("libsvm").load("examples/data/mllib/sample_libsvm_data.txt");
+    var data = sparkSession.read().format("libsvm").load("examples/mllib/data/sample_libsvm_data.txt");
 
     var indexer = new spark.ml.feature.VectorIndexer()
       .setInputCol("features")
@@ -57,9 +55,13 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "vectorindexer");
-  run(sc).then(function(results) {
-    console.log('VectorIndexer result', JSON.stringify(results[0]));
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("vectorindexer")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
+    // console.log('VectorIndexer result', JSON.stringify(results[0]));
 
     for (var feature in results[1])
       console.log('Catagory Maps feature ['+feature+'] : ', results[1][feature]);

@@ -20,17 +20,15 @@ function exit() {
 
 function stop(e) {
   if (e) {
-    console.log(e);
+    console.log(e.stack);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
 
     // $example on$
     var attrs = [
@@ -41,12 +39,13 @@ function run(sc) {
 
     var group = new spark.ml.attribute.AttributeGroup("userFeatures", attrs);
 
+    var sc = sparkSession.sparkContext();
     var  rdd = sc.parallelize([
       spark.sql.RowFactory.create(spark.mllib.linalg.Vectors.sparse(3, [0, 1], [-2.0, 2.3])),
       spark.sql.RowFactory.create(spark.mllib.linalg.Vectors.dense([-2.0, 2.3, 0.0]))
     ]);
 
-    var dataset = sqlContext.createDataFrame(rdd,
+    var dataset = sparkSession.createDataFrame(rdd,
       (new spark.sql.types.StructType()).add(group.toStructField()));
 
     var vectorSlicer = new spark.ml.feature.VectorSlicer()
@@ -56,8 +55,10 @@ function run(sc) {
     // or slicer.setIndices(new int[]{1, 2}), or slicer.setNames(new String[]{"f2", "f3"})
 
     var output = vectorSlicer.transform(dataset);
-    var result=output.select("userFeatures", "features").first();
-    result.mkString(",", "[", "]").then(resolve).catch(reject);
+    var result=output.select("userFeatures", "features").first().then(function(row){
+       resolve(row.mkString(",", "[", "]"));
+
+    }).catch(reject);
    // output.select("userFeatures", "features").take(1).then(resolve).catch(stop);
 
   });
@@ -67,8 +68,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "vectorslicer");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("vectorslicer")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         console.log(JSON.stringify(results));
     stop();
   }).catch(stop);

@@ -22,13 +22,15 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
+
+    var sc = sparkSession.sparkContext();
     var sqlContext = new spark.sql.SQLContext(sc);
 
 
@@ -62,8 +64,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "word2vec");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("word2Vec")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     spark.sql.DataFrame.show(results);
     stop();
   }).catch(stop);
