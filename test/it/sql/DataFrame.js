@@ -24,11 +24,19 @@ var TestUtils = require('../../lib/utils.js');
 var spark = require('../../../lib/index.js');
 
 var sc;
+var session;
 
 if (global.SC) {
   sc = global.SC;
+  session = global.SESSION;
 } else {
-  sc = new spark.SparkContext("local[*]", "sql.DataFrame Integration Tests");
+  session = spark.SparkSession
+    .builder()
+    .appName("sql.DataFrame Integration Tests")
+    .master("local[*]")
+    .getOrCreate();
+
+  sc = session.sparkContext();
 }
 
 var sqlContext = new spark.sql.SQLContext(sc);
@@ -172,14 +180,14 @@ describe('DataFrame Test', function() {
   describe("dataFrame.flatMap()", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
-        function(callback) {
+        function(callback, error) {
           var result = dataFrame.flatMap(function(row) {
             var r = [];
             r.push(row.getString(0));
             return r
-          });
+          }, spark.sql.Encoders.STRING());
 
-          result.take(10).then(callback);
+          result.take(10).then(callback).catch(error);
         }, function(result) {
           expect(result).deep.equals(["Michael", "Andy", "Justin"]);
         },
@@ -235,60 +243,13 @@ describe('DataFrame Test', function() {
     });
   });
 
-  describe("dataFrame.head(separator)", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          var row = dataFrame.head().then(function(row) {
-            callback(row.mkString(" - "));
-          });
-        }, function(result) {
-          expect(result).equals("Michael - 29 - 1");
-        },
-        done
-      );
-    });
-  });
-
-  describe("dataFrame.head(separator, start, end)", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          var row = dataFrame.head().then(function(row) {
-            callback(row.mkString("(", " - ", ")"));
-          });
-        }, function(result) {
-          expect(result).equals("(Michael - 29 - 1)");
-        },
-        done
-      );
-    });
-  });
-
   describe("dataFrame.map", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
           var names = dataFrame.map(function(row) {
             return "Name: " + row.getString(0);
-          });
-
-          names.take(10).then(callback);
-        }, function(result) {
-          expect(result).deep.equals(["Name: Michael", "Name: Andy", "Name: Justin"]);
-        },
-        done
-      );
-    });
-  });
-
-  describe("dataFrame.map", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          var names = dataFrame.map(function(row, prefix) {
-            return prefix + row.getString(0);
-          }, ["Name: "]);
+          }, spark.sql.Encoders.STRING());
 
           names.take(10).then(callback);
         }, function(result) {
@@ -371,7 +332,7 @@ describe('DataFrame Test', function() {
   describe("dataFrame.agg()", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
-        function(callback) {
+        function(callback, error) {
           var results = sqlContext.sql("SELECT name, age, expense FROM people");
 
           var m = {};
@@ -379,24 +340,10 @@ describe('DataFrame Test', function() {
           m["expense"] = "sum";
 
           results.agg(m).collect().then(function(rows) {
-            callback(rows[0].getInt(0));
-          });
+            callback(rows[0].getLong(0));
+          }).catch(error);
         }, function(result) {
-          expect(result).equals(30);
-        },
-        done
-      );
-    });
-  });
-
-  describe("dataFrame.as()", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          var result = dataFrame.as("myAlias");
-          result.toString().then(callback);
-        }, function(result) {
-          expect(result).equals("[name: string, age: int, expense: int]");
+          expect(result).equals(6);
         },
         done
       );
@@ -433,39 +380,11 @@ describe('DataFrame Test', function() {
     });
   });
 
-  describe("dataFrame.cube(columnName)", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          var cube = dataFrame.cube("name", "expense");
-          cube.avg("age").toString().then(callback);
-        }, function(result) {
-          expect(result).equals('[name: string, expense: int, avg(age): double]');
-        },
-        done
-      );
-    });
-  });
-
-  describe("dataFrame.cube(column)", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          var cube = dataFrame.cube(dataFrame.col("name"), dataFrame.col("expense"));
-          cube.avg("age").toString().then(callback);
-        }, function(result) {
-          expect(result).equals('[name: string, expense: int, avg(age): double]');
-        },
-        done
-      );
-    });
-  });
-
   describe("dataFrame.describe(columnName)", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback, error) {
-          dataFrame.describe("age", "expense").toJSON().then(callback).catch(error);
+          dataFrame.describe("age", "expense").collect().then(callback).catch(error);
         }, function(result) {
           expect(result.length).equals(5);
         },
@@ -478,7 +397,7 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          dataFrame.drop("age").toJSON().then(callback);
+          dataFrame.drop("age").collect().then(callback);
         }, function(result) {
           expect(result.length).equals(3);
         },
@@ -491,7 +410,7 @@ describe('DataFrame Test', function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
-          dataFrame.drop(dataFrame.col("age")).toJSON().then(callback);
+          dataFrame.drop(dataFrame.col("age")).collect().then(callback);
         }, function(result) {
           expect(result.length).equals(3);
         },
@@ -568,7 +487,7 @@ describe('DataFrame Test', function() {
         function(callback) {
           var df2 = dataFrame.filter("age > 20");
 
-          dataFrame.except(df2).toJSON().then(callback);
+          dataFrame.except(df2).collect().then(callback);
         }, function(result) {
           expect(result.length).equals(1);
         },
@@ -605,37 +524,11 @@ describe('DataFrame Test', function() {
     });
   });
 
-  describe("dataFrame.foreach()", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          dataFrame.foreach(function(row){}).then(callback);
-        }, function(result) {
-          expect(result).equals(undefined);
-        },
-        done
-      );
-    });
-  });
-
   describe("dataFrame.foreachPartition()", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
         function(callback) {
           dataFrame.foreachPartition(function(partition){}).then(callback);
-        }, function(result) {
-          expect(result).equals(undefined);
-        },
-        done
-      );
-    });
-  });
-
-  describe("dataFrame.show()", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          dataFrame.show().then(callback);
         }, function(result) {
           expect(result).equals(undefined);
         },
@@ -652,7 +545,7 @@ describe('DataFrame Test', function() {
 
           sqlContext.read().json(fileName).inputFiles().then(callback);
         }, function(result) {
-          expect(result).deep.equals(["file:"+path.resolve(__dirname+'/../../data/test.json')]);
+          expect(result).deep.equals(["file://"+path.resolve(__dirname+'/../../data/test.json')]);
         },
         done
       );
@@ -689,14 +582,14 @@ describe('DataFrame Test', function() {
       );
     });
   });
-
+/*
   describe("dataFrame.join(df)", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
-        function(callback) {
+        function(callback, error) {
           var result = dataFrame.join(dataFrame).take(1).then(function(rows) {
             callback(rows[0].mkString());
-          });
+          }).catch(error);
         }, function(result) {
           expect(result).equals('Michael291Michael291');
         },
@@ -756,7 +649,7 @@ describe('DataFrame Test', function() {
       );
     });
   });
-
+*/
   describe("dataFrame.limit()", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
@@ -774,10 +667,10 @@ describe('DataFrame Test', function() {
   describe("dataFrame.mapPartitions()", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
-        function(callback) {
+        function(callback, error) {
           dataFrame.mapPartitions(function(rows) {
             return [rows.length];
-          }).take(10).then(callback)
+          }, spark.sql.Encoders.INT()).take(10).then(callback).catch(error);
         }, function(result) {
           expect(result).deep.equals([2,1]);
         },
@@ -807,10 +700,10 @@ describe('DataFrame Test', function() {
   describe("dataFrame.orderBy()", function() {
     it("should generate the correct output", function(done) {
       TestUtils.executeTest(
-        function(callback) {
+        function(callback, error) {
           dataFrame.orderBy("age", "name").take(10).then(function(rows) {
             callback(rows[0].getString(0));
-          });
+          }).catch(error);
         }, function(result) {
           expect(result).equals("Justin");
         },
@@ -884,22 +777,6 @@ describe('DataFrame Test', function() {
           df.rollup(df.col("age"), df.col("expense")).count().count().then(callback);
         }, function(result) {
           expect(result).equals(7);
-        },
-        done
-      );
-    });
-  });
-
-
-  describe("dataFrame.sample()", function() {
-    it("should generate the correct output", function(done) {
-      TestUtils.executeTest(
-        function(callback) {
-          var df = dataFrame.sample(true, 0.5).collect().then(function(rows) {
-            callback(rows[0].getString(0));
-          });
-        }, function(result) {
-          expect(result).equals("Andy");
         },
         done
       );
