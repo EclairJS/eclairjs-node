@@ -39,13 +39,12 @@ function run(sparkSession) {
 
     var group = new spark.ml.attribute.AttributeGroup("userFeatures", attrs);
 
-    var sc = sparkSession.sparkContext();
-    var  rdd = sc.parallelize([
+    var  rows = [
       spark.sql.RowFactory.create(spark.mllib.linalg.Vectors.sparse(3, [0, 1], [-2.0, 2.3])),
       spark.sql.RowFactory.create(spark.mllib.linalg.Vectors.dense([-2.0, 2.3, 0.0]))
-    ]);
+    ] ;
 
-    var dataset = sparkSession.createDataFrame(rdd,
+    var dataset = sparkSession.createDataFrame(rows,
       (new spark.sql.types.StructType()).add(group.toStructField()));
 
     var vectorSlicer = new spark.ml.feature.VectorSlicer()

@@ -22,20 +22,18 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
     // $example on$
-    var jrdd = sc.parallelize([
+    var data = [
       spark.sql.RowFactory.create([0, 1.0, 3.0]),
       spark.sql.RowFactory.create([2, 2.0, 5.0])
-    ]);
+    ];
     var schema = new spark.sql.types.StructType( [
       new spark.sql.types.StructField("id", spark.sql.types.DataTypes.IntegerType,
           false, spark.sql.types.Metadata.empty()),
@@ -44,7 +42,7 @@ function run(sc) {
       new spark.sql.types.StructField("v2", spark.sql.types.DataTypes.DoubleType,
           false, spark.sql.types.Metadata.empty())
     ]);
-    var df = sqlContext.createDataFrame(jrdd, schema);
+    var df = sparkSession.createDataFrame(data, schema);
 
     var sqlTrans = new spark.ml.feature.SQLTransformer().setStatement(
       "SELECT *, (v1 + v2) AS v3, (v1 * v2) AS v4 FROM __THIS__");
@@ -60,8 +58,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "sqlTransformer");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("sqlTransformer")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         console.log(JSON.stringify(results));
     stop();
   }).catch(stop);

@@ -22,30 +22,29 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
-   var jrdd = sc.parallelize([
+   var data = [
       spark.sql.RowFactory.create(0, "a"),
       spark.sql.RowFactory.create(1, "b"),
       spark.sql.RowFactory.create(2, "c"),
       spark.sql.RowFactory.create(3, "a"),
       spark.sql.RowFactory.create(4, "a"),
       spark.sql.RowFactory.create(5, "c")
-    ]);
+    ];
     var schema = new spark.sql.types.StructType([
       spark.sql.types.DataTypes.createStructField("id",
           spark.sql.types.DataTypes.IntegerType, false),
       spark.sql.types.DataTypes.createStructField("category",
           spark.sql.types.DataTypes.StringType, false)
     ]);
-    var df = sqlContext.createDataFrame(jrdd, schema);
+    var df = sparkSession.createDataFrame(data, schema);
     var indexer = new spark.ml.feature.StringIndexer()
       .setInputCol("category")
       .setOutputCol("categoryIndex");
@@ -61,8 +60,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "string indexer");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("string indexer")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         spark.sql.DataFrame.show(results);
     stop();
   }).catch(stop);

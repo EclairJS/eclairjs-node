@@ -30,21 +30,18 @@ var spark = require('../../lib/index.js');
 function run(sparkSession) {
   return new Promise(function(resolve, reject) {
 
-    var sc = sparkSession.sparkContext();
-    var sqlContext = new spark.sql.SQLContext(sc);
 
-
-    var rdd = sc.parallelize([
+    var rows = [
         spark.sql.RowFactory.create(["Hi I heard about Spark".split(" ")]),
         spark.sql.RowFactory.create(["I wish Java could use case classes".split(" ")]),
         spark.sql.RowFactory.create(["Logistic regression models are neat".split(" ")])
-    ]);
+    ];
     var sf = new spark.sql.types.StructField("text",
           new spark.sql.types.ArrayType(spark.sql.types.DataTypes.StringType, true),
           false, spark.sql.types.Metadata.empty());
     var sfa = [sf];
     var schema = new spark.sql.types.StructType(sfa);
-    var documentDF = sqlContext.createDataFrame(rdd, schema);
+    var documentDF = sparkSession.createDataFrame(rows, schema);
 
 // Learn a mapping from words to Vectors.
     var word2Vec = new spark.ml.feature.Word2Vec()

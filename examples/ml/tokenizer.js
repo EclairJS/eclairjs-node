@@ -22,21 +22,19 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
-
-    var jrdd = sc.parallelize([
+    var data = [
       spark.sql.RowFactory.create(0, "Hi I heard about Spark"),
       spark.sql.RowFactory.create(1, "I wish Java could use case classes"),
       spark.sql.RowFactory.create(2, "Logistic,regression,models,are,neat")
-    ]);
+    ];
 
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("label", spark.sql.types.DataTypes.IntegerType,
@@ -45,7 +43,7 @@ function run(sc) {
           false, spark.sql.types.Metadata.empty())
     ]);
 
-    var sentenceDataFrame = sqlContext.createDataFrame(jrdd, schema);
+    var sentenceDataFrame = sparkSession.createDataFrame(data, schema);
 
     var tokenizer = new spark.ml.feature.Tokenizer().setInputCol("sentence").setOutputCol("words");
 
@@ -72,8 +70,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "tokenizer");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("tokenizer")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         console.log("Results: ",JSON.stringify(results));
     stop();
   }).catch(stop);

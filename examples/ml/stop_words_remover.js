@@ -22,23 +22,22 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
     var remover = new spark.ml.feature.StopWordsRemover()
       .setInputCol("raw")
       .setOutputCol("filtered");
 
-    var rdd = sc.parallelize([
+    var data = [
       spark.sql.RowFactory.create([["I", "saw", "the", "red", "baloon"]]),
       spark.sql.RowFactory.create([["Mary", "had", "a", "little", "lamb"]])
-    ]);
+    ];
 
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField(
@@ -46,7 +45,7 @@ function run(sc) {
          false, spark.sql.types.Metadata.empty())
     ]);
 
-    var dataset = sqlContext.createDataFrame(rdd, schema);
+    var dataset = sparkSession.createDataFrame(data, schema);
     remover.transform(dataset).take(3).then(resolve).catch(reject);
 
   });
@@ -56,8 +55,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "stopWordsRemover");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("stopWordsRemover")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         spark.sql.DataFrame.show(results);
     stop();
   }).catch(stop);

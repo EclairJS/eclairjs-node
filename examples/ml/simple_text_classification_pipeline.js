@@ -22,15 +22,13 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
     // Prepare training documents, which are labeled.
     var localTraining = [
       { "id" : 0 , "text" : "a b c d e spark", "label" : 1.0},
@@ -38,7 +36,7 @@ function run(sc) {
       { "id" : 2 , "text" : "spark f g h", "label" : 1.0},
       { "id" : 3 , "text" : "hadoop mapreduce", "label" : 0.0}];
 
-    var training = sqlContext.createDataFrameFromJson(sc.parallelize(localTraining), {
+    var training = sparkSession.createDataFrameFromJson(localTraining, {
         "id" :"Integer",
         "text" :"String",
         "label" :"Double"
@@ -48,7 +46,7 @@ function run(sc) {
     var tokenizer = new spark.ml.feature.Tokenizer()
       .setInputCol("text")
      .setOutputCol("words");
-    
+
     var hashingTF = new spark.ml.feature.HashingTF()
       .setNumFeatures(1000)
       .setInputCol(tokenizer.getOutputCol())
@@ -68,7 +66,7 @@ function run(sc) {
       {"id": 5, "text": "l m n"},
       {"id": 6, "text": "spark hadoop spark"},
       {"id": 7, "text": "apache hadoop"}];
-    var test = sqlContext.createDataFrameFromJson(sc.parallelize(localTest), {
+    var test = sparkSession.createDataFrameFromJson(localTest, {
       "id": "Integer",
       "text": "String"
     });
@@ -85,8 +83,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "vectorslicer");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("simple text classification")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         console.log(JSON.stringify(results));
     stop();
   }).catch(stop);

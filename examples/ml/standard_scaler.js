@@ -22,17 +22,15 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
-
-    var dataFrame = sqlContext.read().format("libsvm").load("examples/data/mllib/sample_libsvm_data.txt");
+    var dataFrame = sparkSession.read().format("libsvm").load("examples/mllib/data/sample_libsvm_data.txt");
 
     var scaler = new spark.ml.feature.StandardScaler()
       .setInputCol("features")
@@ -54,8 +52,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "StandardScaler");
-  run(sc).then(function(results) {
+    var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("StandardScaler")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         spark.sql.DataFrame.show(results,true);
     stop();
   }).catch(stop);

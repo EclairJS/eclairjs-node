@@ -22,20 +22,19 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
-    var jrdd = sc.parallelize([
+    var data = [
       spark.sql.RowFactory.create(0, "Hi I heard about Spark"),
       spark.sql.RowFactory.create(0, "I wish Java could use case classes"),
       spark.sql.RowFactory.create(1, "Logistic regression models are neat")
-    ]);
+    ];
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("label", spark.sql.types.DataTypes.DoubleType,
           false, spark.sql.types.Metadata.empty()),
@@ -43,9 +42,10 @@ function run(sc) {
           false, spark.sql.types.Metadata.empty())
     ]);
 
-    var sentenceData = sqlContext.createDataFrame(jrdd, schema);
+    var sentenceData = sparkSession.createDataFrame(data, schema);
     var tokenizer = new spark.ml.feature.Tokenizer().setInputCol("sentence").setOutputCol("words");
     var wordsData = tokenizer.transform(sentenceData);
+    // alternatively, CountVectorizer can also be used to get term frequency vectors
     var numFeatures = 20;
     var hashingTF = new spark.ml.feature.HashingTF()
       .setInputCol("words")
@@ -64,8 +64,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "tfld");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("tfld")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         console.log(JSON.stringify(results));
     stop();
   }).catch(stop);

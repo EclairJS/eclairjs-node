@@ -22,14 +22,13 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
 
     var schema = spark.sql.types.DataTypes.createStructType([
@@ -39,16 +38,17 @@ function run(sc) {
       spark.sql.types.DataTypes.createStructField("userFeatures", new spark.mllib.linalg.VectorUDT(), false),
       spark.sql.types.DataTypes.createStructField("clicked", spark.sql.types.DataTypes.DoubleType, false)
     ]);
-    var row = spark.sql.RowFactory.create([0, 18, 1.0, spark.mllib.linalg.Vectors.dense([0.0, 10.0, 0.5]), 1.0]);
-    var rdd = sc.parallelize([row]);
-    var dataset = sqlContext.createDataFrame(rdd, schema);
+    var row = [spark.sql.RowFactory.create([0, 18, 1.0, spark.mllib.linalg.Vectors.dense([0.0, 10.0, 0.5]), 1.0]) ];
+    var dataset = sparkSession.createDataFrame(row, schema);
 
     var assembler = new spark.ml.feature.VectorAssembler()
       .setInputCols(["hour", "mobile", "userFeatures"])
       .setOutputCol("features");
 
     var output = assembler.transform(dataset);
-    output.select("features", "clicked").first().mkString(",", "[", "]").then(resolve).catch(reject);
+    output.select("features", "clicked").first().then(function(row){
+       resolve(row.mkString(",", "[", "]"));
+    }).catch(reject);;
 
 
   });
@@ -58,8 +58,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "vectorassembler");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("vectorassembler")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         console.log(JSON.stringify(results));
     stop();
   }).catch(stop);
