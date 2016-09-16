@@ -35,10 +35,10 @@ function run(sparkSession) {
       spark.sql.types.DataTypes.createStructField("id", spark.sql.types.DataTypes.IntegerType, false),
       spark.sql.types.DataTypes.createStructField("hour", spark.sql.types.DataTypes.IntegerType, false),
       spark.sql.types.DataTypes.createStructField("mobile", spark.sql.types.DataTypes.DoubleType, false),
-      spark.sql.types.DataTypes.createStructField("userFeatures", new spark.mllib.linalg.VectorUDT(), false),
+      spark.sql.types.DataTypes.createStructField("userFeatures", new spark.ml.linalg.VectorUDT(), false),
       spark.sql.types.DataTypes.createStructField("clicked", spark.sql.types.DataTypes.DoubleType, false)
     ]);
-    var row = [spark.sql.RowFactory.create([0, 18, 1.0, spark.mllib.linalg.Vectors.dense([0.0, 10.0, 0.5]), 1.0]) ];
+    var row = [spark.sql.RowFactory.create([0, 18, 1.0, spark.ml.linalg.Vectors.dense([0.0, 10.0, 0.5]), 1.0]) ];
     var dataset = sparkSession.createDataFrame(row, schema);
 
     var assembler = new spark.ml.feature.VectorAssembler()

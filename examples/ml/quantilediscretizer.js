@@ -22,31 +22,32 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
-    var rdd = sc.parallelize(
-      [
+    var data = [
         spark.sql.RowFactory.create(0, 18.0),
         spark.sql.RowFactory.create(1, 19.0),
         spark.sql.RowFactory.create(2, 8.0),
         spark.sql.RowFactory.create(3, 5.0),
         spark.sql.RowFactory.create(4, 2.2)
-      ]
-    );
+      ];
 
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("id", spark.sql.types.DataTypes.IntegerType, false, spark.sql.types.Metadata.empty()),
       new spark.sql.types.StructField("hour", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty())
     ]);
 
-    var df = sqlContext.createDataFrame(rdd, schema);
+    var df = sparkSession.createDataFrame(data, schema);
+    // Output of QuantileDiscretizer for such small datasets can depend on the number of
+    // partitions. Here we force a single partition to ensure consistent results.
+    // Note this is not necessary for normal use cases
+    // var df = dataset.repartition(1);
 
     var discretizer = new spark.ml.feature.QuantileDiscretizer()
       .setInputCol("hour")
@@ -61,8 +62,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Quantile Discretizer");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Quantile Discretizer")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log("Result:", JSON.stringify(results));
     stop();
   }).catch(stop);

@@ -22,19 +22,17 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
 
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("label", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty()),
-      new spark.sql.types.StructField("features", new spark.mllib.linalg.VectorUDT(), false, spark.sql.types.Metadata.empty())
+      new spark.sql.types.StructField("features", new spark.ml.linalg.VectorUDT(), false, spark.sql.types.Metadata.empty())
     ]);
 
 
@@ -42,11 +40,11 @@ function run(sc) {
     // We use LabeledPoint, which is a JavaBean.  Spark SQL can convert RDDs of JavaBeans
     // into DataFrames, where it uses the bean metadata to infer the schema.
     var localTraining = [
-       spark.sql.RowFactory.create([1.0, spark.mllib.linalg.Vectors.dense(0.0, 1.1, 0.1)]),
-       spark.sql.RowFactory.create([0.0, spark.mllib.linalg.Vectors.dense(2.0, 1.0, -1.0)]),
-       spark.sql.RowFactory.create([0.0, spark.mllib.linalg.Vectors.dense(2.0, 1.3, 1.0)]),
-       spark.sql.RowFactory.create([1.0, spark.mllib.linalg.Vectors.dense(0.0, 1.2, -0.5)])];
-    var training = sqlContext.createDataFrame(sc.parallelize(localTraining), schema);
+       spark.sql.RowFactory.create([1.0, spark.ml.linalg.Vectors.dense(0.0, 1.1, 0.1)]),
+       spark.sql.RowFactory.create([0.0, spark.ml.linalg.Vectors.dense(2.0, 1.0, -1.0)]),
+       spark.sql.RowFactory.create([0.0, spark.ml.linalg.Vectors.dense(2.0, 1.3, 1.0)]),
+       spark.sql.RowFactory.create([1.0, spark.ml.linalg.Vectors.dense(0.0, 1.2, -0.5)])];
+    var training = sparkSession.createDataFrame(localTraining, schema);
 
     // Create a LogisticRegression instance.  This instance is an Estimator.
     var lr = new spark.ml.classification.LogisticRegression();
@@ -76,10 +74,10 @@ function run(sc) {
 
     // Prepare test documents.
     var localTest = [
-        spark.sql.RowFactory.create([1.0, spark.mllib.linalg.Vectors.dense(-1.0, 1.5, 1.3)]),
-        spark.sql.RowFactory.create([0.0, spark.mllib.linalg.Vectors.dense(3.0, 2.0, -0.1)]),
-        spark.sql.RowFactory.create([1.0, spark.mllib.linalg.Vectors.dense(0.0, 2.2, -1.5)])];
-    var test = sqlContext.createDataFrame(sc.parallelize(localTest), schema);
+        spark.sql.RowFactory.create([1.0, spark.ml.linalg.Vectors.dense(-1.0, 1.5, 1.3)]),
+        spark.sql.RowFactory.create([0.0, spark.ml.linalg.Vectors.dense(3.0, 2.0, -0.1)]),
+        spark.sql.RowFactory.create([1.0, spark.ml.linalg.Vectors.dense(0.0, 2.2, -1.5)])];
+    var test = sparkSession.createDataFrame(localTest, schema);
     // Make predictions on test documents using the Transformer.transform() method.
     // LogisticRegressionModel.transform will only use the 'features' column.
     // Note that model2.transform() outputs a 'myProbability' column instead of the usual
@@ -95,8 +93,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "simpleparams");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("simpleparams")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         console.log(JSON.stringify(results));
     stop();
   }).catch(stop);

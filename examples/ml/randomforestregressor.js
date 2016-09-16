@@ -22,17 +22,15 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
     // Load and parse the data file, converting it to a DataFrame.
-    var data = sqlContext.read().format("libsvm").load(__dirname+"/..//mllib/data/sample_libsvm_data.txt");
+    var data = sparkSession.read().format("libsvm").load(__dirname+"/../mllib/data/sample_libsvm_data.txt");
 
     // Automatically identify categorical features, and index them.
     // Set maxCategories so features with > 4 distinct values are treated as continuous.
@@ -82,8 +80,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Random Forest Regressor Example");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Random Forest Regressor Example")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log("Root Mean Squared Error (RMSE) on test data:", results);
     stop();
   }).catch(stop);

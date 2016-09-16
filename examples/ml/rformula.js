@@ -22,15 +22,13 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
 
 
     var schema = spark.sql.types.DataTypes.createStructType([
@@ -40,13 +38,13 @@ function run(sc) {
         spark.sql.types.DataTypes.createStructField("clicked", spark.sql.types.DataTypes.DoubleType, false)
     ]);
 
-    var rdd = sc.parallelize([
+    var data = [
         spark.sql.RowFactory.create(7, "US", 18, 1.0),
         spark.sql.RowFactory.create(8, "CA", 12, 0.0),
         spark.sql.RowFactory.create(9, "NZ", 15, 0.0)
-    ]);
+    ];
 
-    var dataset = sqlContext.createDataFrame(rdd, schema);
+    var dataset = sparkSession.createDataFrame(data, schema);
     var formula = new spark.ml.feature.RFormula()
         .setFormula("clicked ~ country + hour")
         .setFeaturesCol("features")
@@ -61,8 +59,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "rformula");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("rformula")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
         spark.sql.DataFrame.show(results);
     stop();
   }).catch(stop);

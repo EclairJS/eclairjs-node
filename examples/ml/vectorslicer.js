@@ -40,8 +40,8 @@ function run(sparkSession) {
     var group = new spark.ml.attribute.AttributeGroup("userFeatures", attrs);
 
     var  rows = [
-      spark.sql.RowFactory.create(spark.mllib.linalg.Vectors.sparse(3, [0, 1], [-2.0, 2.3])),
-      spark.sql.RowFactory.create(spark.mllib.linalg.Vectors.dense([-2.0, 2.3, 0.0]))
+      spark.sql.RowFactory.create(spark.ml.linalg.Vectors.sparse(3, [0, 1], [-2.0, 2.3])),
+      spark.sql.RowFactory.create(spark.ml.linalg.Vectors.dense([-2.0, 2.3, 0.0]))
     ] ;
 
     var dataset = sparkSession.createDataFrame(rows,

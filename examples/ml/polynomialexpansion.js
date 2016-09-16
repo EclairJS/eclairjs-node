@@ -22,31 +22,30 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
     var polyExpansion = new spark.ml.feature.PolynomialExpansion()
       .setInputCol("features")
       .setOutputCol("polyFeatures")
       .setDegree(3);
 
-    var data = sc.parallelize([
-      spark.sql.RowFactory.create(spark.mllib.linalg.Vectors.dense(-2.0, 2.3)),
-      spark.sql.RowFactory.create(spark.mllib.linalg.Vectors.dense(0.0, 0.0)),
-      spark.sql.RowFactory.create(spark.mllib.linalg.Vectors.dense(0.6, -1.1))
-    ]);
+    var data = [
+      spark.sql.RowFactory.create(spark.ml.linalg.Vectors.dense(-2.0, 2.3)),
+      spark.sql.RowFactory.create(spark.ml.linalg.Vectors.dense(0.0, 0.0)),
+      spark.sql.RowFactory.create(spark.ml.linalg.Vectors.dense(0.6, -1.1))
+    ];
 
     var schema = new spark.sql.types.StructType([
-      new spark.sql.types.StructField("features", new spark.mllib.linalg.VectorUDT(), false, spark.sql.types.Metadata.empty())
+      new spark.sql.types.StructField("features", new spark.ml.linalg.VectorUDT(), false, spark.sql.types.Metadata.empty())
     ]);
 
-    var df = sqlContext.createDataFrame(data, schema);
+    var df = sparkSession.createDataFrame(data, schema);
     var polyDF = polyExpansion.transform(df);
 
     polyDF.select("polyFeatures").take(3).then(resolve).catch(reject);
@@ -57,8 +56,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Polynomial Expansion");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Polynomial Expansion")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log("Result:", JSON.stringify(results));
     stop();
   }).catch(stop);
