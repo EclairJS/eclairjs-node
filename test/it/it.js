@@ -53,7 +53,7 @@ describe('SparkContext Integration Test', function() {
     require('./sql/DataFrameNaFunctions');
     require('./sql/DataFrameReader');
     require('./sql/DataFrameStatFunctions');
-    require('./sql/functions');
+    //require('./sql/functions');
     require('./sql/GroupedData');
     require('./sql/Row');
   });
@@ -63,11 +63,11 @@ describe('SparkContext Integration Test', function() {
   });
 
   describe("ML tests", function() {
-    require('./ml/ml.js');
+    //require('./ml/ml.js');
   });
 
   describe("MLLib tests", function() {
-    require('./mllib/mllib.js');
+    //require('./mllib/mllib.js');
   });
 
   after(function(done) {

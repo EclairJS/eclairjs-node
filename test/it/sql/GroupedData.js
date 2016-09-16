@@ -87,7 +87,7 @@ describe('GroupedData Test', function() {
             dataFrame.columns().then(callback);
           });
         }, function(result) {
-          expect(result.toString()).equals('name,age,expense');
+          expect(result).deep.equals(['name','age','expense']);
         },
         done
       );
