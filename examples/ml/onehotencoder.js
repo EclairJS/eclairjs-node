@@ -22,30 +22,28 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
-    var rdd = sc.parallelize([
+    var data = [
       spark.sql.RowFactory.create(0.0, "a"),
       spark.sql.RowFactory.create(1.0, "b"),
       spark.sql.RowFactory.create(2.0, "c"),
       spark.sql.RowFactory.create(3.0, "a"),
       spark.sql.RowFactory.create(4.0, "a"),
       spark.sql.RowFactory.create(5.0, "c")
-    ]);
+    ];
 
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("id", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty()),
       new spark.sql.types.StructField("category", spark.sql.types.DataTypes.StringType, false, spark.sql.types.Metadata.empty())
     ]);
 
-    var df = sqlContext.createDataFrame(rdd, schema);
+    var df = sparkSession.createDataFrame(data, schema);
 
     var indexer = new spark.ml.feature.StringIndexer()
       .setInputCol("category")
@@ -65,8 +63,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "One Hot Encoder");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("One Hot Encoder")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log("Result:", JSON.stringify(results));
     stop();
   }).catch(stop);

@@ -22,20 +22,19 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
-    var rdd = sc.parallelize([
+    var data = [
       spark.sql.RowFactory.create(0.0, ["Hi", "I", "heard", "about", "Spark"]),
       spark.sql.RowFactory.create(1.0, ["I", "wish", "Java", "could", "use", "case", "classes"]),
       spark.sql.RowFactory.create(2.0, ["Logistic", "regression", "models", "are", "neat"])
-    ]);
+    ];
 
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("label", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty()),
@@ -43,7 +42,7 @@ function run(sc) {
         "words", spark.sql.types.DataTypes.createArrayType(spark.sql.types.DataTypes.StringType), false, spark.sql.types.Metadata.empty())
     ]);
 
-    var wordDataFrame = sqlContext.createDataFrame(rdd, schema);
+    var wordDataFrame = sparkSession.createDataFrame(data, schema);
 
     var ngramTransformer = new spark.ml.feature.NGram().setInputCol("words").setOutputCol("ngrams");
 
@@ -57,8 +56,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "NGram");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("NGram")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log("Precision:", JSON.stringify(results));
     stop();
   }).catch(stop);

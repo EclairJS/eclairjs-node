@@ -22,16 +22,14 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
-    var dataFrame = sqlContext.read().format("libsvm").load(__dirname+"/../mllib/data/sample_libsvm_data.txt");
+    var dataFrame = sparkSession.read().format("libsvm").load(__dirname+"/../mllib/data/sample_libsvm_data.txt");
 
     // Normalize each Vector using $L^1$ norm.
     var normalizer = new spark.ml.feature.Normalizer()
@@ -48,8 +46,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Normalizer");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Normalizer")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log("Result:", JSON.stringify(results));
     stop();
   }).catch(stop);

@@ -22,17 +22,16 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
     // Load training data
-    var data = sqlContext.read().format("libsvm")
+    var data = sparkSession.read().format("libsvm")
       .load(__dirname+"/../mllib/data/sample_libsvm_data.txt");
 
 
@@ -60,8 +59,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Naive Bayes");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Naive Bayes")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log("Precision:", results);
     stop();
   }).catch(stop);

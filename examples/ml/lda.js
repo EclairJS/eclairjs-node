@@ -22,31 +22,18 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
 var k = 3;
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
-    var points = sc.textFile(__dirname + '/../mllib/data/sample_lda_data.txt').map(function(line, RowFactory, Vectors) {
-      var tok = line.split(" ");
-      var point = [];
-      for (var i = 0; i < tok.length; ++i) {
-        point[i] = parseFloat(tok[i]);
-      }
-      var points = Vectors.dense(point);
-      return RowFactory.create(points);
-    }, [spark.sql.RowFactory, spark.mllib.linalg.Vectors]);
-
-
-    var fields = [new spark.sql.types.StructField("features", new spark.mllib.linalg.VectorUDT(), false, spark.sql.types.Metadata.empty())];
-    var schema = new spark.sql.types.StructType(fields);
-    var dataset = sqlContext.createDataFrame(points, schema);
+    var dataset = sparkSession.read().format("libsvm")
+      .load(__dirname+"/../mllib/data/sample_lda_libsvm_data.txt");
 
     // Trains a LDA model
     var lda = new spark.ml.clustering.LDA()
@@ -67,8 +54,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "LDA");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("LDA")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log('logLikelihood', results[0]);
     console.log('logPerplexity', results[1]);
     stop();

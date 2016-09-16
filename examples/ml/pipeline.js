@@ -22,14 +22,13 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("id", spark.sql.types.DataTypes.IntegerType, false, spark.sql.types.Metadata.empty()),
@@ -38,7 +37,7 @@ function run(sc) {
     ]);
 
     // Prepare training documents, which are labeled.
-    var training = sqlContext.createDataFrame([
+    var training = sparkSession.createDataFrame([
       spark.sql.RowFactory.create(0, "a b c d e spark", 1.0),
       spark.sql.RowFactory.create(1, "b d", 0.0),
       spark.sql.RowFactory.create(2, "spark f g h", 1.0),
@@ -71,7 +70,7 @@ function run(sc) {
     ]);
 
     // Prepare test documents, which are unlabeled.
-    var test = sqlContext.createDataFrame([
+    var test = sparkSession.createDataFrame([
       spark.sql.RowFactory.create(4, "spark i j k"),
       spark.sql.RowFactory.create(5, "l m n"),
       spark.sql.RowFactory.create(6, "mapreduce spark"),
@@ -88,8 +87,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Pipeline");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Pipeline")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log("Result:", JSON.stringify(results));
     stop();
   }).catch(stop);

@@ -22,17 +22,16 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
     // Load training data
-    var data = sqlContext.read().format("libsvm")
+    var data = sparkSession.read().format("libsvm")
       .load(__dirname+"/../mllib/data/sample_linear_regression_data.txt");
 
 
@@ -51,7 +50,7 @@ function run(sc) {
         .addGrid(lr.fitIntercept())
         .addGrid(lr.elasticNetParam(), [0.0, 0.5, 1.0])
         .build().then(function(paramGrid) {
-        
+
         // In this case the estimator is simply the linear regression.
         // A TrainValidationSplit requires an Estimator, a set of Estimator ParamMaps, and an Evaluator.
         var trainValidationSplit = new spark.ml.tuning.TrainValidationSplit()
@@ -75,8 +74,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Model Selection Via Train Validation Split");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Model Selection Via Train Validation Split")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log("Results:", JSON.stringify(results));
     stop();
   }).catch(stop);

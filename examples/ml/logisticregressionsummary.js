@@ -22,17 +22,16 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
 function run(sc) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
     // Load training data
-    var training = sqlContext.read().format("libsvm")
+    var training = sparkSession.read().format("libsvm")
       .load(__dirname+"/../mllib/data/sample_libsvm_data.txt");
 
     var lr = new spark.ml.classification.LogisticRegression()
@@ -59,8 +58,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Logistic Regression Summary");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Logistic Regression Summary")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log("objectiveHistory:",results[0]);
     //console.log("areaUnderROC:",results[1]);
     stop();

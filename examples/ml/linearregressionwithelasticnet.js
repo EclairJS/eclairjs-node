@@ -22,19 +22,18 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
 var k = 3;
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
     // Load training data
-    var training = sqlContext.read().format("libsvm")
+    var training = sparkSession.read().format("libsvm")
       .load(__dirname+"/../mllib/data/sample_linear_regression_data.txt");
 
     var lr = new spark.ml.regression.LinearRegression()
@@ -70,8 +69,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Linear Regression With Elastic Net");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Linear Regression With Elastic Net")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     results.forEach(function (result) {
       console.log(result[0], result[1])
     });
