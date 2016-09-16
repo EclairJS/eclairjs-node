@@ -65,8 +65,7 @@ var wordCounts = words.groupBy("value")
 // Start running the query that prints the running counts to the console
 var query = words.writeStream()
 	.outputMode("append")
-    .option("checkpointLocation", "/tmp/checkpoint")
-    .format("parquet")
+	.format("console")
     .start("/tmp/wordcount");
 
 query.awaitTermination();
