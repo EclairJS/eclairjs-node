@@ -22,30 +22,29 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
     var fields = [
       spark.sql.types.DataTypes.createStructField("label", spark.sql.types.DataTypes.DoubleType, false),
-      spark.sql.types.DataTypes.createStructField("features", new spark.mllib.linalg.VectorUDT(), true)
+      spark.sql.types.DataTypes.createStructField("features", new spark.ml.linalg.VectorUDT(), true)
     ];
 
     var schema = spark.sql.types.DataTypes.createStructType(fields);
 
     // Prepare training data.
     // DataFrames, where it uses the bean metadata to infer the schema.
-    var training = sqlContext.createDataFrame(
+    var training = sparkSession.createDataFrame(
       [
-        spark.sql.RowFactory.create(1.0, spark.mllib.linalg.Vectors.dense(0.0, 1.1, 0.1)),
-        spark.sql.RowFactory.create(0.0, spark.mllib.linalg.Vectors.dense(2.0, 1.1, -1.0)),
-        spark.sql.RowFactory.create(0.0, spark.mllib.linalg.Vectors.dense(2.0, 1.3, 1.0)),
-        spark.sql.RowFactory.create(1.0, spark.mllib.linalg.Vectors.dense(0.0, 1.2, -0.5))
+        spark.sql.RowFactory.create(1.0, spark.ml.linalg.Vectors.dense(0.0, 1.1, 0.1)),
+        spark.sql.RowFactory.create(0.0, spark.ml.linalg.Vectors.dense(2.0, 1.1, -1.0)),
+        spark.sql.RowFactory.create(0.0, spark.ml.linalg.Vectors.dense(2.0, 1.3, 1.0)),
+        spark.sql.RowFactory.create(1.0, spark.ml.linalg.Vectors.dense(0.0, 1.2, -0.5))
       ], schema);
 
     // Create a LogisticRegression instance. This instance is an Estimator.
@@ -64,10 +63,10 @@ function run(sc) {
       .put(lr.regParam().w(0.1), lr.threshold().w(0.55));  // Specify multiple Params.
 
     // Prepare test documents.
-    var test = sqlContext.createDataFrame([
-      spark.sql.RowFactory.create(1.0, spark.mllib.linalg.Vectors.dense(-1.0, 1.5, 1.3)),
-      spark.sql.RowFactory.create(0.0, spark.mllib.linalg.Vectors.dense(3.0, 2.0, -0.1)),
-      spark.sql.RowFactory.create(1.0, spark.mllib.linalg.Vectors.dense(0.0, 2.2, -1.5))
+    var test = sparkSession.createDataFrame([
+      spark.sql.RowFactory.create(1.0, spark.ml.linalg.Vectors.dense(-1.0, 1.5, 1.3)),
+      spark.sql.RowFactory.create(0.0, spark.ml.linalg.Vectors.dense(3.0, 2.0, -0.1)),
+      spark.sql.RowFactory.create(1.0, spark.ml.linalg.Vectors.dense(0.0, 2.2, -1.5))
     ], schema);
 
     var promises = [];
@@ -87,8 +86,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Estimator Transformer Param");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Estimator Transformer Param")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log('LogisticRegression parameters:', results[0]);
     console.log('Model 1 was fit using parameters:', results[1]);
     stop();

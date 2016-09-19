@@ -22,17 +22,16 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
     // Load the data stored in LIBSVM format as a DataFrame.
-    var data = sqlContext
+    var data = sparkSession
       .read()
       .format("libsvm")
       .load(__dirname+"/../mllib/data/sample_libsvm_data.txt");
@@ -50,7 +49,7 @@ function run(sc) {
     data.randomSplit([0.7, 0.3]).then(function(splits) {
       var trainingData = splits[0];
       var testData = splits[1];
-      
+
       // Train a GBT model.
       var gbt = new spark.ml.regression.GBTRegressor()
         .setLabelCol("label")
@@ -85,8 +84,12 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Gradient Boosted Tree Regressor");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Gradient Boosted Tree Regressor")
+            .getOrCreate();
+
+  run(sparkSession).then(function(results) {
     console.log('Result count:', results[0]);
     console.log('Root Mean Squared Error (RMSE) on test data:', results[1]);
     stop();
