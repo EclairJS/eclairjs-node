@@ -22,29 +22,27 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-    
     var data = [
-      spark.sql.RowFactory.create([1.218, 1.0, spark.mllib.linalg.Vectors.dense(1.560, -0.605)]),
-      spark.sql.RowFactory.create([2.949, 0.0, spark.mllib.linalg.Vectors.dense(0.346, 2.158)]),
-      spark.sql.RowFactory.create([3.627, 0.0, spark.mllib.linalg.Vectors.dense(1.380, 0.231)]),
-      spark.sql.RowFactory.create([0.273, 1.0, spark.mllib.linalg.Vectors.dense(0.520, 1.151)]),
-      spark.sql.RowFactory.create([4.199, 0.0, spark.mllib.linalg.Vectors.dense(0.795, -0.226)])
+      spark.sql.RowFactory.create([1.218, 1.0, spark.ml.linalg.Vectors.dense(1.560, -0.605)]),
+      spark.sql.RowFactory.create([2.949, 0.0, spark.ml.linalg.Vectors.dense(0.346, 2.158)]),
+      spark.sql.RowFactory.create([3.627, 0.0, spark.ml.linalg.Vectors.dense(1.380, 0.231)]),
+      spark.sql.RowFactory.create([0.273, 1.0, spark.ml.linalg.Vectors.dense(0.520, 1.151)]),
+      spark.sql.RowFactory.create([4.199, 0.0, spark.ml.linalg.Vectors.dense(0.795, -0.226)])
     ];
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("label", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty()),
       new spark.sql.types.StructField("censor", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty()),
-      new spark.sql.types.StructField("features", new spark.mllib.linalg.VectorUDT(), false, spark.sql.types.Metadata.empty())
+      new spark.sql.types.StructField("features", new spark.ml.linalg.VectorUDT(), false, spark.sql.types.Metadata.empty())
     ]);
     
-    var training = sqlContext.createDataFrame(data, schema);
+    var training = sparkSession.createDataFrame(data, schema);
     
     var quantileProbabilities = [0.3, 0.6];
     
@@ -67,8 +65,11 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "AFT Survival Regression");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("AFT Survival Regression")
+            .getOrCreate();
+  run(sparkSession).then(function(results) {
     console.log('Coefficients:', results[0]);
     console.log('Intercept:', results[1]);
     console.log('Scale:', results[2]);

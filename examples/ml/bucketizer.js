@@ -22,18 +22,16 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
     var splits = [Number.NEGATIVE_INFINITY, -0.5, 0.0, 0.5, Number.POSITIVE_INFINITY];
 
-    var data = sc.parallelize([
+    var data = sparkSession.sparkContext().parallelize([
       spark.sql.RowFactory.create([-0.5]),
       spark.sql.RowFactory.create([-0.3]),
       spark.sql.RowFactory.create([0.0]),
@@ -42,7 +40,7 @@ function run(sc) {
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("features", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty())
     ]);
-    var dataFrame = sqlContext.createDataFrame(data, schema);
+    var dataFrame = sparkSession.createDataFrame(data, schema);
 
     var bucketizer = new spark.ml.feature.Bucketizer()
       .setInputCol("features")
@@ -58,8 +56,11 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Bucketizer");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Bucketizer")
+            .getOrCreate();
+  run(sparkSession).then(function(results) {
     console.log('Bucketizer result', results);
     stop();
   }).catch(stop);

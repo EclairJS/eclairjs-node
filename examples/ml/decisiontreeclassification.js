@@ -22,17 +22,15 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
     // Load the data stored in LIBSVM format as a DataFrame.
-    var data = sqlContext
+    var data = sparkSession
       .read()
       .format("libsvm")
       .load(__dirname+"/../mllib/data/sample_libsvm_data.txt");
@@ -83,7 +81,7 @@ function run(sc) {
         var evaluator = new spark.ml.evaluation.MulticlassClassificationEvaluator()
          .setLabelCol("indexedLabel")
          .setPredictionCol("prediction")
-         .setMetricName("precision");
+         .setMetricName("accuracy");
 
         var promises = [];
         promises.push(predictions.select("predictedLabel", "label", "features").take(100));
@@ -99,8 +97,11 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Decision Tree Classification");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Decision Tree Classification")
+            .getOrCreate();
+  run(sparkSession).then(function(results) {
     console.log('Predicted:', JSON.stringify(results[0]));
     console.log('Test Error:', 1-results[1]);
     stop();

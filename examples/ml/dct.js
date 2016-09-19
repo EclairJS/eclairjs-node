@@ -22,24 +22,22 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
-    var data = sc.parallelize([
-      spark.sql.RowFactory.create([spark.mllib.linalg.Vectors.dense([0.0, 1.0, -2.0, 3.0])]),
-      spark.sql.RowFactory.create([spark.mllib.linalg.Vectors.dense([-1.0, 2.0, 4.0, -7.0])]),
-      spark.sql.RowFactory.create([spark.mllib.linalg.Vectors.dense([14.0, -2.0, -5.0, 1.0])])
+    var data = sparkSession.sparkContext().parallelize([
+      spark.sql.RowFactory.create([spark.ml.linalg.Vectors.dense([0.0, 1.0, -2.0, 3.0])]),
+      spark.sql.RowFactory.create([spark.ml.linalg.Vectors.dense([-1.0, 2.0, 4.0, -7.0])]),
+      spark.sql.RowFactory.create([spark.ml.linalg.Vectors.dense([14.0, -2.0, -5.0, 1.0])])
     ]);
     var schema = new spark.sql.types.StructType([
-      new spark.sql.types.StructField("features", new spark.mllib.linalg.VectorUDT(), false, spark.sql.types.Metadata.empty())
+      new spark.sql.types.StructField("features", new spark.ml.linalg.VectorUDT(), false, spark.sql.types.Metadata.empty())
     ]);
-    var df = sqlContext.createDataFrame(data, schema);
+    var df = sparkSession.createDataFrame(data, schema);
     var dct = new spark.ml.feature.DCT()
       .setInputCol("features")
       .setOutputCol("featuresDCT")
@@ -53,8 +51,11 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "DCT");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("DCT")
+            .getOrCreate();
+  run(sparkSession).then(function(results) {
     console.log('DCT result', JSON.stringify(results));
     stop();
   }).catch(stop);
