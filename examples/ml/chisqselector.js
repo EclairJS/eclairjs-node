@@ -29,11 +29,11 @@ var spark = require('../../lib/index.js');
 
 function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var rdd = sparkSession.sparkContext().parallelize([
+    var data = [
       spark.sql.RowFactory.create([7, spark.ml.linalg.Vectors.dense(0.0, 0.0, 18.0, 1.0), 1.0]),
       spark.sql.RowFactory.create([8, spark.ml.linalg.Vectors.dense(0.0, 1.0, 12.0, 0.0), 0.0]),
       spark.sql.RowFactory.create([9, spark.ml.linalg.Vectors.dense(1.0, 0.0, 15.0, 0.1), 0.0])
-    ]);
+    ];
 
     var schema = new spark.sql.types.StructType(
       [
@@ -42,7 +42,7 @@ function run(sparkSession) {
         new spark.sql.types.StructField("clicked", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty())
       ]);
 
-    var df = sparkSession.createDataFrame(rdd, schema);
+    var df = sparkSession.createDataFrame(data, schema);
 
     var selector = new spark.ml.feature.ChiSqSelector()
       .setNumTopFeatures(1)

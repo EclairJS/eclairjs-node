@@ -31,12 +31,12 @@ function run(sparkSession) {
   return new Promise(function(resolve, reject) {
     var splits = [Number.NEGATIVE_INFINITY, -0.5, 0.0, 0.5, Number.POSITIVE_INFINITY];
 
-    var data = sparkSession.sparkContext().parallelize([
+    var data = [
       spark.sql.RowFactory.create([-0.5]),
       spark.sql.RowFactory.create([-0.3]),
       spark.sql.RowFactory.create([0.0]),
       spark.sql.RowFactory.create([0.2])
-    ]);
+    ];
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("features", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty())
     ]);

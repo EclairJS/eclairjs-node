@@ -30,10 +30,10 @@ var spark = require('../../lib/index.js');
 function run(sparkSession) {
   return new Promise(function(resolve, reject) {
     // Create some vector data; also works for sparse vectors
-    var rdd = sparkSession.sparkContext().parallelize([
+    var data = [
       spark.sql.RowFactory.create(["a", spark.ml.linalg.Vectors.dense([1.0, 2.0, 3.0])]),
       spark.sql.RowFactory.create(["b", spark.ml.linalg.Vectors.dense([4.0, 5.0, 6.0])])
-    ]);
+    ];
 
     var fields = [
       spark.sql.types.DataTypes.createStructField("id", spark.sql.types.DataTypes.StringType, false),
@@ -42,7 +42,7 @@ function run(sparkSession) {
 
     var schema = spark.sql.types.DataTypes.createStructType(fields);
 
-    var dataFrame = sparkSession.createDataFrame(rdd, schema);
+    var dataFrame = sparkSession.createDataFrame(data, schema);
 
     var transformingVector = spark.ml.linalg.Vectors.dense([0.0, 1.0, 2.0]);
 

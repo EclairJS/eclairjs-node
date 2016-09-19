@@ -29,11 +29,11 @@ var spark = require('../../lib/index.js');
 
 function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var data = sparkSession.sparkContext().parallelize([
+    var data = [
       spark.sql.RowFactory.create([spark.ml.linalg.Vectors.dense([0.0, 1.0, -2.0, 3.0])]),
       spark.sql.RowFactory.create([spark.ml.linalg.Vectors.dense([-1.0, 2.0, 4.0, -7.0])]),
       spark.sql.RowFactory.create([spark.ml.linalg.Vectors.dense([14.0, -2.0, -5.0, 1.0])])
-    ]);
+    ];
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("features", new spark.ml.linalg.VectorUDT(), false, spark.sql.types.Metadata.empty())
     ]);

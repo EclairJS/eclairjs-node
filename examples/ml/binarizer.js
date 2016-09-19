@@ -29,18 +29,18 @@ var spark = require('../../lib/index.js');
 
 function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var rdd = sparkSession.sparkContext().parallelize([
+    var data = [
       spark.sql.RowFactory.create([0, 0.1]),
       spark.sql.RowFactory.create([1, 0.8]),
       spark.sql.RowFactory.create([2, 0.2])
-    ]);
+    ];
 
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("label", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty()),
       new spark.sql.types.StructField("feature", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty())
     ]);
 
-    var continuousDataFrame = sparkSession.createDataFrame(rdd, schema);
+    var continuousDataFrame = sparkSession.createDataFrame(data, schema);
 
     var binarizer = new spark.ml.feature.Binarizer()
       .setInputCol("feature")

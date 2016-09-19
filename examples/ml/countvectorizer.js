@@ -30,16 +30,16 @@ var spark = require('../../lib/index.js');
 function run(sparkSession) {
   return new Promise(function(resolve, reject) {
     // Input data: Each row is a bag of words from a sentence or document.
-    var rdd = sparkSession.sparkContext().parallelize([
+    var data = [
       spark.sql.RowFactory.create([["a", "b", "c"]]),
       spark.sql.RowFactory.create([["a", "b", "b", "c", "a"]])
-    ]);
+    ];
 
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("text", new spark.sql.types.ArrayType(spark.sql.types.DataTypes.StringType, true), false, spark.sql.types.Metadata.empty())
     ]);
 
-    var df = sparkSession.createDataFrame(rdd, schema);
+    var df = sparkSession.createDataFrame(data, schema);
 
     // fit a CountVectorizerModel from the corpus
     var cvModel = new spark.ml.feature.CountVectorizer()
