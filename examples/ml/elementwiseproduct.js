@@ -22,31 +22,29 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
     // Create some vector data; also works for sparse vectors
-    var rdd = sc.parallelize([
-      spark.sql.RowFactory.create(["a", spark.mllib.linalg.Vectors.dense([1.0, 2.0, 3.0])]),
-      spark.sql.RowFactory.create(["b", spark.mllib.linalg.Vectors.dense([4.0, 5.0, 6.0])])
+    var rdd = sparkSession.sparkContext().parallelize([
+      spark.sql.RowFactory.create(["a", spark.ml.linalg.Vectors.dense([1.0, 2.0, 3.0])]),
+      spark.sql.RowFactory.create(["b", spark.ml.linalg.Vectors.dense([4.0, 5.0, 6.0])])
     ]);
 
     var fields = [
       spark.sql.types.DataTypes.createStructField("id", spark.sql.types.DataTypes.StringType, false),
-      spark.sql.types.DataTypes.createStructField("vector", new spark.mllib.linalg.VectorUDT(), false)
+      spark.sql.types.DataTypes.createStructField("vector", new spark.ml.linalg.VectorUDT(), false)
     ];
 
     var schema = spark.sql.types.DataTypes.createStructType(fields);
 
-    var dataFrame = sqlContext.createDataFrame(rdd, schema);
+    var dataFrame = sparkSession.createDataFrame(rdd, schema);
 
-    var transformingVector = spark.mllib.linalg.Vectors.dense([0.0, 1.0, 2.0]);
+    var transformingVector = spark.ml.linalg.Vectors.dense([0.0, 1.0, 2.0]);
 
     var transformer = new spark.ml.feature.ElementwiseProduct()
       .setScalingVec(transformingVector)
@@ -61,8 +59,11 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Elementwise Product");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Elementwise Product")
+            .getOrCreate();
+  run(sparkSession).then(function(results) {
     console.log('Results:', JSON.stringify(results));
     stop();
   }).catch(stop);

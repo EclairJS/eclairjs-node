@@ -22,16 +22,14 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
-    var rdd = sc.parallelize([
+    var rdd = sparkSession.sparkContext().parallelize([
       spark.sql.RowFactory.create([0, 0.1]),
       spark.sql.RowFactory.create([1, 0.8]),
       spark.sql.RowFactory.create([2, 0.2])
@@ -42,7 +40,7 @@ function run(sc) {
       new spark.sql.types.StructField("feature", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty())
     ]);
 
-    var continuousDataFrame = sqlContext.createDataFrame(rdd, schema);
+    var continuousDataFrame = sparkSession.createDataFrame(rdd, schema);
 
     var binarizer = new spark.ml.feature.Binarizer()
       .setInputCol("feature")
@@ -59,8 +57,11 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Binarizer");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Binarizer")
+            .getOrCreate();
+  run(sparkSession).then(function(results) {
     console.log('Binarizer result', results);
     stop();
   }).catch(stop);

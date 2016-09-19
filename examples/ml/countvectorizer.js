@@ -22,17 +22,15 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
-
     // Input data: Each row is a bag of words from a sentence or document.
-    var rdd = sc.parallelize([
+    var rdd = sparkSession.sparkContext().parallelize([
       spark.sql.RowFactory.create([["a", "b", "c"]]),
       spark.sql.RowFactory.create([["a", "b", "b", "c", "a"]])
     ]);
@@ -41,7 +39,7 @@ function run(sc) {
       new spark.sql.types.StructField("text", new spark.sql.types.ArrayType(spark.sql.types.DataTypes.StringType, true), false, spark.sql.types.Metadata.empty())
     ]);
 
-    var df = sqlContext.createDataFrame(rdd, schema);
+    var df = sparkSession.createDataFrame(rdd, schema);
 
     // fit a CountVectorizerModel from the corpus
     var cvModel = new spark.ml.feature.CountVectorizer()
@@ -59,8 +57,11 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Count Vectorizer");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("Count Vectorizer")
+            .getOrCreate();
+  run(sparkSession).then(function(results) {
     console.log('Count Vectorizer result', JSON.stringify(results));
     stop();
   }).catch(stop);
