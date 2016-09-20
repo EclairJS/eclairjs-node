@@ -33,7 +33,7 @@ function run(sparkSession) {
     // Loads data.
     var dataset = sparkSession.read().format("libsvm").load(__dirname + '/../mllib/data/sample_kmeans_data.txt');
 
-    // Trains a  a bisecting-k-means model
+    // Trains a bisecting-k-means model
     var bkm = new spark.ml.clustering.BisectingKMeans().setK(2).setSeed(1);
 
     var model = bkm.fit(dataset);
