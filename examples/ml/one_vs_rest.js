@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+var path = require('path');
+
 function exit() {
   process.exit();
 }
@@ -27,10 +29,12 @@ function stop(e) {
 
 var spark = require('../../lib/index.js');
 
+var fileName = path.resolve(__dirname+'/../mllib/data/sample_multiclass_classification_data.txt');
+
 function run(sparkSession) {
   return new Promise(function(resolve, reject) {
     var inputdata = sparkSession.read().format("libsvm")
-        .load("examples/mllib/data/sample_multiclass_classification_data.txt");
+        .load(fileName);
 
     // Split the data into train and test
     inputdata.randomSplit([0.8, 0.2]).then(function(splits){
@@ -58,8 +62,7 @@ function run(sparkSession) {
 
         // compute the classification error on test data.
         evaluator.evaluate(predictions).then(resolve).catch(reject);
-
-    });
+    }).catch(reject);
   });
 }
 
