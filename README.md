@@ -47,11 +47,11 @@ reducedWordsWithCount.collect().then(function(results) {
 ## Try It
 EclairJS Node provides a Docker container that contains all of its dependencies on [Dockerhub](https://hub.docker.com/r/eclairjs/minimal-gateway/).
 
-The Docker image supports the latest released version of EclairJS Node and may not work with `master`.   You can simply check out the appropriate branch (` git checkout branch-0.5` for example).
+The Docker image supports the latest released version of EclairJS Node and may not work with `master`.   You can simply check out the appropriate branch (` git checkout branch-0.7` for example).
 
 ```bash
-docker pull eclairjs/minimal-gateway
-docker run -p 8888:8888 eclairjs/minimal-gateway
+docker pull eclairjs/minimal-gateway:0.7
+docker run -p 8888:8888 eclairjs/minimal-gateway:0.7
 ```
 
 After retrieving Docker's IP address (`docker-machine ip`), you will need to set two environment variables:
@@ -108,5 +108,5 @@ Our goal is to keep the EclairJS master branch up to date with the latest versio
 |EclairJS Version/Tag | Apache Spark Version |
 | -------- | -------- |
 | 0.1            | 1.5.1 |
-| 0.2 - 0.6      | 1.6.0 |
-| 0.7  (master)  | 1.6.0 |
+| 0.2 - 0.7      | 1.6.0 |
+| 0.8 (master)   | 1.6.0 |

@@ -38,7 +38,7 @@ RUN jupyter toree install
 
 
 #Eclair JS
-ENV ECLAIRJS_VERSION 0.6
+ENV ECLAIRJS_VERSION 0.7
 
 RUN wget -q http://repo2.maven.org/maven2/org/eclairjs/eclairjs-nashorn/${ECLAIRJS_VERSION}/eclairjs-nashorn-${ECLAIRJS_VERSION}-jar-with-dependencies.jar && \
     mkdir -p /opt/nashorn/lib && \
