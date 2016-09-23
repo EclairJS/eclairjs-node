@@ -108,5 +108,5 @@ Our goal is to keep the EclairJS master branch up to date with the latest versio
 |EclairJS Version/Tag | Apache Spark Version |
 | -------- | -------- |
 | 0.1            | 1.5.1 |
-| 0.2 - 0.6      | 1.6.0 |
-| 0.7  (master)  | 1.6.0 |
+| 0.2 - 0.7      | 1.6.0 |
+| 0.8  (master)  | 1.6.0 |
