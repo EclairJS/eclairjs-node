@@ -22,14 +22,13 @@ function stop(e) {
   if (e) {
     console.log(e);
   }
-  sc.stop().then(exit).catch(exit);
+  sparkSession.stop().then(exit).catch(exit);
 }
 
 var spark = require('../../lib/index.js');
 
-function run(sc) {
+function run(sparkSession) {
   return new Promise(function(resolve, reject) {
-    var sqlContext = new spark.sql.SQLContext(sc);
 
     function parseRating(str, RowFactory) {
       var fields = str.split("::");
@@ -44,7 +43,9 @@ function run(sc) {
       return RowFactory.create([userId, movieId, rating, timestamp]);
     }
 
-    var ratingsRDD = sc.textFile(__dirname + '/data/sample_movielens_ratings.txt').map(parseRating, [spark.sql.RowFactory]);
+    var ratingsRDD = sparkSession
+        .read().textFile(__dirname + '/data/sample_movielens_ratings.txt').toRDD()
+        .map(parseRating, [spark.sql.RowFactory]);
 
     var schema = new spark.sql.types.StructType([
       new spark.sql.types.StructField("userId", spark.sql.types.DataTypes.IntegerType, false, spark.sql.types.Metadata.empty()),
@@ -53,7 +54,7 @@ function run(sc) {
       new spark.sql.types.StructField("timestamp", spark.sql.types.DataTypes.DoubleType, false, spark.sql.types.Metadata.empty())
     ]);
 
-    var ratings = sqlContext.createDataFrame(ratingsRDD, schema);
+    var ratings = sparkSession.createDataFrame(ratingsRDD, schema);
     ratings.randomSplit([0.8, 0.2]).then(function(splits) {
       var training = splits[0];
       var test = splits[1];
@@ -85,8 +86,11 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "ALS");
-  run(sc).then(function(results) {
+  var sparkSession = spark.sql.SparkSession
+            .builder()
+            .appName("ALS")
+            .getOrCreate();
+  run(sparkSession).then(function(results) {
     console.log('Root-mean-square error', results);
     stop();
   }).catch(stop);
