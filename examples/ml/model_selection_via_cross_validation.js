@@ -83,39 +83,40 @@ function run(sparkSession) {
     // We use a ParamGridBuilder to construct a grid of parameters to search over.
     // With 3 values for hashingTF.numFeatures and 2 values for lr.regParam,
     // this grid will have 3 x 2 = 6 parameter settings for CrossValidator to choose from.
-    var paramGrid = new spark.ml.tuning.ParamGridBuilder()
+    new spark.ml.tuning.ParamGridBuilder()
         .addGrid(hashingTF.numFeatures(), [10, 100, 1000])
         .addGrid(lr.regParam(), [0.1, 0.01])
-        .build();
+        .build().then(function(paramGrid) {
 
-    // We now treat the Pipeline as an Estimator, wrapping it in a CrossValidator instance.
-    // This will allow us to jointly choose parameters for all Pipeline stages.
-    // A CrossValidator requires an Estimator, a set of Estimator ParamMaps, and an Evaluator.
-    // Note that the evaluator here is a BinaryClassificationEvaluator and its default metric
-    // is areaUnderROC.
-    var cv = new spark.ml.tuning.CrossValidator()
-        .setEstimator(pipeline)
-        .setEvaluator(new spark.ml.evaluation.BinaryClassificationEvaluator())
-        .setEstimatorParamMaps(paramGrid).setNumFolds(2);  // Use 3+ in practice
+        // We now treat the Pipeline as an Estimator, wrapping it in a CrossValidator instance.
+        // This will allow us to jointly choose parameters for all Pipeline stages.
+        // A CrossValidator requires an Estimator, a set of Estimator ParamMaps, and an Evaluator.
+        // Note that the evaluator here is a BinaryClassificationEvaluator and its default metric
+        // is areaUnderROC.
+        var cv = new spark.ml.tuning.CrossValidator()
+            .setEstimator(pipeline)
+            .setEvaluator(new spark.ml.evaluation.BinaryClassificationEvaluator())
+            .setEstimatorParamMaps(paramGrid).setNumFolds(2);  // Use 3+ in practice
 
-    // Run cross-validation, and choose the best set of parameters.
-    var cvModel = cv.fit(training);
+        // Run cross-validation, and choose the best set of parameters.
+        var cvModel = cv.fit(training);
 
-    // Prepare test documents, which are unlabeled.
-    var localTest = [
-        new Document(4, "spark i j k"),
-        new Document(5, "l m n"),
-        new Document(6, "mapreduce spark"),
-        new Document(7, "apache hadoop")];
-    var test = sparkSession.createDataFrameFromJson(localTest, {
-        id:"Integer",
-        text:"String"
-    });
+        // Prepare test documents, which are unlabeled.
+        var localTest = [
+            new Document(4, "spark i j k"),
+            new Document(5, "l m n"),
+            new Document(6, "mapreduce spark"),
+            new Document(7, "apache hadoop")];
+        var test = sparkSession.createDataFrameFromJson(localTest, {
+            id:"Integer",
+            text:"String"
+        });
 
-    // Make predictions on test documents. cvModel uses the best model found (lrModel).
-    var predictions = cvModel.transform(test);
+        // Make predictions on test documents. cvModel uses the best model found (lrModel).
+        var predictions = cvModel.transform(test);
 
-    var rows = predictions.select("id", "text", "probability", "prediction").take(10).then(resolve).catch(reject);
+        var rows = predictions.select("id", "text", "probability", "prediction").take(10).then(resolve).catch(reject);
+      });
 
 
   });
