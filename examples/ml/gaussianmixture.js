@@ -38,18 +38,18 @@ function run(sparkSession) {
 
     var model = gmm.fit(dataset);
 
-    function createResultPromise(label, promise) {
+    function createResultPromise(label, promise, stringify) {
       return new Promise(function(resolve, reject) {
         promise.then(function(result) {
-          resolve([label, result])
+          resolve([label, stringify ? JSON.stringify(result) : result]);
         }).catch(reject);
       });
     }
 
+
     var promises = [];
     promises.push(createResultPromise("Weights:", model.weights()));
-    // TODO FIXME!
-    //promises.push(createResultPromise("gaussiansDF:", model.gaussiansDF()));
+    promises.push(createResultPromise("gaussiansDF:", model.gaussiansDF().take(5), true));
 
     // Shows the result
     Promise.all(promises).then(resolve).catch(reject);
@@ -67,7 +67,7 @@ if (global.SC) {
 
   run(sparkSession).then(function(results) {
     results.forEach(function (result) {
-      console.log(result[0], result[1])
+      console.log(result[0], result[1]);
     });
     stop();
   }).catch(stop);

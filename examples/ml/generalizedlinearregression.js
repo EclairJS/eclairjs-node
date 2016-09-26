@@ -46,10 +46,10 @@ function run(sparkSession) {
     // Summarize the model over the training set and get some metrics to print out
     var summary = model.summary();
 
-    function createResultPromise(label, promise) {
+    function createResultPromise(label, promise, stringify) {
       return new Promise(function(resolve, reject) {
         promise.then(function(result) {
-          resolve([label, result])
+          resolve([label, stringify ? JSON.stringify(result) : result]);
         }).catch(reject);
       });
     }
@@ -66,8 +66,7 @@ function run(sparkSession) {
     promises.push(createResultPromise("Deviance:", summary.deviance()));
     promises.push(createResultPromise("Residual Degree Of Freedom:", summary.residualDegreeOfFreedom()));
     promises.push(createResultPromise("AIC:", summary.aic()));
-    // TODO: FIXME - See ml.regression.GeneralizedLinearRegressionSummary.js!
-    //promises.push(createResultPromise("Deviance Residuals:", summary.residuals()));
+    promises.push(createResultPromise("Deviance Residuals:", summary.residuals().take(5), true));
 
     Promise.all(promises).then(resolve).catch(reject);
   });
@@ -84,7 +83,7 @@ if (global.SC) {
 
   run(sparkSession).then(function(results) {
     results.forEach(function (result) {
-      console.log(result[0], result[1])
+      console.log(result[0], result[1]);
     });
     stop();
   }).catch(stop);
