@@ -21,16 +21,19 @@ var expect = require('chai').expect;
 var path = require('path');
 var TestUtils = require('../../lib/utils.js');
 
-var spark = require('../../../lib/index.js');
-
 var sc;
 var session;
+var spark;
 
 if (global.SC) {
   sc = global.SC;
   session = global.SESSION;
+  spark = global.SPARK;
 } else {
-  session = spark.SparkSession
+  var eclairjs = require('../../../lib/index.js');
+  spark = new eclairjs();
+
+  session = spark.sql.SparkSession
     .builder()
     .appName("sql.DataFrame Integration Tests")
     .master("local[*]")

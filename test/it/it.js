@@ -21,9 +21,10 @@ var expect = require('chai').expect;
 var path = require('path');
 var TestUtils = require('../lib/utils.js');
 
-var spark = require('../../lib/index.js');
+var eclairjs = require('../../lib/index.js');
+var spark = new eclairjs();
 
-var sparkSession = spark.SparkSession
+var sparkSession = spark.sql.SparkSession
   .builder()
   .appName("EclairJS Integration Tests")
   .master("local[*]")
@@ -33,6 +34,7 @@ var sc = sparkSession.sparkContext();
 
 global.SESSION = sparkSession;
 global.SC = sc;
+global.SPARK = spark;
 
 describe('SparkContext Integration Test', function() {
   before(function(done) {
@@ -46,6 +48,7 @@ describe('SparkContext Integration Test', function() {
   describe("SparkContext tests", function() {
     require('./SparkContext');
   });
+
 
   describe("SQL tests", function() {
     require('./sql/Column');
@@ -63,13 +66,12 @@ describe('SparkContext Integration Test', function() {
   });
 
   describe("ML tests", function() {
-    //require('./ml/ml.js');
+    require('./ml/ml.js');
   });
 
   describe("MLLib tests", function() {
-    //require('./mllib/mllib.js');
+    require('./mllib/mllib.js');
   });
-
   after(function(done) {
     if (sc) {
       sc.stop().then(done).catch(done);

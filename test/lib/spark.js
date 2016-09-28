@@ -14,27 +14,105 @@
  * limitations under the License.
  */
 
-function EclairJS() {
-  var result = require('./SparkContext.js')();
 
-  var kernelP = result[0];
+
+var MODE_RESULT = 0;
+var MODE_ASSIGN = 1;
+var MODE_VOID_ASSIGN = 2;
+
+function FakeKernelExecuteHandle(mode) {
+  var self = this;
+
+  setTimeout(function() {
+    if (self.onDone) {
+      if (mode == MODE_RESULT) {
+        var msg = {msg_type: 'execute_result', content: {data: {"text/plain": "{}"}}};
+        self.onIOPub(msg)
+      }
+
+      self.onDone()
+    }
+  }, 10);
+}
+
+function FakeKernel() {
+  this._listener = null;
+}
+
+FakeKernel.prototype.addExecuteListener = function(listener) {
+  this._listener = listener;
+}
+
+FakeKernel.prototype.removeExecuteListener = function(listener) {
+  this._listener = null;
+}
+
+FakeKernel.prototype.execute = function(msg) {
+  if (this._listener) {
+    this._listener(msg);
+  }
+
+  var mode = -1;
+  if (global.ECLAIRJS_TEST_MODE && global.ECLAIRJS_TEST_MODE == 'void') {
+    mode = MODE_VOID_ASSIGN;
+  }
+
+  // TODO: use futures
+  // TODO: registerTempTable is an exception here, need a better way
+  if (msg.code.indexOf("var ") == 0) {
+    return new FakeKernelExecuteHandle(MODE_ASSIGN);
+  } else {
+    if (mode == MODE_VOID_ASSIGN) {
+      return new FakeKernelExecuteHandle(MODE_VOID_ASSIGN);
+    } else {
+      return new FakeKernelExecuteHandle(MODE_RESULT);
+    }
+  }
+};
+
+function FakeServer() {
+  this.kernelP = new Promise(function(resolve, reject) {
+    resolve(new FakeKernel());
+  });
+}
+
+FakeServer.prototype.getKernelPromise = function() {
+  return this.kernelP;
+};
+
+FakeServer.prototype.start = function(appName) {
+};
+
+FakeServer.prototype.stop = function() {
+  return new Promise(function(resolve, reject) {
+    resolve();
+  });
+};
+
+function EclairJS() {
+
+  var server = new FakeServer();
+  var kernelP = server.getKernelPromise();
 
   return {
-    SparkContext: result[1],
+    SparkContext: require('../../lib/SparkContext.js')(kernelP, server),
 
-    SQLContext: require('../../lib/sql/SQLContext.js'),
-    sql: require('../../lib/sql/module.js')(kernelP),
+    Accumulable: require('../../lib/Accumulable.js')(kernelP),
+    AccumulableParam: require('../../lib/AccumulableParam.js')(kernelP),
+    List: require('../../lib/List.js')(kernelP),
+    Tuple: require('../../lib/Tuple.js')(kernelP),
+    Tuple2: require('../../lib/Tuple2.js')(kernelP),
+    Tuple3: require('../../lib/Tuple3.js')(kernelP),
+    Tuple4: require('../../lib/Tuple4.js')(kernelP),
+    SparkConf: require('../../lib/SparkConf.js')(kernelP),
 
-    storage: {
-      StorageLevel: require('../../lib/storage/StorageLevel.js')(kernelP)
-    },
-
-    StreamingContext: require('../../lib/streaming/StreamingContext.js'),
-    streaming: {
-      KafkaUtils: require('../../lib/streaming/kafka/KafkaUtils.js'),
-      Duration: require('../../lib/streaming/Duration.js')
-    }
+    ml: require('../../lib/ml/module.js')(kernelP),
+    mllib: require('../../lib/mllib/module.js')(kernelP),
+    rdd: require('../../lib/rdd/module.js')(kernelP),
+    sql: require('../../lib/sql/module.js')(kernelP, server),
+    storage: require('../../lib/storage/module.js')(kernelP),
+    streaming: require('../../lib/streaming/module.js')(kernelP),
   }
 }
 
-module.exports = new EclairJS();
+module.exports = EclairJS;

@@ -28,7 +28,7 @@ function stop(e) {
   }
 }
 
-var spark = require('../../lib/index.js');
+
 
 var sparkContext = new spark.SparkContext("local[*]", "Twitter Popular Tags");
 var ssc = new spark.streaming.StreamingContext(sparkContext, new spark.streaming.Duration(1000));

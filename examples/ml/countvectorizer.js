@@ -25,9 +25,9 @@ function stop(e) {
   sparkSession.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
 
-function run(sparkSession) {
+
+function run(sparkSession, spark) {
   return new Promise(function(resolve, reject) {
     // Input data: Each row is a bag of words from a sentence or document.
     var data = [
@@ -57,11 +57,13 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sparkSession = spark.sql.SparkSession
             .builder()
             .appName("Count Vectorizer")
             .getOrCreate();
-  run(sparkSession).then(function(results) {
+  run(sparkSession, spark).then(function(results) {
     console.log('Count Vectorizer result', JSON.stringify(results));
     stop();
   }).catch(stop);

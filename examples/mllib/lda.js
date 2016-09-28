@@ -33,9 +33,7 @@ function createResulPromise(label, promise) {
   });
 }
 
-var spark = require('../../lib/index.js');
-
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var data = sc.textFile(__dirname + "/data/sample_lda_data.txt");
 
@@ -73,8 +71,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "LDA");
-  run(sc).then(function(results) {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
+  var sc =  new spark.SparkContext("local[*]", "LDA");
+  run(sc, spark).then(function(results) {
     results.forEach(function(result) {
       console.log(result[0], '=', result[1])
     });

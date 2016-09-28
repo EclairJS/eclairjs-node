@@ -33,12 +33,10 @@ function createResulPromise(label, promise) {
   });
 }
 
-
-var spark = require('../../lib/index.js');
-var Vectors = spark.mllib.linalg.Vectors;
-
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
+    var Vectors = spark.mllib.linalg.Vectors;
+
     var data = sc.textFile(__dirname + "/data/random.data");
 
     var rowsList = [Vectors.dense([1.12, 2.05, 3.12]), Vectors.dense([5.56, 6.28, 8.94]), Vectors.dense([10.2, 8.0, 20.5])];
@@ -60,8 +58,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "PCA");
-  run(sc).then(function(results) {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
+  var sc =  new spark.SparkContext("local[*]", "PCA");
+  run(sc, spark).then(function(results) {
     console.log('Projected vector of principal component:', results);
     stop();
   }).catch(stop);

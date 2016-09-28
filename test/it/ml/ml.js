@@ -20,19 +20,29 @@ var assert = require('assert');
 var expect = require('chai').expect;
 var TestUtils = require('../../lib/utils.js');
 
-var spark = require('../../../lib/index.js');
-
+var spark;
 var sc;
+var sparkSession;
 
 var doWeOwnTheSC = false;
 
 if (global.SC) {
   // we are being run inside another test, probably the main integration-test file
   sc = global.SC;
+  sparkSession = global.SESSION;
+  spark = global.SPARK;
 } else {
+  var eclairjs = require('../../../lib/index.js');
+  spark = new eclairjs();
   doWeOwnTheSC = true;
-  sc = new spark.SparkContext("local[*]", "ml Integration Tests");
+  sparkSession = spark.sql.SparkSession
+    .builder()
+    .appName("ml Integration Tests")
+    .getOrCreate();
+  sc = sparkSession.sparkContext();
   global.SC = sc;
+  global.SESSION = sparkSession;
+  global.SPARK = spark;
 }
 
 describe('ml Test', function() {
@@ -49,7 +59,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/als');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results).to.be.an('Number');
         done();
       }).catch(done);
@@ -61,7 +71,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/aftsurvivalregression');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(3);
         done();
       }).catch(done);
@@ -73,7 +83,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/binarizer');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(3);
 
         var promises = [];
@@ -96,7 +106,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/bucketizer');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(4);
         done();
       }).catch(done);
@@ -108,7 +118,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/chisqselector');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(3);
         done();
       }).catch(done);
@@ -120,7 +130,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/countvectorizer');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(2);
         done();
       }).catch(done);
@@ -132,7 +142,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/dct');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(3);
         done();
       }).catch(done);
@@ -144,7 +154,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/decisiontreeclassification');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(2);
         expect(results[1]).to.be.an('Number');
         done();
@@ -157,7 +167,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/decisiontreeregression');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(2);
         expect(results[1]).to.be.an('Number');
         done();
@@ -170,7 +180,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/elementwiseproduct');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(2);
         done();
       }).catch(done);
@@ -182,7 +192,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/estimatortransformerparam');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(2);
         expect(results[1]).to.be.an('Number');
         done();
@@ -195,7 +205,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/gradientboostedtreeclassifier');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(2);
         expect(results[0]).to.be.an('Number');
         expect(results[1]).to.be.an('Number');
@@ -209,7 +219,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/gradientboostedtreeregressor');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(2);
         expect(results[0]).to.be.an('Number');
         expect(results[1]).to.be.an('Number');
@@ -223,7 +233,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/indextostring');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results).to.be.an('Number');
         done();
       }).catch(done);
@@ -235,7 +245,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/kmeans');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(3);
         done();
       }).catch(done);
@@ -247,7 +257,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/lda');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(2);
         expect(results[0]).to.be.an('Number');
         expect(results[1]).to.be.an('Number');
@@ -261,7 +271,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/linearregressionwithelasticnet');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(5);
         done();
       }).catch(done);
@@ -273,7 +283,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/logisticregressionsummary');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(1);
         done();
       }).catch(done);
@@ -285,7 +295,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/logisticregressionwithelasticnet');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(2);
         done();
       }).catch(done);
@@ -297,7 +307,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/minmaxscaler');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(10);
         done();
       }).catch(done);
@@ -309,7 +319,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/modelselectionviatrainvalidationsplit');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(10);
         done();
       }).catch(done);
@@ -321,7 +331,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/multilayerperceptronclassifier');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results).to.be.an('Number');
         done();
       }).catch(done);
@@ -333,7 +343,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/naivebayes');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results).to.be.an('Number');
         done();
       }).catch(done);
@@ -345,7 +355,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/ngram');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(3);
         done();
       }).catch(done);
@@ -357,7 +367,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/normalizer');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results).to.be.an('String');
         done();
       }).catch(done);
@@ -369,7 +379,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/onehotencoder');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(6);
         done();
       }).catch(done);
@@ -381,7 +391,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/pca');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(3);
         done();
       }).catch(done);
@@ -393,7 +403,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/pipeline');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(4);
         done();
       }).catch(done);
@@ -405,7 +415,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/polynomialexpansion');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(3);
         done();
       }).catch(done);
@@ -417,7 +427,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/quantilediscretizer');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results.length).equals(5);
         done();
       }).catch(done);
@@ -429,7 +439,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/randomforestregressor');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results).to.be.an('Number');
         done();
       }).catch(done);
@@ -441,7 +451,7 @@ describe('ml Test', function() {
       this.timeout(100000);
 
       var test = require('../../../examples/ml/randomforestclassifier');
-      test(sc).then(function(results) {
+      test(sparkSession, spark).then(function(results) {
         expect(results).to.be.an('Number');
         done();
       }).catch(done);

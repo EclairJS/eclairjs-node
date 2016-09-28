@@ -25,8 +25,6 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
 var rank = 12;
 var iterations = 4;
 var blocks = -1;
@@ -35,7 +33,9 @@ function featuresToString(tuple) {
   return tuple[0] + "," + tuple[2];
 }
 
-var sc = new spark.SparkContext("local[*]", "ALS");
+var eclairjs = require('../../lib/index.js');
+var spark = new eclairjs();
+var sc =  new spark.SparkContext("local[*]", "ALS");
 
 var lines = sc.textFile(__dirname + "/data/alsdata.txt");
 

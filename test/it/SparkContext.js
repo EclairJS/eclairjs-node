@@ -21,15 +21,17 @@ var expect = require('chai').expect;
 var path = require('path');
 var TestUtils = require('../lib/utils.js');
 
-var spark = require('../../lib/index.js');
-
+var spark;
 var sc;
 
 if (global.SC) {
   sc = global.SC;
+  spark = global.SPARK;
 } else {
-  //sc = new spark.SparkContext("local[*]", "SparkContext Integration Tests");
-  session = spark.SparkSession.builder().appName("sql.Dataset Integration tests").master("local[*]").getOrCreate();
+  var eclairjs = require('../../lib/index.js');
+  spark = new eclairjs();
+
+  var session = spark.sql.SparkSession.builder().appName("SparkContext Integration tests").master("local[*]").getOrCreate();
   sc = session.sparkContext();
 }
 

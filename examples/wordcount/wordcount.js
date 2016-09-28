@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-var spark = require('../../lib/index.js');
+
 
 var sc;
 

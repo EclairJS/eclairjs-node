@@ -25,9 +25,9 @@ function stop(e) {
   sparkSession.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
 
-function run(sparkSession) {
+
+function run(sparkSession, spark) {
   return new Promise(function(resolve, reject) {
     // Load and parse the data file, converting it to a DataFrame.
     var data = sparkSession.read().format("libsvm").load(__dirname+"/../mllib/data/sample_libsvm_data.txt");
@@ -80,12 +80,14 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sparkSession = spark.sql.SparkSession
             .builder()
             .appName("Random Forest Regressor Example")
             .getOrCreate();
 
-  run(sparkSession).then(function(results) {
+  run(sparkSession, spark).then(function(results) {
     console.log("Root Mean Squared Error (RMSE) on test data:", results);
     stop();
   }).catch(stop);

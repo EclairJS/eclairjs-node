@@ -25,9 +25,7 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
 
@@ -61,7 +59,7 @@ function run(sc) {
           }, [model, spark.Tuple2]);
 
           var filtered = predictionAndLabel.filter(function (tuple) {
-            return tuple[0] != tuple[1];
+            return tuple._1() != tuple._2();
           });
 
           var promises = [];
@@ -79,8 +77,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Gradient Boosting Classification");
-  run(sc).then(function(results) {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
+  var sc =  new spark.SparkContext("local[*]", "Gradient Boosting Classification");
+  run(sc, spark).then(function(results) {
     console.log("Test Error:", results[0]/results[1]);
     stop();
   }).catch(stop);

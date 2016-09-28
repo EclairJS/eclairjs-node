@@ -25,9 +25,9 @@ function stop(e) {
   sparkSession.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
 
-function run(sparkSession) {
+
+function run(sparkSession, spark) {
   return new Promise(function(resolve, reject) {
 
     var fields = [
@@ -86,12 +86,14 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sparkSession = spark.sql.SparkSession
             .builder()
             .appName("Estimator Transformer Param")
             .getOrCreate();
 
-  run(sparkSession).then(function(results) {
+  run(sparkSession, spark).then(function(results) {
     console.log('LogisticRegression parameters:', results[0]);
     console.log('Model 1 was fit using parameters:', results[1]);
     stop();

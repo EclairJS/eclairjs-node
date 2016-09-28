@@ -38,9 +38,9 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
-var sc = new spark.SparkContext("local[*]", "Word2Vec");
+var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
+  var sc =  new spark.SparkContext("local[*]", "Word2Vec");
 
 var rdd = sc.textFile(__dirname + '/text8_lines').map(function(s, List) {
   return new List(s.split(" "));

@@ -21,13 +21,16 @@ var expect = require('chai').expect;
 var path = require('path');
 var TestUtils = require('../../lib/utils.js');
 
-var spark = require('../../../lib/index.js');
-
+var spark;
 var sc;
 
 if (global.SC) {
   sc = global.SC;
+  spark = global.SPARK;
 } else {
+  var eclairjs = require('../../../lib/index.js');
+  spark = new eclairjs();
+
   sc = new spark.SparkContext("local[*]", "sql.DataFrameNAFunctions Integration Tests");
 }
 

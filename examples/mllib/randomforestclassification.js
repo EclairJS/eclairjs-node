@@ -25,13 +25,11 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
 var k = 3;
 var iterations = 10;
 var runs = 1;
 
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var data =  spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_libsvm_data.txt");
 
@@ -67,8 +65,6 @@ function run(sc) {
       var predictionAndLabel = testData.mapToPair(function(p, model, Tuple2) {
         return new Tuple2(model.predict(p.getFeatures()), p.getLabel());
       }, [model, spark.Tuple2]);
-
-
       var promises = [];
       promises.push(predictionAndLabel.filter(function(tup) {
         return (tup[0] !== tup[1]);
@@ -84,8 +80,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Random Forest Classification");
-  run(sc).then(function(results) {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
+  var sc =  new spark.SparkContext("local[*]", "Random Forest Classification");
+  run(sc, spark).then(function(results) {
     console.log("Test Error: ", 1.0 * results[0]/results[1]);
     stop();
   }).catch(stop);

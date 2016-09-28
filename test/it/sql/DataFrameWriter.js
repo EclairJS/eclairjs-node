@@ -28,9 +28,12 @@ var expect = require('chai').expect;
 var path = require('path');
 var TestUtils = require('../../lib/utils.js');
 
-var spark = require('../../../lib/index.js');
+var eclairjs = require('../../../lib/index.js');
+var spark = new eclairjs();
 
-var sc = new spark.SparkContext("local[*]", "sql.DataFrameWriter Integration Tests");
+var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
+  var sc =  new spark.SparkContext("local[*]", "sql.DataFrameWriter Integration Tests");
 var sqlContext = new spark.sql.SQLContext(sc);
 
 function buildPeopleTable(file, callback) {

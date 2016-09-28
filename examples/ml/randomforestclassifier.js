@@ -25,9 +25,9 @@ function stop(e) {
   sparkSession.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
 
-function run(sparkSession) {
+
+function run(sparkSession, spark) {
   return new Promise(function(resolve, reject) {
 
     // Load and parse the data file, converting it to a DataFrame.
@@ -80,7 +80,7 @@ function run(sparkSession) {
         var evaluator = new spark.ml.evaluation.MulticlassClassificationEvaluator()
           .setLabelCol("indexedLabel")
           .setPredictionCol("prediction")
-          .setMetricName("precision");
+          .setMetricName("accuracy");
         var accuracy = evaluator.evaluate(predictions).then(resolve).catch(reject);
 
       });
@@ -92,12 +92,14 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sparkSession = spark.sql.SparkSession
             .builder()
             .appName("Random Forest Classifier")
             .getOrCreate();
 
-  run(sparkSession).then(function(results) {
+  run(sparkSession, spark).then(function(results) {
     console.log("Test error:", 1-results);
     stop();
   }).catch(stop);

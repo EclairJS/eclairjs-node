@@ -25,9 +25,7 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var data = spark.mllib.util.MLUtils.loadLibSVMFile(sc, __dirname + "/data/sample_binary_classification_data.txt");
 
@@ -96,8 +94,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "LBFGS");
-  run(sc).then(function(result) {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
+  var sc =  new spark.SparkContext("local[*]", "LBFGS");
+  run(sc, spark).then(function(result) {
     console.log('Area under ROC:', result);
     stop();
   }).catch(stop);

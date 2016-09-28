@@ -33,9 +33,7 @@ function createResulPromise(label, promise) {
   });
 }
 
-var spark = require('../../lib/index.js');
-
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var numExamples = 10000; // # number of examples to generate
 
@@ -61,8 +59,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "Random RDD Generation");
-  run(sc).then(function(results) {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
+  var sc =  new spark.SparkContext("local[*]", "Random RDD Generation");
+  run(sc, spark).then(function(results) {
     console.log('Generated RDD examples sampled from the standard normal distribution:',results[0]);
     console.log('  First 5:',results[1]);
 

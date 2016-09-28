@@ -33,7 +33,7 @@ function stop(e) {
   }
 }
 
-var spark = require('../../lib/index.js');
+
 
 var kafkaHost = '192.168.99.100:2181';
 var topic = 'tlog';

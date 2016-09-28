@@ -25,12 +25,10 @@ function stop(e) {
   sc.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
-function run(sc) {
+function run(sc, spark) {
   return new Promise(function(resolve, reject) {
     var minSupport = 0.3;
-    var numPartition = -1;
+    var numPartition = 1;
 
     var data = sc.textFile(__dirname + "/data/sample_fpgrowth.txt");
 
@@ -52,8 +50,10 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
-  var sc = new spark.SparkContext("local[*]", "FP Growth");
-  run(sc).then(function(results) {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
+  var sc =  new spark.SparkContext("local[*]", "FP Growth");
+  run(sc, spark).then(function(results) {
     results.forEach(function(itemSet) {
       console.log(itemSet.items, itemSet.freq)
     });

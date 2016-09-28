@@ -21,14 +21,17 @@ var expect = require('chai').expect;
 var path = require('path');
 var TestUtils = require('../../lib/utils.js');
 
-var spark = require('../../../lib/index.js');
-
+var spark;
 var session;
 
 if (global.SESSION) {
   session = global.SESSION;
+  spark = glboal.SPARK;
 } else {
-  session = spark.SparkSession.builder().appName("sql.Dataset Integration tests").master("local[*]").getOrCreate();
+  var eclairjs = require('../../../lib/index.js');
+  spark = new eclairjs();
+
+  session = spark.sql.SparkSession.builder().appName("sql.Dataset Integration tests").master("local[*]").getOrCreate();
 }
 
 describe('Dataset Test', function() {

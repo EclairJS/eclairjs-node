@@ -25,9 +25,9 @@ function stop(e) {
   sparkSession.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
 
-function run(sc) {
+
+function run(sparkSession, spark) {
   return new Promise(function(resolve, reject) {
 
     // Load training data
@@ -50,12 +50,14 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sparkSession = spark.sql.SparkSession
             .builder()
             .appName("Min Max Scaler")
             .getOrCreate();
 
-  run(sparkSession).then(function(results) {
+  run(sparkSession, spark).then(function(results) {
     console.log("Results:", JSON.stringify(results));
     stop();
   }).catch(stop);

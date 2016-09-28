@@ -17,7 +17,8 @@
 var assert = require('assert');
 var expect = require('chai').expect;
 
-var spark = require('./lib/spark.js');
+var eclairjs = require('./lib/spark.js');
+var spark = new eclairjs();
 var Utils = require('../lib/utils');
 var sc = new spark.SparkContext("local[*]", "foo");
 
@@ -350,6 +351,6 @@ describe('Utils Test', function() {
   });
 
   /*
-    Tests: resolver, wrapArray
+   Tests: resolver, wrapArray
    */
 });

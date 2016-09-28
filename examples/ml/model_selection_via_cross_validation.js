@@ -25,9 +25,9 @@ function stop(e) {
   sparkSession.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
 
-function run(sparkSession) {
+
+function run(sparkSession, spark) {
   return new Promise(function(resolve, reject) {
 
 
@@ -126,12 +126,14 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sparkSession = spark.sql.SparkSession
             .builder()
             .appName("Model Selection Via Cross Validation")
             .getOrCreate();
 
-  run(sparkSession).then(function(results) {
+  run(sparkSession, spark).then(function(results) {
     console.log("Results:", JSON.stringify(results));
     stop();
   }).catch(stop);

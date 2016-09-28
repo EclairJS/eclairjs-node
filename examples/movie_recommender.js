@@ -32,6 +32,8 @@ var sparkConf = new spark.SparkConf()
 	.set("spark.driver.memory", "6g")
 	.setMaster("local[*]")
 	.setAppName("movie_recommender");
+var eclairjs = require('../../lib/index.js');
+var spark = new eclairjs();
 var sc = new spark.SparkContext(sparkConf);
 var pathToSmallDataset = '/Users/billreed/eclairjs_dev/eclairjs-nashorn/examples/data/mllib/ml-latest-small';
 var pathToCompleteDataset = '/Users/billreed/eclairjs_dev/eclairjs-nashorn/examples/data/mllib/ml-latest';

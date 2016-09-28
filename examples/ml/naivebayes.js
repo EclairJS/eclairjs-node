@@ -25,15 +25,12 @@ function stop(e) {
   sparkSession.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
-
-function run(sparkSession) {
+function run(sparkSession, spark) {
   return new Promise(function(resolve, reject) {
 
     // Load training data
     var data = sparkSession.read().format("libsvm")
       .load(__dirname+"/../mllib/data/sample_libsvm_data.txt");
-
 
     // Prepare training and test data.
     data.randomSplit([0.6, 0.4], 1234).then(function(splits) {
@@ -48,7 +45,7 @@ function run(sparkSession) {
       var result = model.transform(test);
       var predictionAndLabels = result.select("prediction", "label");
       var evaluator = new spark.ml.evaluation.MulticlassClassificationEvaluator()
-        .setMetricName("precision");
+        .setMetricName("accuracy");
 
       evaluator.evaluate(predictionAndLabels).then(resolve).catch(reject);
     }).catch(reject)
@@ -59,12 +56,14 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sparkSession = spark.sql.SparkSession
             .builder()
             .appName("Naive Bayes")
             .getOrCreate();
 
-  run(sparkSession).then(function(results) {
+  run(sparkSession, spark).then(function(results) {
     console.log("Precision:", results);
     stop();
   }).catch(stop);

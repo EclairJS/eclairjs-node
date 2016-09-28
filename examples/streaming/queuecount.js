@@ -28,7 +28,7 @@ function stop(e) {
   }
 }
 
-var spark = require('../../lib/index.js');
+
 
 var sparkContext = new spark.SparkContext("local[*]", "Queue Stream");
 var ssc = new spark.streaming.StreamingContext(sparkContext, new spark.streaming.Duration(1000));

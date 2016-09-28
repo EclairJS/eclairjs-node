@@ -25,9 +25,9 @@ function stop(e) {
   sparkSession.stop().then(exit).catch(exit);
 }
 
-var spark = require('../../lib/index.js');
 
-function run(sparkSession) {
+
+function run(sparkSession, spark) {
   return new Promise(function(resolve, reject) {
     var data = [
       spark.sql.RowFactory.create([7, spark.ml.linalg.Vectors.dense(0.0, 0.0, 18.0, 1.0), 1.0]),
@@ -60,11 +60,13 @@ if (global.SC) {
   // we are being run as part of a test
   module.exports = run;
 } else {
+  var eclairjs = require('../../lib/index.js');
+  var spark = new eclairjs();
   var sparkSession = spark.sql.SparkSession
             .builder()
             .appName("Chi Sq Selector")
             .getOrCreate();
-  run(sparkSession).then(function(results) {
+  run(sparkSession, spark).then(function(results) {
     console.log('Chi Sq Selector result', results);
     stop();
   }).catch(stop);
