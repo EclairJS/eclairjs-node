@@ -106,7 +106,7 @@ Contributions are always welcome via pull requests.
 Our goal is to keep the EclairJS master branch up to date with the latest version of Spark. When new versions of Spark require code changes, we create a separate branch. The table below shows what is available now.
 
 |EclairJS Version/Tag | Apache Spark Version |
-| -------- | -------- |
+| ---------------| ----- |
 | 0.1            | 1.5.1 |
 | 0.2 - 0.7      | 1.6.0 |
 | 0.8  (master)  | 2.0.0 |
