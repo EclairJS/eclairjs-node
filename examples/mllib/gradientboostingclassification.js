@@ -44,12 +44,12 @@ function run(sc, spark) {
 
         var promises = [];
 
-        promises.push(treeStrat.setNumClasses(2));
-        promises.push(treeStrat.setMaxDepth(5));
+        promises.push(boostingStrategy.getTreeStrategy().setNumClasses(2));
+        promises.push(boostingStrategy.getTreeStrategy().setMaxDepth(5));
 
         // Empty categoricalFeaturesInfo indicates all features are continuous.
         var categoricalFeaturesInfo = {};
-        promises.push(treeStrat.setCategoricalFeaturesInfo(categoricalFeaturesInfo));
+        promises.push(boostingStrategy.getTreeStrategy().setCategoricalFeaturesInfo(categoricalFeaturesInfo));
 
         Promise.all(promises).then(function() {
           var model = spark.mllib.tree.GradientBoostedTrees.train(trainingData, boostingStrategy);
@@ -67,8 +67,8 @@ function run(sc, spark) {
           promises.push(testData.count());
 
           Promise.all(promises).then(resolve).catch(reject);
-        }).catch(stop)
-      });
+        }).catch(reject)
+      }).catch(reject);
     }).catch(reject);
   });
 }

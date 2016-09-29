@@ -74,15 +74,17 @@ describe('mllib Test', function() {
     });
   });
 
-  /*describe("Binary Classification Metrics", function() {
+  describe("Binary Classification Metrics", function() {
     it("should return the expected result", function(done) {
+      this.timeout(10000);
+
       var test = require('../../../examples/mllib/binaryclassification');
       test(sc, spark).then(function(results) {
         expect(results.length).equals(5);
         done();
       }).catch(console.error);
     });
-  });*/
+  });
 
   describe("Bisecting K Mean", function() {
     it("should return the expected result", function(done) {
@@ -115,7 +117,7 @@ describe('mllib Test', function() {
     });
   });
 
- /* describe("Gradient Boosting Classification", function() {
+  describe("Gradient Boosting Classification", function() {
     it("should return the expected result", function(done) {
       var test = require('../../../examples/mllib/gradientboostingclassification');
       test(sc, spark).then(function(results) {
@@ -123,9 +125,9 @@ describe('mllib Test', function() {
         done();
       }).catch(done);
     });
-  });*/
+  });
 
-/*  describe("Gradient Boosting Regression", function() {
+  describe("Gradient Boosting Regression", function() {
     it("should return the expected result", function(done) {
       var test = require('../../../examples/mllib/gradientboostingregression');
       test(sc, spark).then(function(results) {
@@ -133,7 +135,7 @@ describe('mllib Test', function() {
         done();
       }).catch(done);
     });
-  });*/
+  });
 
   describe("Isotonic Regression", function() {
     it("should return the expected result", function(done) {
