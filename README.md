@@ -20,7 +20,9 @@ EclairJS Node's api mirrors the Spark api.  Here is the classic word count examp
 ```node
 var eclairjs = require('eclairjs');
 
-var sc = new eclairjs.SparkContext("local[*]", "Simple Word Count");
+var spark = new eclairjs();
+
+var sc = new spark.SparkContext("local[*]", "Simple Word Count");
 
 var textFile = sc.textFile('foo.txt');
 
@@ -45,7 +47,7 @@ reducedWordsWithCount.collect().then(function(results) {
 ## Try It
 EclairJS Node provides a Docker container that contains all of its dependencies on [Dockerhub](https://hub.docker.com/r/eclairjs/minimal-gateway/).
 
-The Docker image supports the latest released version of EclairJS Node and may not work with `master`.   You can simply check out the appropriate branch (` git checkout branch-0.5` for example).
+The Docker image supports the latest released version of EclairJS Node and may not work with `master`.   You can simply check out the appropriate branch (` git checkout branch-0.7` for example).
 
 ```bash
 docker pull eclairjs/minimal-gateway
@@ -106,5 +108,5 @@ Our goal is to keep the EclairJS master branch up to date with the latest versio
 |EclairJS Version/Tag | Apache Spark Version |
 | -------- | -------- |
 | 0.1            | 1.5.1 |
-| 0.2 - 0.6      | 1.6.0 |
-| 0.7  (master)  | 1.6.0 |
+| 0.2 - 0.7      | 1.6.0 |
+| 0.8  (master)  | 2.0.0 |
