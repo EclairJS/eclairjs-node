@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "jupyter-js-services": "^0.16.3",
-    "request": "2.67.x",
+    "request": "2.74.0",
     "xmlhttprequest": "^1.8.0",
     "ws": "^1.1.1"
   },
