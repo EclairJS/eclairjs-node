@@ -1,3 +1,5 @@
+The eclairjs-node and eclairjs-nashorn repositories have been merged into a new one called [eclairjs](https://github.com/EclairJS/eclairjs) and all future work is done there.
+
 EclairJS Node
 ===================
 EclairJS Node provides Node.js language bindings for [Apache Spark](https://spark.apache.org).
