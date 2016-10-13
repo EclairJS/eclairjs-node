@@ -2,9 +2,13 @@ The eclairjs-node and eclairjs-nashorn repositories have been merged into a new 
 
 EclairJS Node
 ===================
+
+[![Known Vulnerabilities](https://snyk.io/test/github/EclairJS/eclairjs-node/2af3c51aecb5a31f19fe93b36bcf5a9df2a4a2f4/badge.svg)](https://snyk.io/test/github/EclairJS/eclairjs-node/2af3c51aecb5a31f19fe93b36bcf5a9df2a4a2f4)
+
 EclairJS Node provides Node.js language bindings for [Apache Spark](https://spark.apache.org).
 
 Learn more about the larger [EclairJS project](http://www.eclairjs.org).
+
 
 ## Installation
 
